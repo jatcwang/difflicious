@@ -2,11 +2,16 @@
 
 # TODO:
 Must have:
-- Customizable "equals"? (e.g. cats.Eq)
-- Undo
+- Ignore fields
+- Swap two fields of the same type! (or a subtype to a super type)
+- Dynamic ignore (add new field ignores at runtime)
   
 Nice to have:
 - Nice string diff
+- Undo
+- Customizable "equals"? (e.g. cats.Eq)
+- Custom value output (e.g. JPG)
+- Modify map keys
 
 # Design
 
@@ -35,3 +40,108 @@ Operations:
 Operations:
 - Match entries by field (e.g. ID)
 - Swap two index
+
+# API
+
+## Result API
+
+Example expected:
+
+[
+  {
+    (CaseCls)
+    id: "1"
+    f1: {
+      str: "a"
+    }
+  }
+]
+
+compare with actual
+
+[
+  {
+    (CaseCls)
+    id: "1"
+    f1: {
+      str: "b"
+    }
+  },
+  {
+    (CaseCls)
+    id: "2",
+    f1: {
+      str: "c"
+    }
+  }
+]
+
+type: matching
+archetype: list
+items: 
+  - type: matching
+    archetype: record
+    fields: 
+      f1: 
+        type: matching // redundant?
+        cls: F
+        archetype: record
+        fields:
+          str:
+            archetype: string
+            actual: b
+            expected: a
+    
+  - type: actualOnly
+    value:
+      cls: CaseCls
+      archetype: record
+      fields:
+        f1:
+          type: actualOnly
+          cls: F
+          archetype: record
+          fields:
+            str:
+              type: actualOnly
+              archetype: string
+              actual: c
+    
+# Set
+Similar to list, just different available operations
+```
+archetype: set
+entries:
+
+```
+
+# Map
+
+Allow swapping two keys or values, as well as deleting an entry
+Adding an entry is more difficult
+
+```
+archetype: map
+entries:
+  - key:
+      archetype: string
+      actual: k1
+    value:
+      archetype: record
+      type: matching
+      fields:
+        ...
+  - key:
+      archetype: string
+      actual: k2
+    value:
+      archetype: record
+      type: actualOnly
+      fields:
+```
+  
+map / list / set
+
+## Operation API
+
+

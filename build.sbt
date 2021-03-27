@@ -5,6 +5,9 @@ lazy val root = Project("root", file("."))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.4.2",
       "org.scalameta" %% "munit" % "0.7.22" % Test,
+      "io.circe" %% "circe-generic" % "0.13.0",
+      "com.propensive" %% "magnolia" % "0.17.0"
+      "com.softwaremill.diffx" %% "diffx-core" % "0.4.4", // FIXME:
     ),
   )
 
