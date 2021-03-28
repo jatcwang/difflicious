@@ -36,6 +36,8 @@ object DiffGen {
                 MismatchTypeResult(
                   actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
                   expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
+                  matchType = MatchType.Both,
+                  ignored = false,
                 )
               }
             }

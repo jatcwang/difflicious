@@ -24,12 +24,13 @@ object Differ {
             .Both(
               actual = en.apply(actual),
               expected = en.apply(expected),
-              compareResult = if (actual == expected) CompareResult.Identical else CompareResult.Different,
+              isIdentical = actual == expected,
+              ignored = false,
             )
         case Ior.Left(actual) =>
-          DiffResult.ValueResult.ActualOnly(en.apply(actual))
+          DiffResult.ValueResult.ActualOnly(en.apply(actual), ignored = false)
         case Ior.Right(expected) =>
-          DiffResult.ValueResult.ExpectedOnly(en.apply(expected))
+          DiffResult.ValueResult.ExpectedOnly(en.apply(expected), ignored = false)
       }
     }
 
@@ -44,11 +45,12 @@ object Differ {
       DiffResult.ValueResult.Both(
         encoder.apply(actual),
         encoder.apply(expected),
-        CompareResult.fromBool(numeric.equiv(actual, expected)),
+        isIdentical = numeric.equiv(actual, expected),
+        ignored = false,
       )
     }
-    case Ior.Left(actual)    => DiffResult.ValueResult.ActualOnly(encoder.apply(actual))
-    case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected))
+    case Ior.Left(actual)    => DiffResult.ValueResult.ActualOnly(encoder.apply(actual), ignored = false)
+    case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), ignored = false)
   }
 
   class RecordDiffer[T](
@@ -67,7 +69,7 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(MatchType.Both, diffResults)
+        DiffResult.RecordResult(diffResults, MatchType.Both, ignored = false)
       }
       case Ior.Left(value) => {
         val diffResults = fieldDiffers
@@ -79,7 +81,7 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(MatchType.ActualOnly, diffResults)
+        DiffResult.RecordResult(diffResults, MatchType.ActualOnly, ignored = false)
       }
       case Ior.Right(expected) => {
         val diffResults = fieldDiffers
@@ -91,7 +93,7 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(MatchType.ExpectedOnly, diffResults)
+        DiffResult.RecordResult(diffResults, MatchType.ExpectedOnly, ignored = false)
       }
     }
   }
