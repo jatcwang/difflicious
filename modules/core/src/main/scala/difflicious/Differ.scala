@@ -13,8 +13,22 @@ trait Differ[T] {
   /**
     * Create an new Differ instance where the given path will produce an ignored DiffResult
     */
-  def updateIgnore(path: IgnorePath, newIgnored: Boolean): Either[IgnoreError, Differ[T]]
+  def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[T]]
 }
+
+sealed trait DifferOp
+
+object DifferOp {
+  final case class SetIgnored(isIgnored: Boolean) extends DifferOp
+  sealed trait MatchBy extends DifferOp
+  object MatchBy {
+    case object Index extends MatchBy
+    case class FieldValue(fieldName: String) extends MatchBy
+  }
+
+}
+
+object UpdateDiffer {}
 
 object Differ {
   trait ValueDiffer[T] extends Differ[T] {
@@ -28,19 +42,21 @@ object Differ {
           .Both(
             actual = encoder.apply(actual),
             expected = encoder.apply(expected),
-            isIdentical = actual == expected,
-            ignored = ignored,
+            isSame = actual == expected,
+            isIgnored = ignored,
           )
       case Ior.Left(actual) =>
-        DiffResult.ValueResult.ActualOnly(encoder.apply(actual), ignored = ignored)
+        DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = ignored)
       case Ior.Right(expected) =>
-        DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), ignored = ignored)
+        DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = ignored)
     }
 
-    override def updateIgnore(path: IgnorePath, newIgnored: Boolean): Either[IgnoreError, EqualsDiffer[T]] = {
-      path.next match {
-        case (Some(_), nextPath) => Left(IgnoreError.PathTooLong(nextPath.resolvedSteps))
-        case (None, _)           => Right(new EqualsDiffer[T](ignored = newIgnored))
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
+      val (step, nextPath) = path.next
+      (step, op) match {
+        case (Some(_), _)                            => Left(DifferUpdateError.PathTooLong(nextPath))
+        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new EqualsDiffer[T](ignored = newIgnored))
+        case (None, otherOp)                         => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
@@ -51,30 +67,33 @@ object Differ {
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean]
 
-  class NumericDiffer[T](ignored: Boolean)(implicit numeric: Numeric[T], encoder: Encoder[T]) extends ValueDiffer[T] {
+  class NumericDiffer[T](isIgnored: Boolean)(implicit numeric: Numeric[T], encoder: Encoder[T]) extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(actual, expected) => {
         DiffResult.ValueResult.Both(
           encoder.apply(actual),
           encoder.apply(expected),
-          isIdentical = numeric.equiv(actual, expected),
-          ignored = ignored,
+          isSame = numeric.equiv(actual, expected),
+          isIgnored = isIgnored,
         )
       }
-      case Ior.Left(actual)    => DiffResult.ValueResult.ActualOnly(encoder.apply(actual), ignored = ignored)
-      case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), ignored = ignored)
+      case Ior.Left(actual)    => DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = isIgnored)
+      case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = isIgnored)
     }
 
-    override def updateIgnore(path: IgnorePath, newIgnored: Boolean): Either[IgnoreError, NumericDiffer[T]] = {
-      path.next match {
-        case (Some(_), nextPath) => Left(IgnoreError.PathTooLong(nextPath.resolvedSteps))
-        case (None, _)           => Right(new NumericDiffer[T](ignored = newIgnored))
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, NumericDiffer[T]] = {
+      val (step, nextPath) = path.next
+      (step, op) match {
+        case (Some(_), _)                            => Left(DifferUpdateError.PathTooLong(nextPath))
+        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new NumericDiffer[T](isIgnored = newIgnored))
+        case (None, otherOp) =>
+          Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "NumericDiffer"))
       }
     }
   }
 
   implicit def numericDiff[T](implicit numeric: Numeric[T], encoder: Encoder[T]): ValueDiffer[T] =
-    new NumericDiffer[T](ignored = false)
+    new NumericDiffer[T](isIgnored = false)
 
   class RecordDiffer[T](
     fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
@@ -92,7 +111,8 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(diffResults, MatchType.Both, ignored = ignored)
+        DiffResult
+          .RecordResult(diffResults, MatchType.Both, isIgnored = ignored, isSame = diffResults.values.forall(_.isSame))
       }
       case Ior.Left(value) => {
         val diffResults = fieldDiffers
@@ -104,7 +124,8 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(diffResults, MatchType.ActualOnly, ignored = ignored)
+        DiffResult
+          .RecordResult(diffResults, MatchType.ActualOnly, isIgnored = ignored, diffResults.values.forall(_.isSame))
       }
       case Ior.Right(expected) => {
         val diffResults = fieldDiffers
@@ -116,30 +137,37 @@ object Differ {
               fieldName -> diffResult
           }
           .to(ListMap)
-        DiffResult.RecordResult(diffResults, MatchType.ExpectedOnly, ignored = ignored)
+        DiffResult
+          .RecordResult(diffResults, MatchType.ExpectedOnly, isIgnored = ignored, diffResults.values.forall(_.isSame))
       }
     }
 
-    override def updateIgnore(path: IgnorePath, newIgnored: Boolean): Either[IgnoreError, RecordDiffer[T]] = {
-      path.next match {
-        case (Some(IgnoreStep.RecordField(fieldName)), nextPath) => {
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, RecordDiffer[T]] = {
+      val (step, nextPath) = path.next
+      step match {
+        case Some(UpdateStep.RecordField(fieldName)) =>
           for {
             (getter, fieldDiffer) <- fieldDiffers
               .get(fieldName)
-              .toRight(IgnoreError.NonExistentField(nextPath.resolvedSteps, fieldName))
-            newFieldDiffer <- fieldDiffer.updateIgnore(nextPath, newIgnored)
+              .toRight(DifferUpdateError.NonExistentField(nextPath, fieldName))
+            newFieldDiffer <- fieldDiffer.updateWith(nextPath, op)
           } yield new RecordDiffer[T](
             ignored = this.ignored,
             fieldDiffers = fieldDiffers.updated(fieldName, (getter, newFieldDiffer)),
           )
-        }
-        case (Some(_), nextPath) => Left(IgnoreError.UnexpectedDifferType(nextPath.resolvedSteps, "record"))
-        case (None, _)           => Right(new RecordDiffer[T](ignored = newIgnored, fieldDiffers = fieldDiffers))
+        case Some(_) => Left(DifferUpdateError.UnexpectedDifferType(nextPath, "record"))
+        case None =>
+          op match {
+            case DifferOp.SetIgnored(newIgnored) =>
+              Right(new RecordDiffer[T](ignored = newIgnored, fieldDiffers = fieldDiffers))
+            case _: DifferOp.MatchBy => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+          }
+
       }
     }
 
     def unsafeIgnoreField(fieldName: String): RecordDiffer[T] =
-      updateIgnore(IgnorePath(Vector.empty, IgnoreStep.RecordField(fieldName) :: Nil), newIgnored = true) match {
+      updateWith(UpdatePath(Vector.empty, UpdateStep.RecordField(fieldName) :: Nil), DifferOp.SetIgnored(true)) match {
         case Left(_) =>
           throw new IllegalArgumentException(s"Cannot ignore field: field '$fieldName' is not part of record")
         case Right(differ) => differ

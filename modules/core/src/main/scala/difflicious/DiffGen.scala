@@ -37,7 +37,7 @@ object DiffGen {
                 actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
                 expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
                 matchType = MatchType.Both,
-                ignored = false,
+                isIgnored = false,
               )
             }
           }
@@ -45,13 +45,14 @@ object DiffGen {
       }
     }
 
-    override def updateIgnore(path: IgnorePath, newIgnored: Boolean): Either[IgnoreError, Typeclass[T]] = {
-      path.next match {
-        case (Some(IgnoreStep.Down(fullTypeName)), nextPath) =>
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Typeclass[T]] = {
+      val (step, nextPath) = path.next
+      step match {
+        case Some(UpdateStep.Down(fullTypeName)) =>
           ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.full == fullTypeName } match {
             case Some((sub, idx)) =>
               sub.typeclass
-                .updateIgnore(nextPath, newIgnored)
+                .updateWith(nextPath, op)
                 .map { newDiffer =>
                   Subtype(
                     name = sub.typeName,
@@ -74,10 +75,16 @@ object DiffGen {
                   new SealedTraitDiffer[T](newSealedTrait, ignored)
                 }
             case None =>
-              Left(IgnoreError.InvalidSubType(nextPath.resolvedSteps, ctx.subtypes.map(_.typeName.full).toVector))
+              Left(DifferUpdateError.InvalidSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
           }
-        case (Some(_), nextPath) => Left(IgnoreError.UnexpectedDifferType(nextPath.resolvedSteps, "sealed trait"))
-        case (None, _)           => Right(new SealedTraitDiffer[T](ctx, ignored = newIgnored))
+        case Some(_) => Left(DifferUpdateError.UnexpectedDifferType(nextPath, "sealed trait"))
+        case None =>
+          op match {
+            case DifferOp.SetIgnored(newIgnored) =>
+              Right(new SealedTraitDiffer[T](ctx, ignored = newIgnored))
+            case _: DifferOp.MatchBy => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+          }
+
       }
     }
   }
