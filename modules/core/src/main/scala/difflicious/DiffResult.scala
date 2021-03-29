@@ -40,7 +40,7 @@ object DiffResult {
   ) extends DiffResult
 
   object MapResult {
-    final case class Entry(key: ValueResult.ActualOnly, value: DiffResult)
+    final case class Entry(key: ValueResult, value: DiffResult)
   }
 
   final case class MismatchTypeResult(
@@ -68,20 +68,4 @@ object DiffResult {
     }
   }
 
-  def setIgnore(res: DiffResult, ignored: Boolean): DiffResult = {
-    res match {
-      case r: RecordResult       => r.copy(isIgnored = ignored)
-      case r: MismatchTypeResult => r.copy(isIgnored = ignored)
-      case r: ValueResult =>
-        r match {
-          case rr: ValueResult.Both         => rr.copy(isIgnored = ignored)
-          case rr: ValueResult.ActualOnly   => rr.copy(isIgnored = ignored)
-          case rr: ValueResult.ExpectedOnly => rr.copy(isIgnored = ignored)
-        }
-      case r: ListResult => r.copy(isIgnored = ignored)
-      case r: MapResult  => r.copy(isIgnored = ignored)
-      case r: SetResult  => r.copy(isIgnored = ignored)
-    }
-
-  }
 }

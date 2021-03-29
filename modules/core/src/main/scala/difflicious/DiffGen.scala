@@ -22,7 +22,9 @@ object DiffGen {
     )
   }
 
-  class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], ignored: Boolean) extends Differ[T] {
+  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], ignored: Boolean) extends Differ[T] {
+    override type R = DiffResult
+
     override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
       case Ior.Left(actual)    => ctx.dispatch(actual)(sub => sub.typeclass.diff(Ior.Left(sub.cast(actual))))
       case Ior.Right(expected) => ctx.dispatch(expected)(sub => sub.typeclass.diff(Ior.Right(sub.cast(expected))))

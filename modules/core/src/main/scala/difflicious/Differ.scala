@@ -1,14 +1,18 @@
 package difflicious
 import io.circe.Encoder
 import cats.data.Ior
+import difflicious.DiffResult.MapResult
 
 import scala.collection.immutable.ListMap
+import scala.collection.mutable
 
 // FIXME: don't use cats Ior
 trait Differ[T] {
-  def diff(inputs: Ior[T, T]): DiffResult
+  type R <: DiffResult
 
-  final def diff(actual: T, expected: T): DiffResult = diff(Ior.Both(actual, expected))
+  def diff(inputs: Ior[T, T]): R
+
+  final def diff(actual: T, expected: T): R = diff(Ior.Both(actual, expected))
 
   /**
     * Create an new Differ instance where the given path will produce an ignored DiffResult
@@ -32,7 +36,9 @@ object UpdateDiffer {}
 
 object Differ {
   trait ValueDiffer[T] extends Differ[T] {
-    override def diff(inputs: Ior[T, T]): DiffResult.ValueResult
+    final override type R = DiffResult.ValueResult
+
+    override def diff(inputs: Ior[T, T]): R
   }
 
   final class EqualsDiffer[T](ignored: Boolean)(implicit encoder: Encoder[T]) extends ValueDiffer[T] {
@@ -95,11 +101,13 @@ object Differ {
   implicit def numericDiff[T](implicit numeric: Numeric[T], encoder: Encoder[T]): ValueDiffer[T] =
     new NumericDiffer[T](isIgnored = false)
 
-  class RecordDiffer[T](
+  final class RecordDiffer[T](
     fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
     ignored: Boolean,
   ) extends Differ[T] {
-    override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
+    override type R = DiffResult.RecordResult
+
+    override def diff(inputs: Ior[T, T]): R = inputs match {
       case Ior.Both(actual, expected) => {
         val diffResults = fieldDiffers
           .map {
@@ -167,10 +175,86 @@ object Differ {
     }
 
     def unsafeIgnoreField(fieldName: String): RecordDiffer[T] =
-      updateWith(UpdatePath(Vector.empty, UpdateStep.RecordField(fieldName) :: Nil), DifferOp.SetIgnored(true)) match {
+      updateWith(UpdatePath.of(UpdateStep.RecordField(fieldName)), DifferOp.SetIgnored(true)) match {
         case Left(_) =>
           throw new IllegalArgumentException(s"Cannot ignore field: field '$fieldName' is not part of record")
         case Right(differ) => differ
       }
+  }
+
+  implicit def mapDiffer[A: ValueDiffer, B: Differ, M[KK, VV] <: Map[KK, VV]]: MapDiffer[A, B, M] =
+    new MapDiffer(isIgnored = true)
+
+  // FIXME: probably want some sort of ordering to maintain consistent order
+  final class MapDiffer[A, B, M[KK, VV] <: Map[KK, VV]](
+    isIgnored: Boolean,
+  )(
+    implicit
+    keyDiffer: ValueDiffer[A],
+    valueDiffer: Differ[B],
+  ) extends Differ[M[A, B]] {
+    override type R = MapResult
+
+    override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs match {
+      case Ior.Both(actual, expected) =>
+        val actualOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
+        val both = mutable.ArrayBuffer.empty[MapResult.Entry]
+        val expectedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
+        actual.foreach {
+          case (k, actualV) =>
+            expected.get(k) match {
+              case Some(expectedV) =>
+                both += MapResult.Entry(
+                  keyDiffer.diff(k, k),
+                  valueDiffer.diff(actualV, expectedV),
+                )
+              case None =>
+                actualOnly += MapResult.Entry(
+                  keyDiffer.diff(Ior.Left(k)),
+                  valueDiffer.diff(Ior.Left(actualV)),
+                )
+            }
+        }
+        expected.foreach {
+          case (k, expectedV) =>
+            if (actual.contains(k)) {
+              // Do nothing, already compared when iterating through actual
+            } else {
+              expectedOnly += MapResult.Entry(
+                keyDiffer.diff(Ior.Right(k)),
+                valueDiffer.diff(Ior.Right(expectedV)),
+              )
+            }
+        }
+        (actualOnly ++ both ++ expectedOnly).toVector
+        MapResult(
+          (actualOnly ++ both ++ expectedOnly).toVector,
+          MatchType.Both,
+          isIgnored = isIgnored,
+          isSame = actualOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isSame),
+        )
+      case Ior.Left(actual) =>
+        DiffResult.MapResult(
+          entries = actual.map {
+            case (k, v) =>
+              MapResult.Entry(keyDiffer.diff(Ior.Left(k)), valueDiffer.diff(Ior.Left(v)))
+          }.toVector,
+          matchType = MatchType.ActualOnly,
+          isIgnored = isIgnored,
+          isSame = false,
+        )
+      case Ior.Right(expected) =>
+        DiffResult.MapResult(
+          entries = expected.map {
+            case (k, v) =>
+              MapResult.Entry(keyDiffer.diff(Ior.Right(k)), valueDiffer.diff(Ior.Right(v)))
+          }.toVector,
+          matchType = MatchType.ActualOnly,
+          isIgnored = isIgnored,
+          isSame = false,
+        )
+    }
+
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[M[A, B]]] = ???
   }
 }
