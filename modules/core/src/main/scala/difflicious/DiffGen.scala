@@ -22,7 +22,7 @@ object DiffGen {
     )
   }
 
-  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], ignored: Boolean) extends Differ[T] {
+  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean) extends Differ[T] {
     override type R = DiffResult
 
     override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
@@ -39,7 +39,7 @@ object DiffGen {
                 actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
                 expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
                 matchType = MatchType.Both,
-                isIgnored = false,
+                isIgnored = isIgnored,
               )
             }
           }
@@ -74,7 +74,7 @@ object DiffGen {
                     annotationsArray = ctx.annotations.toArray,
                     typeAnnotationsArray = ctx.typeAnnotations.toArray,
                   )
-                  new SealedTraitDiffer[T](newSealedTrait, ignored)
+                  new SealedTraitDiffer[T](newSealedTrait, isIgnored)
                 }
             case None =>
               Left(DifferUpdateError.InvalidSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
@@ -83,7 +83,7 @@ object DiffGen {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIgnored) =>
-              Right(new SealedTraitDiffer[T](ctx, ignored = newIgnored))
+              Right(new SealedTraitDiffer[T](ctx, isIgnored = newIgnored))
             case _: DifferOp.MatchBy => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
           }
 
@@ -92,7 +92,7 @@ object DiffGen {
   }
 
   def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
-    new SealedTraitDiffer[T](ctx, ignored = false)
+    new SealedTraitDiffer[T](ctx, isIgnored = false)
 
   def derive[T]: Differ[T] = macro Magnolia.gen[T]
 }

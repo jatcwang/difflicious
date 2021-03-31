@@ -41,33 +41,33 @@ object Differ {
     override def diff(inputs: Ior[T, T]): R
   }
 
-  final class EqualsDiffer[T](ignored: Boolean)(implicit encoder: Encoder[T]) extends ValueDiffer[T] {
+  final class EqualsDiffer[T](isIgnored: Boolean)(implicit encoder: Encoder[T]) extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(actual, expected) =>
         DiffResult.ValueResult
           .Both(
             actual = encoder.apply(actual),
             expected = encoder.apply(expected),
-            isSame = actual == expected,
-            isIgnored = ignored,
+            isOk = isIgnored || actual == expected,
+            isIgnored = isIgnored,
           )
       case Ior.Left(actual) =>
-        DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = ignored)
+        DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = isIgnored)
       case Ior.Right(expected) =>
-        DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = ignored)
+        DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = isIgnored)
     }
 
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
       val (step, nextPath) = path.next
       (step, op) match {
         case (Some(_), _)                            => Left(DifferUpdateError.PathTooLong(nextPath))
-        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new EqualsDiffer[T](ignored = newIgnored))
+        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new EqualsDiffer[T](isIgnored = newIgnored))
         case (None, otherOp)                         => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
 
-  def useEquals[T: Encoder]: ValueDiffer[T] = new EqualsDiffer[T](ignored = false)
+  def useEquals[T: Encoder]: ValueDiffer[T] = new EqualsDiffer[T](isIgnored = false)
 
   implicit val stringDiff: ValueDiffer[String] = useEquals[String]
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
@@ -79,7 +79,7 @@ object Differ {
         DiffResult.ValueResult.Both(
           encoder.apply(actual),
           encoder.apply(expected),
-          isSame = numeric.equiv(actual, expected),
+          isOk = isIgnored || numeric.equiv(actual, expected),
           isIgnored = isIgnored,
         )
       }
@@ -120,7 +120,12 @@ object Differ {
           }
           .to(ListMap)
         DiffResult
-          .RecordResult(diffResults, MatchType.Both, isIgnored = ignored, isSame = diffResults.values.forall(_.isSame))
+          .RecordResult(
+            diffResults,
+            MatchType.Both,
+            isIgnored = ignored,
+            isOk = ignored || diffResults.values.forall(_.isOk),
+          )
       }
       case Ior.Left(value) => {
         val diffResults = fieldDiffers
@@ -133,7 +138,7 @@ object Differ {
           }
           .to(ListMap)
         DiffResult
-          .RecordResult(diffResults, MatchType.ActualOnly, isIgnored = ignored, diffResults.values.forall(_.isSame))
+          .RecordResult(diffResults, MatchType.ActualOnly, isIgnored = ignored, diffResults.values.forall(_.isOk))
       }
       case Ior.Right(expected) => {
         val diffResults = fieldDiffers
@@ -146,7 +151,7 @@ object Differ {
           }
           .to(ListMap)
         DiffResult
-          .RecordResult(diffResults, MatchType.ExpectedOnly, isIgnored = ignored, diffResults.values.forall(_.isSame))
+          .RecordResult(diffResults, MatchType.ExpectedOnly, isIgnored = ignored, diffResults.values.forall(_.isOk))
       }
     }
 
@@ -232,7 +237,7 @@ object Differ {
           (actualOnly ++ both ++ expectedOnly).toVector,
           MatchType.Both,
           isIgnored = isIgnored,
-          isSame = actualOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isSame),
+          isOk = isIgnored || actualOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isOk),
         )
       case Ior.Left(actual) =>
         DiffResult.MapResult(
@@ -242,7 +247,7 @@ object Differ {
           }.toVector,
           matchType = MatchType.ActualOnly,
           isIgnored = isIgnored,
-          isSame = false,
+          isOk = isIgnored,
         )
       case Ior.Right(expected) =>
         DiffResult.MapResult(
@@ -252,20 +257,21 @@ object Differ {
           }.toVector,
           matchType = MatchType.ActualOnly,
           isIgnored = isIgnored,
-          isSame = false,
+          isOk = isIgnored,
         )
     }
 
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[M[A, B]]] = ???
   }
 
-  implicit def seqDiffer[F[X] <: Seq[X], A]: SeqDiffer[F, A] = new SeqDiffer[F, A](isIgnored = false)
+  implicit def seqDiffer[F[X] <: Seq[X], A: Differ]: SeqDiffer[F, A] =
+    new SeqDiffer[F, A](isIgnored = false, matchMethod = MatchMethod.Index)
 
   // How items are matched with each other when comparing two Seqs
-  sealed trait MatchMethod[A]
+  sealed trait MatchMethod[-A]
 
   object MatchMethod {
-    case object Index extends MatchMethod[Nothing]
+    case object Index extends MatchMethod[Any]
     final case class ByFunc[A, B](func: A => B) extends MatchMethod[A]
   }
 
@@ -292,7 +298,7 @@ object Differ {
               items = diffResults,
               matchType = MatchType.Both,
               isIgnored = isIgnored,
-              isSame = diffResults.forall(_.isSame),
+              isOk = isIgnored || diffResults.forall(_.isOk),
             )
           }
           case MatchMethod.ByFunc(func) => {
@@ -308,7 +314,7 @@ object Differ {
                     val res = itemDiffer.diff(a, e)
                     results += res
                     matchedIndexes += idx
-                    overallIsSame &= res.isSame
+                    overallIsSame &= res.isOk
                     true
                   } else {
                     false
@@ -335,7 +341,7 @@ object Differ {
               items = results.toVector,
               matchType = MatchType.Both,
               isIgnored = isIgnored,
-              isSame = overallIsSame,
+              isOk = isIgnored || overallIsSame,
             )
           }
         }
@@ -347,7 +353,7 @@ object Differ {
           }.toVector,
           MatchType.ActualOnly,
           isIgnored = isIgnored,
-          isSame = false,
+          isOk = isIgnored,
         )
       case Ior.Right(expected) =>
         ListResult(
@@ -356,11 +362,14 @@ object Differ {
           }.toVector,
           MatchType.ExpectedOnly,
           isIgnored = isIgnored,
-          isSame = false,
+          isOk = isIgnored,
         )
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[F[A]]] = {}
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[F[A]]] = {
+      ???
+
+    }
   }
 
 }
