@@ -7,6 +7,8 @@ sealed trait DiffResult {
   def isIgnored: Boolean
   def isSame: Boolean
   def matchType: MatchType
+
+  // FIXME: need isOk, probably don't need isSame?
 }
 
 object DiffResult {

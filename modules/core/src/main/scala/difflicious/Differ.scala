@@ -1,7 +1,7 @@
 package difflicious
 import io.circe.Encoder
 import cats.data.Ior
-import difflicious.DiffResult.MapResult
+import difflicious.DiffResult.{MapResult, ListResult}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
@@ -183,7 +183,7 @@ object Differ {
   }
 
   implicit def mapDiffer[A: ValueDiffer, B: Differ, M[KK, VV] <: Map[KK, VV]]: MapDiffer[A, B, M] =
-    new MapDiffer(isIgnored = true)
+    new MapDiffer(isIgnored = false)
 
   // FIXME: probably want some sort of ordering to maintain consistent order
   final class MapDiffer[A, B, M[KK, VV] <: Map[KK, VV]](
@@ -196,6 +196,7 @@ object Differ {
     override type R = MapResult
 
     override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs match {
+      // FIXME: consolidate all 3 cases
       case Ior.Both(actual, expected) =>
         val actualOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
         val both = mutable.ArrayBuffer.empty[MapResult.Entry]
@@ -257,4 +258,109 @@ object Differ {
 
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[M[A, B]]] = ???
   }
+
+  implicit def seqDiffer[F[X] <: Seq[X], A]: SeqDiffer[F, A] = new SeqDiffer[F, A](isIgnored = false)
+
+  // How items are matched with each other when comparing two Seqs
+  sealed trait MatchMethod[A]
+
+  object MatchMethod {
+    case object Index extends MatchMethod[Nothing]
+    final case class ByFunc[A, B](func: A => B) extends MatchMethod[A]
+  }
+
+  final class SeqDiffer[F[X] <: Seq[X], A](isIgnored: Boolean, matchMethod: MatchMethod[A])(
+    implicit itemDiffer: Differ[A],
+  ) extends Differ[F[A]] {
+    override type R = ListResult
+
+    override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
+      case Ior.Both(actual, expected) => {
+        matchMethod match {
+          case MatchMethod.Index => {
+            val diffResults = actual
+              .map(Some(_))
+              .zipAll(expected.map(Some(_)), None, None)
+              .map {
+                case (aOpt, eOpt) =>
+                  val ior = Ior.fromOptions(aOpt, eOpt).get // guaranteed one of the Option is Some
+                  itemDiffer.diff(ior)
+              }
+              .toVector
+
+            ListResult(
+              items = diffResults,
+              matchType = MatchType.Both,
+              isIgnored = isIgnored,
+              isSame = diffResults.forall(_.isSame),
+            )
+          }
+          case MatchMethod.ByFunc(func) => {
+            val matchedIndexes = mutable.BitSet.empty
+            val results = mutable.ArrayBuffer.empty[DiffResult]
+            val expWithIdx = expected.zipWithIndex
+            var overallIsSame = true
+            actual.foreach { a =>
+              val aMatchVal = func(a)
+              val found = expWithIdx.find {
+                case (e, idx) =>
+                  if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
+                    val res = itemDiffer.diff(a, e)
+                    results += res
+                    matchedIndexes += idx
+                    overallIsSame &= res.isSame
+                    true
+                  } else {
+                    false
+                  }
+              }
+
+              // FIXME: perhaps we need to prepend this to the front
+              //  of all results for nicer result view?
+              if (found.isEmpty) {
+                results += itemDiffer.diff(Ior.Left(a))
+                overallIsSame = false
+              }
+            }
+
+            expWithIdx.foreach {
+              case (e, idx) =>
+                if (!matchedIndexes.contains(idx)) {
+                  results += itemDiffer.diff(Ior.Right(e))
+                  overallIsSame = false
+                }
+            }
+
+            ListResult(
+              items = results.toVector,
+              matchType = MatchType.Both,
+              isIgnored = isIgnored,
+              isSame = overallIsSame,
+            )
+          }
+        }
+      }
+      case Ior.Left(actual) =>
+        ListResult(
+          actual.map { a =>
+            itemDiffer.diff(Ior.Left(a))
+          }.toVector,
+          MatchType.ActualOnly,
+          isIgnored = isIgnored,
+          isSame = false,
+        )
+      case Ior.Right(expected) =>
+        ListResult(
+          expected.map { a =>
+            itemDiffer.diff(Ior.Right(a))
+          }.toVector,
+          MatchType.ExpectedOnly,
+          isIgnored = isIgnored,
+          isSame = false,
+        )
+    }
+
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[F[A]]] = {}
+  }
+
 }
