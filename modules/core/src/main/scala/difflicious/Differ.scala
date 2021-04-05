@@ -1,8 +1,11 @@
 package difflicious
 import io.circe.Encoder
 import cats.data.Ior
-import difflicious.DiffResult.{MapResult, ListResult}
+import difflicious.DiffResult.{ListResult, SetResult, MapResult}
+import difflicious.DifferOp.MatchBy
+import izumi.reflect.Tag
 
+import scala.annotation.nowarn
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
@@ -24,10 +27,10 @@ sealed trait DifferOp
 
 object DifferOp {
   final case class SetIgnored(isIgnored: Boolean) extends DifferOp
-  sealed trait MatchBy extends DifferOp
+  sealed trait MatchBy[-A] extends DifferOp
   object MatchBy {
-    case object Index extends MatchBy
-    case class FieldValue(fieldName: String) extends MatchBy
+    case object Index extends MatchBy[Any]
+    final case class ByFunc[A, B](func: A => B, aTag: Tag[A]) extends MatchBy[A]
   }
 
 }
@@ -73,7 +76,9 @@ object Differ {
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean]
 
-  class NumericDiffer[T](isIgnored: Boolean)(implicit numeric: Numeric[T], encoder: Encoder[T]) extends ValueDiffer[T] {
+  // FIXME: tuple instances
+  class NumericDiffer[T](isIgnored: Boolean)(implicit numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T])
+      extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(actual, expected) => {
         DiffResult.ValueResult.Both(
@@ -98,7 +103,7 @@ object Differ {
     }
   }
 
-  implicit def numericDiff[T](implicit numeric: Numeric[T], encoder: Encoder[T]): ValueDiffer[T] =
+  implicit def numericDiff[T](implicit numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T]): ValueDiffer[T] =
     new NumericDiffer[T](isIgnored = false)
 
   final class RecordDiffer[T](
@@ -173,7 +178,7 @@ object Differ {
           op match {
             case DifferOp.SetIgnored(newIgnored) =>
               Right(new RecordDiffer[T](ignored = newIgnored, fieldDiffers = fieldDiffers))
-            case _: DifferOp.MatchBy => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+            case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
           }
 
       }
@@ -261,29 +266,48 @@ object Differ {
         )
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[M[A, B]]] = ???
+    // FIXME:
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[A, B, M]] = {
+      val (step, nextPath) = path.next
+      step match {
+        case Some(UpdateStep.DownTypeParam(idx)) =>
+          if (idx == 1) { // the value
+            valueDiffer.updateWith(nextPath, op).map { newValueDiffer =>
+              new MapDiffer[A, B, M](
+                isIgnored = isIgnored,
+              )(
+                keyDiffer,
+                newValueDiffer,
+              )
+            }
+          } else
+            Left(DifferUpdateError.InvalidTypeParamIndex(path = nextPath, invalidIndex = idx, currentClassName = "Map")) // TODO: more accurate name?
+        case Some(_: UpdateStep.DownSubtype | _: UpdateStep.RecordField) =>
+          Left(DifferUpdateError.UnexpectedDifferType(nextPath, "Map"))
+        case None =>
+          op match {
+            case DifferOp.SetIgnored(newIsIgnored) =>
+              Right(new MapDiffer[A, B, M](isIgnored = newIsIgnored))
+            case _: MatchBy[_] =>
+              Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "Map"))
+          }
+      }
+    }
   }
 
-  implicit def seqDiffer[F[X] <: Seq[X], A: Differ]: SeqDiffer[F, A] =
-    new SeqDiffer[F, A](isIgnored = false, matchMethod = MatchMethod.Index)
+  implicit def seqDiffer[F[X] <: Seq[X], A: Differ: Tag]: SeqDiffer[F, A] =
+    new SeqDiffer[F, A](isIgnored = false, matchBy = MatchBy.Index)
 
-  // How items are matched with each other when comparing two Seqs
-  sealed trait MatchMethod[-A]
-
-  object MatchMethod {
-    case object Index extends MatchMethod[Any]
-    final case class ByFunc[A, B](func: A => B) extends MatchMethod[A]
-  }
-
-  final class SeqDiffer[F[X] <: Seq[X], A](isIgnored: Boolean, matchMethod: MatchMethod[A])(
+  final class SeqDiffer[F[X] <: Seq[X], A](isIgnored: Boolean, matchBy: MatchBy[A])(
     implicit itemDiffer: Differ[A],
+    tag: Tag[A],
   ) extends Differ[F[A]] {
     override type R = ListResult
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
       case Ior.Both(actual, expected) => {
-        matchMethod match {
-          case MatchMethod.Index => {
+        matchBy match {
+          case MatchBy.Index => {
             val diffResults = actual
               .map(Some(_))
               .zipAll(expected.map(Some(_)), None, None)
@@ -301,47 +325,13 @@ object Differ {
               isOk = isIgnored || diffResults.forall(_.isOk),
             )
           }
-          case MatchMethod.ByFunc(func) => {
-            val matchedIndexes = mutable.BitSet.empty
-            val results = mutable.ArrayBuffer.empty[DiffResult]
-            val expWithIdx = expected.zipWithIndex
-            var overallIsSame = true
-            actual.foreach { a =>
-              val aMatchVal = func(a)
-              val found = expWithIdx.find {
-                case (e, idx) =>
-                  if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
-                    val res = itemDiffer.diff(a, e)
-                    results += res
-                    matchedIndexes += idx
-                    overallIsSame &= res.isOk
-                    true
-                  } else {
-                    false
-                  }
-              }
-
-              // FIXME: perhaps we need to prepend this to the front
-              //  of all results for nicer result view?
-              if (found.isEmpty) {
-                results += itemDiffer.diff(Ior.Left(a))
-                overallIsSame = false
-              }
-            }
-
-            expWithIdx.foreach {
-              case (e, idx) =>
-                if (!matchedIndexes.contains(idx)) {
-                  results += itemDiffer.diff(Ior.Right(e))
-                  overallIsSame = false
-                }
-            }
-
+          case MatchBy.ByFunc(func, _) => {
+            val (results, allIsOk) = diffMatchByFunc(actual, expected, func, itemDiffer)
             ListResult(
-              items = results.toVector,
+              items = results,
               matchType = MatchType.Both,
               isIgnored = isIgnored,
-              isOk = isIgnored || overallIsSame,
+              isOk = isIgnored || allIsOk,
             )
           }
         }
@@ -366,10 +356,169 @@ object Differ {
         )
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[F[A]]] = {
-      ???
-
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
+      val (step, nextPath) = path.next
+      step match {
+        case Some(UpdateStep.DownTypeParam(idx)) =>
+          if (idx == 0) {
+            itemDiffer.updateWith(nextPath, op).map { newItemDiffer =>
+              new SeqDiffer[F, A](
+                isIgnored = isIgnored,
+                matchBy = matchBy,
+              )(
+                newItemDiffer,
+                tag,
+              )
+            }
+          } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, tag.tag.longName))
+        case Some(_: UpdateStep.DownSubtype | _: UpdateStep.RecordField) =>
+          Left(DifferUpdateError.UnexpectedDifferType(nextPath, s"seq"))
+        case None =>
+          op match {
+            case DifferOp.SetIgnored(newIsIgnored) =>
+              Right(new SeqDiffer[F, A](isIgnored = newIsIgnored, matchBy = matchBy))
+            case matchBy: DifferOp.MatchBy[_] =>
+              matchBy match {
+                case MatchBy.Index =>
+                  Right(new SeqDiffer[F, A](isIgnored = isIgnored, matchBy = MatchBy.Index))
+                case m: MatchBy.ByFunc[_, _] =>
+                  if (m.aTag.tag == tag.tag) {
+                    Right(new SeqDiffer[F, A](isIgnored = isIgnored, matchBy = m.asInstanceOf[DifferOp.MatchBy[A]]))
+                  } else {
+                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, tag.tag, m.aTag.tag))
+                  }
+              }
+          }
+      }
     }
+  }
+
+  implicit def setDiffer[F[X] <: Set[X], A](implicit itemDiffer: Differ[A], tag: Tag[A]): SetDiffer[F, A] =
+    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity)(tag)
+
+  // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
+  final class SetDiffer[F[X] <: Set[X], A](isIgnored: Boolean, itemDiffer: Differ[A], matchFunc: A => Any)(
+    implicit tag: Tag[A],
+  ) extends Differ[F[A]] {
+    override type R = SetResult
+
+    override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
+      case Ior.Left(actual) =>
+        SetResult(
+          actual.toVector.map { a =>
+            itemDiffer.diff(Ior.Left(a))
+          },
+          MatchType.ActualOnly,
+          isIgnored = isIgnored,
+          isOk = isIgnored,
+        )
+      case Ior.Right(expected) =>
+        SetResult(
+          expected.toVector.map { e =>
+            itemDiffer.diff(Ior.Right(e))
+          },
+          MatchType.ExpectedOnly,
+          isIgnored = isIgnored,
+          isOk = isIgnored,
+        )
+      case Ior.Both(actual, expected) => {
+        val (results, overallIsSame) = diffMatchByFunc(actual.toSeq, expected.toSeq, matchFunc, itemDiffer)
+        SetResult(
+          results,
+          matchType = MatchType.Both,
+          isIgnored = isIgnored,
+          isOk = isIgnored || overallIsSame,
+        )
+      }
+    }
+
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
+      val (step, nextPath) = path.next
+      step match {
+        case Some(UpdateStep.DownTypeParam(idx)) =>
+          if (idx == 0) {
+            itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
+              new SetDiffer[F, A](isIgnored = isIgnored, updatedItemDiffer, matchFunc)
+            }
+          } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, "Set"))
+        case Some(_: UpdateStep.RecordField | _: UpdateStep.DownSubtype) =>
+          Left(DifferUpdateError.UnexpectedDifferType(nextPath, "Set"))
+        case None =>
+          op match {
+            case DifferOp.SetIgnored(newIsIgnored) =>
+              Right(new SetDiffer[F, A](isIgnored = newIsIgnored, itemDiffer, matchFunc))
+            case m: MatchBy[_] =>
+              m match {
+                case MatchBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
+                case m: MatchBy.ByFunc[_, _] =>
+                  if (m.aTag.tag == tag.tag) {
+                    Right(
+                      new SetDiffer[F, A](
+                        isIgnored = isIgnored,
+                        itemDiffer = itemDiffer,
+                        matchFunc = m.func.asInstanceOf[A => Any],
+                      ),
+                    )
+                  } else {
+                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, tag.tag, m.aTag.tag))
+                  }
+              }
+          }
+
+      }
+    }
+
+    @nowarn("msg=.*deprecated.*")
+    def matchBy[B](func: A => B): SetDiffer[F, A] = {
+      updateWith(UpdatePath.current, MatchBy.ByFunc(func, tag)).right.get
+    }
+  }
+
+  // Given two lists of item, find "matching" items using te provided function
+  // (where "matching" means ==). For example we might want to items by
+  // person name.
+  private def diffMatchByFunc[A](
+    actual: Seq[A],
+    expected: Seq[A],
+    func: A => Any,
+    itemDiffer: Differ[A],
+  ): (Vector[DiffResult], Boolean) = {
+    val matchedIndexes = mutable.BitSet.empty
+    val results = mutable.ArrayBuffer.empty[DiffResult]
+    val expWithIdx = expected.zipWithIndex
+    var allIsOk = true
+    actual.foreach { a =>
+      val aMatchVal = func(a)
+      val found = expWithIdx.find {
+        case (e, idx) =>
+          if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
+            val res = itemDiffer.diff(a, e)
+            results += res
+            matchedIndexes += idx
+            allIsOk &= res.isOk
+            true
+          } else {
+            false
+          }
+      }
+
+      // FIXME: perhaps we need to prepend this to the front
+      //  of all results for nicer result view?
+      if (found.isEmpty) {
+        results += itemDiffer.diff(Ior.Left(a))
+        allIsOk = false
+      }
+    }
+
+    expWithIdx.foreach {
+      case (e, idx) =>
+        if (!matchedIndexes.contains(idx)) {
+          results += itemDiffer.diff(Ior.Right(e))
+          allIsOk = false
+        }
+    }
+
+    (results.toVector, allIsOk)
   }
 
 }

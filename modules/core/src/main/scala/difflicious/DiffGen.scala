@@ -47,10 +47,11 @@ object DiffGen {
       }
     }
 
+    // FIXME: test: two layers of sealed trait. Will probably need a "stack" of subtype name in the API response?
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Typeclass[T]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.Down(fullTypeName)) =>
+        case Some(UpdateStep.DownSubtype(fullTypeName)) =>
           ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.full == fullTypeName } match {
             case Some((sub, idx)) =>
               sub.typeclass
@@ -84,7 +85,7 @@ object DiffGen {
           op match {
             case DifferOp.SetIgnored(newIgnored) =>
               Right(new SealedTraitDiffer[T](ctx, isIgnored = newIgnored))
-            case _: DifferOp.MatchBy => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+            case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
           }
 
       }
