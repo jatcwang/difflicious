@@ -44,7 +44,7 @@ object Differ {
     override def diff(inputs: Ior[T, T]): R
   }
 
-  final class EqualsDiffer[T](isIgnored: Boolean)(implicit encoder: Encoder[T]) extends ValueDiffer[T] {
+  final class EqualsDiffer[T](isIgnored: Boolean, encoder: Encoder[T]) extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(actual, expected) =>
         DiffResult.ValueResult
@@ -63,21 +63,23 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
       val (step, nextPath) = path.next
       (step, op) match {
-        case (Some(_), _)                            => Left(DifferUpdateError.PathTooLong(nextPath))
-        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new EqualsDiffer[T](isIgnored = newIgnored))
-        case (None, otherOp)                         => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
+        case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
+        case (None, DifferOp.SetIgnored(newIgnored)) =>
+          Right(new EqualsDiffer[T](isIgnored = newIgnored, encoder = encoder))
+        case (None, otherOp) => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
 
-  def useEquals[T: Encoder]: ValueDiffer[T] = new EqualsDiffer[T](isIgnored = false)
+  def useEquals[T](implicit encoder: Encoder[T]): ValueDiffer[T] =
+    new EqualsDiffer[T](isIgnored = false, encoder = encoder)
 
   implicit val stringDiff: ValueDiffer[String] = useEquals[String]
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean]
 
   // FIXME: tuple instances
-  class NumericDiffer[T](isIgnored: Boolean)(implicit numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T])
+  class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T])
       extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(actual, expected) => {
@@ -95,8 +97,9 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, NumericDiffer[T]] = {
       val (step, nextPath) = path.next
       (step, op) match {
-        case (Some(_), _)                            => Left(DifferUpdateError.PathTooLong(nextPath))
-        case (None, DifferOp.SetIgnored(newIgnored)) => Right(new NumericDiffer[T](isIgnored = newIgnored))
+        case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
+        case (None, DifferOp.SetIgnored(newIgnored)) =>
+          Right(new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, encoder = encoder, tag = tag))
         case (None, otherOp) =>
           Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "NumericDiffer"))
       }
@@ -104,7 +107,7 @@ object Differ {
   }
 
   implicit def numericDiff[T](implicit numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T]): ValueDiffer[T] =
-    new NumericDiffer[T](isIgnored = false)
+    new NumericDiffer[T](isIgnored = false, numeric = numeric, encoder = encoder, tag = tag)
 
   final class RecordDiffer[T](
     fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
@@ -117,9 +120,7 @@ object Differ {
         val diffResults = fieldDiffers
           .map {
             case (fieldName, (getter, differ)) =>
-              val actualValue = getter(actual)
-              val expectedValue = getter(expected)
-              val diffResult = differ.diff(actualValue, expectedValue)
+              val diffResult = differ.diff(getter(actual), getter(expected))
 
               fieldName -> diffResult
           }
@@ -136,8 +137,7 @@ object Differ {
         val diffResults = fieldDiffers
           .map {
             case (fieldName, (getter, differ)) =>
-              val fieldValue = getter(value)
-              val diffResult = differ.diff(Ior.left(fieldValue))
+              val diffResult = differ.diff(Ior.left(getter(value)))
 
               fieldName -> diffResult
           }
@@ -149,8 +149,7 @@ object Differ {
         val diffResults = fieldDiffers
           .map {
             case (fieldName, (getter, differ)) =>
-              val fieldValue = getter(expected)
-              val diffResult = differ.diff(Ior.Right(fieldValue))
+              val diffResult = differ.diff(Ior.Right(getter(expected)))
 
               fieldName -> diffResult
           }
@@ -192,14 +191,15 @@ object Differ {
       }
   }
 
-  implicit def mapDiffer[A: ValueDiffer, B: Differ, M[KK, VV] <: Map[KK, VV]]: MapDiffer[A, B, M] =
-    new MapDiffer(isIgnored = false)
+  implicit def mapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
+    implicit keyDiffer: ValueDiffer[A],
+    valueDiffer: Differ[B],
+  ): MapDiffer[M, A, B] =
+    new MapDiffer(isIgnored = false, keyDiffer = keyDiffer, valueDiffer = valueDiffer)
 
   // FIXME: probably want some sort of ordering to maintain consistent order
-  final class MapDiffer[A, B, M[KK, VV] <: Map[KK, VV]](
+  final class MapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
     isIgnored: Boolean,
-  )(
-    implicit
     keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
   ) extends Differ[M[A, B]] {
@@ -267,17 +267,16 @@ object Differ {
     }
 
     // FIXME:
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[A, B, M]] = {
+    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(UpdateStep.DownTypeParam(idx)) =>
           if (idx == 1) { // the value
             valueDiffer.updateWith(nextPath, op).map { newValueDiffer =>
-              new MapDiffer[A, B, M](
+              new MapDiffer[M, A, B](
                 isIgnored = isIgnored,
-              )(
-                keyDiffer,
-                newValueDiffer,
+                keyDiffer = keyDiffer,
+                valueDiffer = newValueDiffer,
               )
             }
           } else
@@ -287,7 +286,7 @@ object Differ {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
-              Right(new MapDiffer[A, B, M](isIgnored = newIsIgnored))
+              Right(new MapDiffer[M, A, B](isIgnored = newIsIgnored, keyDiffer = keyDiffer, valueDiffer = valueDiffer))
             case _: MatchBy[_] =>
               Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "Map"))
           }
@@ -295,13 +294,11 @@ object Differ {
     }
   }
 
-  implicit def seqDiffer[F[X] <: Seq[X], A: Differ: Tag]: SeqDiffer[F, A] =
-    new SeqDiffer[F, A](isIgnored = false, matchBy = MatchBy.Index)
+  implicit def seqDiffer[F[X] <: Seq[X], A](implicit itemDiffer: Differ[A], tag: Tag[A]): SeqDiffer[F, A] =
+    new SeqDiffer[F, A](isIgnored = false, matchBy = MatchBy.Index, itemDiffer = itemDiffer, tag = tag)
 
-  final class SeqDiffer[F[X] <: Seq[X], A](isIgnored: Boolean, matchBy: MatchBy[A])(
-    implicit itemDiffer: Differ[A],
-    tag: Tag[A],
-  ) extends Differ[F[A]] {
+  final class SeqDiffer[F[X] <: Seq[X], A](isIgnored: Boolean, matchBy: MatchBy[A], itemDiffer: Differ[A], tag: Tag[A])
+      extends Differ[F[A]] {
     override type R = ListResult
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
@@ -365,9 +362,8 @@ object Differ {
               new SeqDiffer[F, A](
                 isIgnored = isIgnored,
                 matchBy = matchBy,
-              )(
-                newItemDiffer,
-                tag,
+                itemDiffer = newItemDiffer,
+                tag = tag,
               )
             }
           } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, tag.tag.longName))
@@ -376,14 +372,30 @@ object Differ {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
-              Right(new SeqDiffer[F, A](isIgnored = newIsIgnored, matchBy = matchBy))
+              Right(
+                new SeqDiffer[F, A](isIgnored = newIsIgnored, matchBy = matchBy, itemDiffer = itemDiffer, tag = tag),
+              )
             case matchBy: DifferOp.MatchBy[_] =>
               matchBy match {
                 case MatchBy.Index =>
-                  Right(new SeqDiffer[F, A](isIgnored = isIgnored, matchBy = MatchBy.Index))
+                  Right(
+                    new SeqDiffer[F, A](
+                      isIgnored = isIgnored,
+                      matchBy = MatchBy.Index,
+                      itemDiffer = itemDiffer,
+                      tag = tag,
+                    ),
+                  )
                 case m: MatchBy.ByFunc[_, _] =>
                   if (m.aTag.tag == tag.tag) {
-                    Right(new SeqDiffer[F, A](isIgnored = isIgnored, matchBy = m.asInstanceOf[DifferOp.MatchBy[A]]))
+                    Right(
+                      new SeqDiffer[F, A](
+                        isIgnored = isIgnored,
+                        matchBy = m.asInstanceOf[DifferOp.MatchBy[A]],
+                        itemDiffer = itemDiffer,
+                        tag = tag,
+                      ),
+                    )
                   } else {
                     Left(DifferUpdateError.MatchByTypeMismatch(nextPath, tag.tag, m.aTag.tag))
                   }
@@ -394,12 +406,11 @@ object Differ {
   }
 
   implicit def setDiffer[F[X] <: Set[X], A](implicit itemDiffer: Differ[A], tag: Tag[A]): SetDiffer[F, A] =
-    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity)(tag)
+    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity, tag = tag)
 
   // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
-  final class SetDiffer[F[X] <: Set[X], A](isIgnored: Boolean, itemDiffer: Differ[A], matchFunc: A => Any)(
-    implicit tag: Tag[A],
-  ) extends Differ[F[A]] {
+  final class SetDiffer[F[X] <: Set[X], A](isIgnored: Boolean, itemDiffer: Differ[A], matchFunc: A => Any, tag: Tag[A])
+      extends Differ[F[A]] {
     override type R = SetResult
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
@@ -438,7 +449,7 @@ object Differ {
         case Some(UpdateStep.DownTypeParam(idx)) =>
           if (idx == 0) {
             itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
-              new SetDiffer[F, A](isIgnored = isIgnored, updatedItemDiffer, matchFunc)
+              new SetDiffer[F, A](isIgnored = isIgnored, updatedItemDiffer, matchFunc, tag)
             }
           } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, "Set"))
         case Some(_: UpdateStep.RecordField | _: UpdateStep.DownSubtype) =>
@@ -446,7 +457,7 @@ object Differ {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
-              Right(new SetDiffer[F, A](isIgnored = newIsIgnored, itemDiffer, matchFunc))
+              Right(new SetDiffer[F, A](isIgnored = newIsIgnored, itemDiffer, matchFunc, tag))
             case m: MatchBy[_] =>
               m match {
                 case MatchBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
@@ -457,6 +468,7 @@ object Differ {
                         isIgnored = isIgnored,
                         itemDiffer = itemDiffer,
                         matchFunc = m.func.asInstanceOf[A => Any],
+                        tag,
                       ),
                     )
                   } else {
