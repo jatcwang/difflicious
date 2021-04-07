@@ -7,6 +7,7 @@ Must have:
 - Dynamic ignore (add new field ignores at runtime)
   
 Nice to have:
+- Print a single value (i.e. no need for pprint if you want nice printout)
 - Nice string diff
 - Undo
 - Customizable "equals"? (e.g. cats.Eq)

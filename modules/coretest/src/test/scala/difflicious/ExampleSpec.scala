@@ -1,5 +1,6 @@
 package difflicious
 
+import difflicious.DiffResultPrinter.{consoleOutput, consolePrint}
 import munit.FunSuite
 import difflicious.testutils._
 
@@ -7,7 +8,7 @@ import difflicious.testutils._
 class ExampleSpec extends FunSuite {
 
   test("test fail") {
-    pprint.pprintln(
+    consolePrint(
       checkDiff(Blah(1, "asdf", 2.0), Blah(1, "asdf", 3.0))(
         Blah.differ
           .updateWith(
@@ -42,6 +43,29 @@ class ExampleSpec extends FunSuite {
       ),
     )
   }
+
+  test("diff") {
+    println(consoleOutput(checkDiff(1, 2), indentLevel = 0))
+  }
+
+  test("seq") {
+    implicit val setD: Differ.SeqDiffer[List, Blah] = Differ.seqDiffer[List, Blah]
+    consolePrint(
+      checkDiff(
+        List(
+          Blah(1, "s1", 1),
+          Blah(2, "s2", 2),
+          Blah(3, "s2", 2),
+        ),
+        List(
+          Blah(1, "s2", 1),
+          Blah(2, "s1", 2),
+          Blah(4, "s2", 2),
+        ),
+      ),
+    )
+  }
+
 }
 
 case class Blah(i: Int, s: String, kkk: Double)

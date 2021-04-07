@@ -2,7 +2,7 @@ package difflicious
 import cats.data.Ior
 import difflicious.DiffResult.MismatchTypeResult
 import difflicious.Differ.RecordDiffer
-
+import izumi.reflect.Tag
 import magnolia._
 
 import scala.collection.immutable.ListMap
@@ -10,7 +10,7 @@ import scala.collection.immutable.ListMap
 object DiffGen {
   type Typeclass[T] = Differ[T]
 
-  def combine[T](ctx: ReadOnlyCaseClass[Differ, T]): Differ[T] = {
+  def combine[T](ctx: ReadOnlyCaseClass[Differ, T])(implicit tag: Tag[T]): Differ[T] = {
     new RecordDiffer[T](
       ctx.parameters
         .map { p =>
@@ -19,6 +19,7 @@ object DiffGen {
         }
         .to(ListMap),
       ignored = false,
+      tag = tag,
     )
   }
 

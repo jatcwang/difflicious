@@ -10,6 +10,7 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       "io.circe" %% "circe-generic" % "0.13.0",
       "com.propensive" %% "magnolia" % "0.17.0",
       "dev.zio" %% "izumi-reflect" % "1.0.0-M16",
+      "com.lihaoyi" %% "fansi" % "0.2.10",
       "com.softwaremill.diffx" %% "diffx-core" % "0.4.4", // FIXME:
     ),
   )

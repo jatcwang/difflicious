@@ -1,5 +1,7 @@
 package difflicious
 
+import difflicious.utils.TypeName
+
 import scala.collection.immutable.ListMap
 import io.circe.Json
 
@@ -12,6 +14,7 @@ sealed trait DiffResult {
 object DiffResult {
   // FIXME: add class types
   final case class ListResult(
+    typeName: TypeName,
     items: Vec[DiffResult],
     matchType: MatchType,
     isIgnored: Boolean,
@@ -26,6 +29,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class RecordResult(
+    typeName: TypeName,
     fields: ListMap[String, DiffResult],
     matchType: MatchType,
     isIgnored: Boolean,
@@ -55,6 +59,7 @@ object DiffResult {
   sealed trait ValueResult extends DiffResult
 
   object ValueResult {
+    // FIXME: rename isOk to isIdentical for value result
     final case class Both(actual: Json, expected: Json, isOk: Boolean, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.Both
     }
