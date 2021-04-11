@@ -12,6 +12,8 @@ object DiffResultPrinter {
 
   private val indentStep = 2
 
+  val ignoredStr = Str("[IGNORED]").overlay(colorIgnored)
+
   def consolePrint(
     res: DiffResult,
   ): Unit = {
@@ -48,9 +50,9 @@ object DiffResultPrinter {
         val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
         val fieldsStr = r.fields
           .map {
-            case (fieldName, valueResult) =>
+            case (fieldName, vRes) =>
               Str(fieldName) ++ ": " ++ consoleOutput(
-                valueResult,
+                vRes,
                 indentLevel = indentLevel + 1,
               ) ++ ","
           }
@@ -93,13 +95,12 @@ object DiffResultPrinter {
       }
       case result: DiffResult.ValueResult =>
         result match {
-          case ValueResult.Both(actual, expected, isOk, isIgnored) => {
-            val actualStr = Str(actual.noSpaces)
-            val expectedStr = Str(expected.noSpaces)
-            if (isOk) {
+          case r: ValueResult.Both => {
+            val actualStr = Str(r.actual.noSpaces)
+            val expectedStr = Str(r.expected.noSpaces)
+            if (r.isIgnored) ignoredStr
+            else if (r.isSame) {
               actualStr
-            } else if (isIgnored) { // isOk is false
-              (actualStr ++ " -> " ++ expectedStr).overlay(Color.DarkGray)
             } else {
               actualStr.overlay(colorActual) ++ " -> " ++ expectedStr.overlay(colorExpected)
             }

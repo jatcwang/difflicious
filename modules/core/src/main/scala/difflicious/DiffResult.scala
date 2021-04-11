@@ -64,8 +64,9 @@ object DiffResult {
 
   object ValueResult {
     // FIXME: rename isOk to isIdentical for value result
-    final case class Both(actual: Json, expected: Json, isOk: Boolean, isIgnored: Boolean) extends ValueResult {
+    final case class Both(actual: Json, expected: Json, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.Both
+      override def isOk: Boolean = isIgnored || isSame
     }
     final case class ActualOnly(actual: Json, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.ActualOnly

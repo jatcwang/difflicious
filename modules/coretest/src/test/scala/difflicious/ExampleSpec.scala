@@ -7,10 +7,15 @@ import difflicious.testutils._
 // FIXME:
 class ExampleSpec extends FunSuite {
 
+  private val R = "\u001b[31m" // actual (red)
+  private val G = "\u001b[32m" // expected (green)
+  private val I = "\u001b[90m" // ignore (dark grey)
+  private val X = "\u001b[39m" // reset
+
   test("test fail") {
     consolePrint(
-      checkDiff(Blah(1, "asdf", 2.0), Blah(1, "asdf", 3.0))(
-        Blah.differ
+      checkDiff(CC(1, "asdf", 2.0), CC(1, "asdf", 3.0))(
+        CC.differ
           .updateWith(
             UpdatePath.of(UpdateStep.RecordField("i")),
             DifferOp.SetIgnored(true),
@@ -22,23 +27,23 @@ class ExampleSpec extends FunSuite {
 
   test("adsf") {
     consolePrint(
-      checkDiff[Map[Int, Foo]](Map(1 -> X(1)), Map(1 -> F2(2))),
+      checkDiff[Map[Int, Foo]](Map(1 -> Sub1(1)), Map(1 -> SubSub2(2))),
     )
   }
 
   test("asff") {
-    implicit val setD: Differ.SetDiffer[Set, Blah] = Differ.setDiffer[Set, Blah].matchBy(_.i)
+    implicit val setD: Differ.SetDiffer[Set, CC] = Differ.setDiffer[Set, CC].matchBy(_.i)
     consolePrint(
       checkDiff(
         Set(
-          Blah(1, "s1", 1),
-          Blah(2, "s2", 2),
-          Blah(3, "s2", 2),
+          CC(1, "s1", 1),
+          CC(2, "s2", 2),
+          CC(3, "s2", 2),
         ),
         Set(
-          Blah(1, "s2", 1),
-          Blah(2, "s1", 2),
-          Blah(4, "s2", 2),
+          CC(1, "s2", 1),
+          CC(2, "s1", 2),
+          CC(4, "s2", 2),
         ),
       ),
     )
@@ -48,30 +53,65 @@ class ExampleSpec extends FunSuite {
     println(consoleOutput(checkDiff(1, 2), indentLevel = 0))
   }
 
-  test("seq") {
-    implicit val setD: Differ.SeqDiffer[List, Blah] = Differ.seqDiffer[List, Blah]
-    consolePrint(
-      checkDiff(
-        List(
-          Blah(1, "s1", 1),
-          Blah(2, "s2", 2),
-          Blah(3, "s2", 2),
-        ),
-        List(
-          Blah(1, "s2", 1),
-          Blah(2, "s1", 2),
-          Blah(4, "s2", 2),
-        ),
+  test("seq".only) {
+    assertConsoleDiffOutput(
+      Differ
+        .seqDiffer[List, CC]
+        .updateWith(UpdatePath.of(UpdateStep.DownTypeParam(0), UpdateStep.RecordField("dd")), DifferOp.ignore)
+        .unsafeGet,
+      List(
+        CC(1, "s1", 1),
+        CC(2, "s2", 2),
+        CC(3, "s2", 2),
       ),
+      List(
+        CC(1, "s2", 1),
+        CC(2, "s1", 2),
+        CC(4, "s2", 3),
+      ),
+      s"""List(
+         |  CC(
+         |    i: 1,
+         |    s: $R"s1"$X -> $G"s2"$X,
+         |    dd: $I[IGNORED]$X,
+         |  ),
+         |  CC(
+         |    i: 2,
+         |    s: $R"s2"$X -> $G"s1"$X,
+         |    dd: $I[IGNORED]$X,
+         |  ),
+         |  CC(
+         |    i: ${R}3$X -> ${G}4$X,
+         |    s: "s2",
+         |    dd: $I[IGNORED]$X,
+         |  ),
+         |)""".stripMargin,
     )
   }
 
+  private def assertConsoleDiffOutput[A](
+    differ: Differ[A],
+    a: A,
+    b: A,
+    expectedOutputStr: String,
+  ): Unit = {
+    val res = differ.diff(a, b)
+    val actualOutputStr = consoleOutput(res, 0).render
+
+    if (actualOutputStr != expectedOutputStr) {
+      println("=== Actual Output === ")
+      println(actualOutputStr)
+      println("=== Expected Output === ")
+      println(expectedOutputStr)
+      assertEquals(actualOutputStr, expectedOutputStr)
+    } else ()
+  }
 }
 
-case class Blah(i: Int, s: String, kkk: Double)
+case class CC(i: Int, s: String, dd: Double)
 
-object Blah {
-  implicit val differ: Differ[Blah] = DiffGen.derive[Blah]
+object CC {
+  implicit val differ: Differ[CC] = DiffGen.derive[CC]
 }
 
 sealed trait Foo
@@ -80,8 +120,8 @@ object Foo {
   implicit val differ: Differ[Foo] = DiffGen.derive[Foo]
 }
 
-case class X(i: Int) extends Foo
+case class Sub1(i: Int) extends Foo
 
 sealed trait Foo2 extends Foo
-case class F1(d: Double) extends Foo2
-case class F2(i: Int) extends Foo2
+case class SubSub1(d: Double) extends Foo2
+case class SubSub2(i: Int) extends Foo2

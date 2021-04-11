@@ -6,7 +6,6 @@ import difflicious.DifferOp.MatchBy
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName
 import izumi.reflect.Tag
-import izumi.reflect.macrortti.LightTypeTag
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
@@ -29,6 +28,9 @@ trait Differ[T] {
 sealed trait DifferOp
 
 object DifferOp {
+  val ignore: SetIgnored = SetIgnored(true)
+  val unignored: SetIgnored = SetIgnored(false)
+
   final case class SetIgnored(isIgnored: Boolean) extends DifferOp
   sealed trait MatchBy[-A] extends DifferOp
   object MatchBy {
@@ -37,8 +39,6 @@ object DifferOp {
   }
 
 }
-
-object UpdateDiffer {}
 
 object Differ {
   trait ValueDiffer[T] extends Differ[T] {
@@ -54,7 +54,7 @@ object Differ {
           .Both(
             actual = encoder.apply(actual),
             expected = encoder.apply(expected),
-            isOk = isIgnored || actual == expected,
+            isSame = actual == expected,
             isIgnored = isIgnored,
           )
       case Ior.Left(actual) =>
@@ -89,7 +89,7 @@ object Differ {
         DiffResult.ValueResult.Both(
           encoder.apply(actual),
           encoder.apply(expected),
-          isOk = isIgnored || numeric.equiv(actual, expected),
+          isSame = numeric.equiv(actual, expected),
           isIgnored = isIgnored,
         )
       }
