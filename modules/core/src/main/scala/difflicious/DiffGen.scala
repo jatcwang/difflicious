@@ -4,6 +4,7 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.Differ.RecordDiffer
 import izumi.reflect.Tag
 import magnolia._
+import difflicious.utils.{TypeName => DTypeName}
 
 import scala.collection.immutable.ListMap
 
@@ -37,8 +38,10 @@ object DiffGen {
                 .diff(actualSubtype.cast(actual), expectedSubtype.cast(expected).asInstanceOf[actualSubtype.SType])
             } else {
               MismatchTypeResult(
-                actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
-                expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
+                actual = actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
+                actualTypeName = toDiffliciousTypeName(actualSubtype.typeName),
+                expected = expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
+                expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeName),
                 matchType = MatchType.Both,
                 isIgnored = isIgnored,
               )
@@ -91,10 +94,19 @@ object DiffGen {
 
       }
     }
+
   }
 
   def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
     new SealedTraitDiffer[T](ctx, isIgnored = false)
 
   def derive[T]: Differ[T] = macro Magnolia.gen[T]
+
+  private def toDiffliciousTypeName(typeName: magnolia.TypeName): difflicious.utils.TypeName = {
+    DTypeName(
+      long = typeName.full,
+      short = typeName.short,
+      typeArguments = typeName.typeArguments.map(toDiffliciousTypeName).toVector,
+    )
+  }
 }

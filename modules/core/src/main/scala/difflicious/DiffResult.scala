@@ -22,6 +22,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class SetResult(
+    typeName: TypeName,
     items: Vec[DiffResult],
     matchType: MatchType,
     isIgnored: Boolean,
@@ -37,6 +38,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class MapResult(
+    typeName: TypeName,
     entries: Vec[MapResult.Entry],
     matchType: MatchType,
     isIgnored: Boolean,
@@ -44,12 +46,14 @@ object DiffResult {
   ) extends DiffResult
 
   object MapResult {
-    final case class Entry(key: ValueResult, value: DiffResult)
+    final case class Entry(key: Json, value: DiffResult)
   }
 
   final case class MismatchTypeResult(
     actual: DiffResult,
+    actualTypeName: TypeName,
     expected: DiffResult,
+    expectedTypeName: TypeName,
     matchType: MatchType,
     isIgnored: Boolean,
   ) extends DiffResult {

@@ -1,14 +1,13 @@
 package difflicious
-import io.circe.Encoder
+import io.circe.{Encoder, Json}
 import cats.data.Ior
-import difflicious.DiffResult.{ListResult, SetResult, MapResult}
+import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.DifferOp.MatchBy
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName
 import izumi.reflect.Tag
 import izumi.reflect.macrortti.LightTypeTag
 
-import scala.annotation.nowarn
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
@@ -215,16 +214,20 @@ object Differ {
   implicit def mapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
     implicit keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
+    tag: Tag[M[A, B]],
   ): MapDiffer[M, A, B] =
-    new MapDiffer(isIgnored = false, keyDiffer = keyDiffer, valueDiffer = valueDiffer)
+    new MapDiffer(isIgnored = false, keyDiffer = keyDiffer, valueDiffer = valueDiffer, tag = tag)
 
   // FIXME: probably want some sort of ordering to maintain consistent order
   final class MapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
     isIgnored: Boolean,
     keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
+    tag: Tag[M[A, B]],
   ) extends Differ[M[A, B]] {
     override type R = MapResult
+
+    val typeName: TypeName = TypeName.fromTag(tag.tag)
 
     override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs match {
       // FIXME: consolidate all 3 cases
@@ -237,12 +240,12 @@ object Differ {
             expected.get(k) match {
               case Some(expectedV) =>
                 both += MapResult.Entry(
-                  keyDiffer.diff(k, k),
+                  jsonForKey(k, keyDiffer),
                   valueDiffer.diff(actualV, expectedV),
                 )
               case None =>
                 actualOnly += MapResult.Entry(
-                  keyDiffer.diff(Ior.Left(k)),
+                  jsonForKey(k, keyDiffer),
                   valueDiffer.diff(Ior.Left(actualV)),
                 )
             }
@@ -253,13 +256,14 @@ object Differ {
               // Do nothing, already compared when iterating through actual
             } else {
               expectedOnly += MapResult.Entry(
-                keyDiffer.diff(Ior.Right(k)),
+                jsonForKey(k, keyDiffer),
                 valueDiffer.diff(Ior.Right(expectedV)),
               )
             }
         }
         (actualOnly ++ both ++ expectedOnly).toVector
         MapResult(
+          typeName = typeName,
           (actualOnly ++ both ++ expectedOnly).toVector,
           MatchType.Both,
           isIgnored = isIgnored,
@@ -267,9 +271,10 @@ object Differ {
         )
       case Ior.Left(actual) =>
         DiffResult.MapResult(
+          typeName = typeName,
           entries = actual.map {
             case (k, v) =>
-              MapResult.Entry(keyDiffer.diff(Ior.Left(k)), valueDiffer.diff(Ior.Left(v)))
+              MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Left(v)))
           }.toVector,
           matchType = MatchType.ActualOnly,
           isIgnored = isIgnored,
@@ -277,9 +282,10 @@ object Differ {
         )
       case Ior.Right(expected) =>
         DiffResult.MapResult(
+          typeName = typeName,
           entries = expected.map {
             case (k, v) =>
-              MapResult.Entry(keyDiffer.diff(Ior.Right(k)), valueDiffer.diff(Ior.Right(v)))
+              MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
           }.toVector,
           matchType = MatchType.ActualOnly,
           isIgnored = isIgnored,
@@ -298,6 +304,7 @@ object Differ {
                 isIgnored = isIgnored,
                 keyDiffer = keyDiffer,
                 valueDiffer = newValueDiffer,
+                tag = tag,
               )
             }
           } else
@@ -307,7 +314,14 @@ object Differ {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
-              Right(new MapDiffer[M, A, B](isIgnored = newIsIgnored, keyDiffer = keyDiffer, valueDiffer = valueDiffer))
+              Right(
+                new MapDiffer[M, A, B](
+                  isIgnored = newIsIgnored,
+                  keyDiffer = keyDiffer,
+                  valueDiffer = valueDiffer,
+                  tag = tag,
+                ),
+              )
             case _: MatchBy[_] =>
               Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "Map"))
           }
@@ -315,8 +329,18 @@ object Differ {
     }
   }
 
-  implicit def seqDiffer[F[X] <: Seq[X], A](implicit itemDiffer: Differ[A], tag: Tag[F[A]]): SeqDiffer[F, A] =
-    new SeqDiffer[F, A](isIgnored = false, matchBy = MatchBy.Index, itemDiffer = itemDiffer, fullTag = tag)
+  implicit def seqDiffer[F[X] <: Seq[X], A](
+    implicit itemDiffer: Differ[A],
+    fullTag: Tag[F[A]],
+    itemTag: Tag[A],
+  ): SeqDiffer[F, A] =
+    new SeqDiffer[F, A](
+      isIgnored = false,
+      matchBy = MatchBy.Index,
+      itemDiffer = itemDiffer,
+      fullTag = fullTag,
+      itemTag = itemTag,
+    )
 
   // FIXME: add matchBy
   final class SeqDiffer[F[X] <: Seq[X], A](
@@ -324,11 +348,11 @@ object Differ {
     matchBy: MatchBy[A],
     itemDiffer: Differ[A],
     fullTag: Tag[F[A]],
+    itemTag: Tag[A],
   ) extends Differ[F[A]] {
     override type R = ListResult
 
     val typeName: TypeName = TypeName.fromTag(fullTag.tag)
-    val itemLTag: LightTypeTag = fullTag.tag.typeArgs.head
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
       case Ior.Both(actual, expected) => {
@@ -397,6 +421,7 @@ object Differ {
                 matchBy = matchBy,
                 itemDiffer = newItemDiffer,
                 fullTag = fullTag,
+                itemTag = itemTag,
               )
             }
           } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, typeName.withTypeParamsLong))
@@ -411,6 +436,7 @@ object Differ {
                   matchBy = matchBy,
                   itemDiffer = itemDiffer,
                   fullTag = fullTag,
+                  itemTag = itemTag,
                 ),
               )
             case matchBy: DifferOp.MatchBy[_] =>
@@ -422,21 +448,24 @@ object Differ {
                       matchBy = MatchBy.Index,
                       itemDiffer = itemDiffer,
                       fullTag = fullTag,
+                      itemTag = itemTag,
                     ),
                   )
                 case m: MatchBy.ByFunc[_, _] =>
-                  if (m.aTag.tag == itemLTag) {
+                  if (m.aTag.tag == itemTag.tag) {
                     Right(
                       new SeqDiffer[F, A](
                         isIgnored = isIgnored,
                         matchBy = m.asInstanceOf[DifferOp.MatchBy[A]],
                         itemDiffer = itemDiffer,
                         fullTag = fullTag,
+                        itemTag = itemTag,
                       ),
                     )
                   } else {
                     Left(
-                      DifferUpdateError.MatchByTypeMismatch(nextPath, actualTag = m.aTag.tag, expectedTag = itemLTag),
+                      DifferUpdateError
+                        .MatchByTypeMismatch(nextPath, actualTag = m.aTag.tag, expectedTag = itemTag.tag),
                     )
                   }
               }
@@ -445,17 +474,29 @@ object Differ {
     }
   }
 
-  implicit def setDiffer[F[X] <: Set[X], A](implicit itemDiffer: Differ[A], tag: Tag[A]): SetDiffer[F, A] =
-    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity, tag = tag)
+  implicit def setDiffer[F[X] <: Set[X], A](
+    implicit itemDiffer: Differ[A],
+    fullTag: Tag[F[A]],
+    itemTag: Tag[A],
+  ): SetDiffer[F, A] =
+    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity, fullTag = fullTag, itemTag = itemTag)
 
   // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
-  final class SetDiffer[F[X] <: Set[X], A](isIgnored: Boolean, itemDiffer: Differ[A], matchFunc: A => Any, tag: Tag[A])
-      extends Differ[F[A]] {
+  final class SetDiffer[F[X] <: Set[X], A](
+    isIgnored: Boolean,
+    itemDiffer: Differ[A],
+    matchFunc: A => Any,
+    fullTag: Tag[F[A]],
+    itemTag: Tag[A],
+  ) extends Differ[F[A]] {
     override type R = SetResult
+
+    val typeName: TypeName = TypeName.fromTag(fullTag.tag)
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
       case Ior.Left(actual) =>
         SetResult(
+          typeName = typeName,
           actual.toVector.map { a =>
             itemDiffer.diff(Ior.Left(a))
           },
@@ -465,17 +506,19 @@ object Differ {
         )
       case Ior.Right(expected) =>
         SetResult(
-          expected.toVector.map { e =>
+          typeName = typeName,
+          items = expected.toVector.map { e =>
             itemDiffer.diff(Ior.Right(e))
           },
-          MatchType.ExpectedOnly,
+          matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
       case Ior.Both(actual, expected) => {
         val (results, overallIsSame) = diffMatchByFunc(actual.toSeq, expected.toSeq, matchFunc, itemDiffer)
         SetResult(
-          results,
+          typeName = typeName,
+          items = results,
           matchType = MatchType.Both,
           isIgnored = isIgnored,
           isOk = isIgnored || overallIsSame,
@@ -489,7 +532,13 @@ object Differ {
         case Some(UpdateStep.DownTypeParam(idx)) =>
           if (idx == 0) {
             itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
-              new SetDiffer[F, A](isIgnored = isIgnored, updatedItemDiffer, matchFunc, tag)
+              new SetDiffer[F, A](
+                isIgnored = isIgnored,
+                itemDiffer = updatedItemDiffer,
+                matchFunc = matchFunc,
+                fullTag = fullTag,
+                itemTag = itemTag,
+              )
             }
           } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, "Set"))
         case Some(_: UpdateStep.RecordField | _: UpdateStep.DownSubtype) =>
@@ -497,22 +546,31 @@ object Differ {
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
-              Right(new SetDiffer[F, A](isIgnored = newIsIgnored, itemDiffer, matchFunc, tag))
+              Right(
+                new SetDiffer[F, A](
+                  isIgnored = newIsIgnored,
+                  itemDiffer = itemDiffer,
+                  matchFunc = matchFunc,
+                  fullTag = fullTag,
+                  itemTag = itemTag,
+                ),
+              )
             case m: MatchBy[_] =>
               m match {
                 case MatchBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
                 case m: MatchBy.ByFunc[_, _] =>
-                  if (m.aTag.tag == tag.tag) {
+                  if (m.aTag.tag == itemTag.tag) {
                     Right(
                       new SetDiffer[F, A](
                         isIgnored = isIgnored,
                         itemDiffer = itemDiffer,
                         matchFunc = m.func.asInstanceOf[A => Any],
-                        tag,
+                        fullTag = fullTag,
+                        itemTag = itemTag,
                       ),
                     )
                   } else {
-                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, tag.tag, m.aTag.tag))
+                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, fullTag.tag, m.aTag.tag))
                   }
               }
           }
@@ -522,7 +580,7 @@ object Differ {
 
     def matchBy[B](func: A => B): SetDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
-      updateWith(UpdatePath.current, MatchBy.ByFunc(func, tag)).unsafeGet
+      updateWith(UpdatePath.current, MatchBy.ByFunc(func, itemTag)).unsafeGet
     }
   }
 
@@ -571,6 +629,14 @@ object Differ {
     }
 
     (results.toVector, allIsOk)
+  }
+
+  private def jsonForKey[T](k: T, keyDiffer: ValueDiffer[T]): Json = {
+    keyDiffer.diff(Ior.Left(k)) match {
+      case r: ValueResult.ActualOnly   => r.actual
+      case r: ValueResult.Both         => r.actual
+      case r: ValueResult.ExpectedOnly => r.expected
+    }
   }
 
 }

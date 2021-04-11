@@ -21,14 +21,14 @@ class ExampleSpec extends FunSuite {
   }
 
   test("adsf") {
-    pprint.pprintln(
-      checkDiff[Map[Int, Foo]](Map(1 -> X(1)), Map(1 -> X(2))),
+    consolePrint(
+      checkDiff[Map[Int, Foo]](Map(1 -> X(1)), Map(1 -> F2(2))),
     )
   }
 
   test("asff") {
     implicit val setD: Differ.SetDiffer[Set, Blah] = Differ.setDiffer[Set, Blah].matchBy(_.i)
-    pprint.pprintln(
+    consolePrint(
       checkDiff(
         Set(
           Blah(1, "s1", 1),
