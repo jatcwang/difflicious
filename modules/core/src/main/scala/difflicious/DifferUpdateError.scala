@@ -7,10 +7,9 @@ import izumi.reflect.macrortti.LightTypeTag
 sealed trait DifferUpdateError
 
 object DifferUpdateError {
+  // FIXME: errors should always contain the current differ type?
   final case class NonExistentField(path: UpdatePath, fieldName: String) extends DifferUpdateError
   final case class PathTooLong(path: UpdatePath) extends DifferUpdateError
-  final case class InvalidTypeParamIndex(path: UpdatePath, invalidIndex: Int, currentClassName: String)
-      extends DifferUpdateError
   final case class InvalidSubType(path: UpdatePath, allowedTypes: Vec[String]) extends DifferUpdateError
   final case class UnexpectedDifferType(path: UpdatePath, actualDifferType: String) extends DifferUpdateError
   final case class InvalidDifferOp(path: UpdatePath, op: DifferOp, differType: String) extends DifferUpdateError

@@ -2,22 +2,23 @@ package difflicious
 
 import difflicious.DiffResultPrinter.{consoleOutput, consolePrint}
 import munit.FunSuite
-import difflicious.testutils._
+import difflicious.utils._
+import difflicious.implicits._
 
 // FIXME:
-class ExampleSpec extends FunSuite {
+class DifferSpec extends FunSuite {
 
   private val R = "\u001b[31m" // actual (red)
   private val G = "\u001b[32m" // expected (green)
   private val I = "\u001b[90m" // ignore (dark grey)
-  private val X = "\u001b[39m" // reset
+  private val X = "\u001b[39m" // terminal color reset
 
   test("test fail") {
     consolePrint(
       checkDiff(CC(1, "asdf", 2.0), CC(1, "asdf", 3.0))(
         CC.differ
           .updateWith(
-            UpdatePath.of(UpdateStep.RecordField("i")),
+            UpdatePath.of(UpdateStep.DownPath("i")),
             DifferOp.SetIgnored(true),
           )
           .unsafeGet,
@@ -53,12 +54,11 @@ class ExampleSpec extends FunSuite {
     println(consoleOutput(checkDiff(1, 2), indentLevel = 0))
   }
 
-  test("seq".only) {
+  test("seq") {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
-        .updateWith(UpdatePath.of(UpdateStep.DownTypeParam(0), UpdateStep.RecordField("dd")), DifferOp.ignore)
-        .unsafeGet,
+        .updateByStrPathUnsafe(DifferOp.ignore, "each", "dd"),
       List(
         CC(1, "s1", 1),
         CC(2, "s2", 2),

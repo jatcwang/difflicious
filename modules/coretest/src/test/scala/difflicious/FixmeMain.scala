@@ -1,5 +1,4 @@
 package difflicious
-import izumi.reflect.Tag
 import izumi.reflect.macrortti.LTag
 
 object FixmeMain {

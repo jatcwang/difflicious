@@ -181,7 +181,7 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, RecordDiffer[T]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.RecordField(fieldName)) =>
+        case Some(UpdateStep.DownPath(fieldName)) =>
           for {
             (getter, fieldDiffer) <- fieldDiffers
               .get(fieldName)
@@ -192,7 +192,6 @@ object Differ {
             ignored = this.ignored,
             tag = tag,
           )
-        case Some(_) => Left(DifferUpdateError.UnexpectedDifferType(nextPath, "record"))
         case None =>
           op match {
             case DifferOp.SetIgnored(newIgnored) =>
@@ -204,7 +203,7 @@ object Differ {
     }
 
     def unsafeIgnoreField(fieldName: String): RecordDiffer[T] =
-      updateWith(UpdatePath.of(UpdateStep.RecordField(fieldName)), DifferOp.SetIgnored(true)) match {
+      updateWith(UpdatePath.of(UpdateStep.DownPath(fieldName)), DifferOp.SetIgnored(true)) match {
         case Left(_) =>
           throw new IllegalArgumentException(s"Cannot ignore field: field '$fieldName' is not part of record")
         case Right(differ) => differ
@@ -297,8 +296,8 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownTypeParam(idx)) =>
-          if (idx == 1) { // the value
+        case Some(UpdateStep.DownPath(fieldName)) =>
+          if (fieldName == "each") {
             valueDiffer.updateWith(nextPath, op).map { newValueDiffer =>
               new MapDiffer[M, A, B](
                 isIgnored = isIgnored,
@@ -308,9 +307,7 @@ object Differ {
               )
             }
           } else
-            Left(DifferUpdateError.InvalidTypeParamIndex(path = nextPath, invalidIndex = idx, currentClassName = "Map")) // TODO: more accurate name?
-        case Some(_: UpdateStep.DownSubtype | _: UpdateStep.RecordField) =>
-          Left(DifferUpdateError.UnexpectedDifferType(nextPath, "Map"))
+            Left(DifferUpdateError.NonExistentField(path = nextPath, fieldName))
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
@@ -413,8 +410,8 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownTypeParam(idx)) =>
-          if (idx == 0) {
+        case Some(UpdateStep.DownPath(fieldName)) =>
+          if (fieldName == "each") {
             itemDiffer.updateWith(nextPath, op).map { newItemDiffer =>
               new SeqDiffer[F, A](
                 isIgnored = isIgnored,
@@ -424,9 +421,7 @@ object Differ {
                 itemTag = itemTag,
               )
             }
-          } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, typeName.withTypeParamsLong))
-        case Some(_: UpdateStep.DownSubtype | _: UpdateStep.RecordField) =>
-          Left(DifferUpdateError.UnexpectedDifferType(nextPath, s"seq"))
+          } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>
@@ -529,8 +524,8 @@ object Differ {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownTypeParam(idx)) =>
-          if (idx == 0) {
+        case Some(UpdateStep.DownPath(fieldName)) =>
+          if (fieldName == "each") {
             itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
               new SetDiffer[F, A](
                 isIgnored = isIgnored,
@@ -540,9 +535,7 @@ object Differ {
                 itemTag = itemTag,
               )
             }
-          } else Left(DifferUpdateError.InvalidTypeParamIndex(nextPath, idx, "Set"))
-        case Some(_: UpdateStep.RecordField | _: UpdateStep.DownSubtype) =>
-          Left(DifferUpdateError.UnexpectedDifferType(nextPath, "Set"))
+          } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
             case DifferOp.SetIgnored(newIsIgnored) =>

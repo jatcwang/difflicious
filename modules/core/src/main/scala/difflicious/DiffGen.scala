@@ -55,8 +55,8 @@ object DiffGen {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Typeclass[T]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownSubtype(fullTypeName)) =>
-          ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.full == fullTypeName } match {
+        case Some(UpdateStep.DownPath(shortName)) =>
+          ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.short == shortName } match {
             case Some((sub, idx)) =>
               sub.typeclass
                 .updateWith(nextPath, op)

@@ -18,13 +18,9 @@ object UpdatePath {
   }
 }
 
-// FIXME: better name
+// FIXME: better name. Or just get rid of this if there's only one subclass
 sealed trait UpdateStep
 
 object UpdateStep {
-  // FIXME: Need type param index in the API response as well as subtype name (for ADT sealed traits)?
-  // FIXME: Map[String, Either[Double, Option[NonEmptyList[Int]]]]
-  final case class DownTypeParam(idx: Int) extends UpdateStep
-  final case class DownSubtype(fullSubclassName: String) extends UpdateStep
-  final case class RecordField(name: String) extends UpdateStep
+  final case class DownPath(name: String) extends UpdateStep
 }
