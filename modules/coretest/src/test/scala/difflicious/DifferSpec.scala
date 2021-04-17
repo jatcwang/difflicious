@@ -24,45 +24,15 @@ class DifferSpec extends ScalaCheckSuite {
   private val justIgnoredStr = s"[IGNORED]"
 
   test("Map: isOk == true if two values are equal") {
-    val differ = Differ.mapDiffer[Map, MapKey, CC]
-    forAll { (l: Map[MapKey, CC]) =>
-      val res = differ.diff(l, l)
-      assert(res.isOk)
-      inside(res) {
-        case s: MapResult =>
-          assert(s.entries.length == l.size)
-          assert(s.entries.forall { case MapResult.Entry(_, valueRes) => valueRes.isOk })
-      }
-    }
+    assertOkIfValuesEqualProp(Differ.mapDiffer[Map, MapKey, CC])
   }
 
   test("Map: isOk == false if two values are NOT equal") {
-    val differ = Differ.mapDiffer[Map, MapKey, CC]
-    forAll { (l: Map[MapKey, CC], r: Map[MapKey, CC]) =>
-      (l != r) ==> {
-        val res = differ.diff(l, r)
-        assert(!res.isOk)
-        inside(res) {
-          case s: MapResult =>
-            assert(s.entries.exists { case MapResult.Entry(_, valueRes) => !valueRes.isOk })
-        }
-      }
-    }
+    assertNotOkIfNotEqualProp(Differ.mapDiffer[Map, MapKey, CC])
   }
 
   test("Map: isOk always true if differ is marked ignored") {
-    val differIgnored = Differ.mapDiffer[Map, MapKey, CC].updateByStrPathUnsafe(DifferOp.ignore)
-    val differUnignored = differIgnored.updateByStrPathUnsafe(DifferOp.unignored)
-    forAll { (l: Map[MapKey, CC], r: Map[MapKey, CC]) =>
-      val ignoredResult = differIgnored.diff(l, r)
-      assert(ignoredResult.isOk)
-      assertDiffResultRender(
-        ignoredResult,
-        expectedOutputStr = grayIgnoredStr,
-      )
-      if (l == r) assert(differUnignored.diff(l, r).isOk)
-      else assert(!differUnignored.diff(l, r).isOk)
-    }
+    assertIsOkIfIgnoredProp(Differ.mapDiffer[Map, MapKey, CC])
   }
 
   test("Map diff shows both matched entries (based on key equals) and also one-side-only entries") {
@@ -104,44 +74,15 @@ class DifferSpec extends ScalaCheckSuite {
   }
 
   test("Seq: isOk == true if two values are equal") {
-    val differ = Differ.seqDiffer[List, CC]
-    forAll { (l: List[CC]) =>
-      val res = differ.diff(l, l)
-      assert(res.isOk)
-      inside(res) {
-        case s: ListResult =>
-          assert(s.items.forall(_.isOk))
-      }
-    }
+    assertOkIfValuesEqualProp(Differ.seqDiffer[List, CC])
   }
 
   test("Seq: isOk == false if two values are not equal") {
-    val differ = Differ.seqDiffer[List, CC]
-    forAll { (l: List[CC], r: List[CC]) =>
-      (l != r) ==> {
-        val res = differ.diff(l, r)
-        assert(!res.isOk)
-        inside(res) {
-          case s: ListResult =>
-            assert(s.items.exists(!_.isOk))
-        }
-      }
-    }
+    assertNotOkIfNotEqualProp(Differ.seqDiffer[List, CC])
   }
 
   test("Seq: isOk always true if differ is marked ignored") {
-    val differIgnored = Differ.seqDiffer[Seq, CC].updateByStrPathUnsafe(DifferOp.ignore)
-    val differUnignored = differIgnored.updateByStrPathUnsafe(DifferOp.unignored)
-    forAll { (l: Seq[CC], r: Seq[CC]) =>
-      val ignoredResult = differIgnored.diff(l, r)
-      assert(ignoredResult.isOk)
-      assertDiffResultRender(
-        ignoredResult,
-        expectedOutputStr = grayIgnoredStr,
-      )
-      if (l == r) assert(differUnignored.diff(l, r).isOk)
-      else assert(!differUnignored.diff(l, r).isOk)
-    }
+    assertIsOkIfIgnoredProp(Differ.seqDiffer[Seq, CC])
   }
 
   test("Seq match entries base on item index by default") {
@@ -252,6 +193,38 @@ class DifferSpec extends ScalaCheckSuite {
       assertEquals(actualOutputStr, expectedOutputStr)
     } else ()
   }
+
+  private def assertOkIfValuesEqualProp[A: Arbitrary](differ: Differ[A]) = {
+    forAll { l: A =>
+      val res = differ.diff(l, l)
+      assert(res.isOk)
+    }
+  }
+
+  private def assertNotOkIfNotEqualProp[A: Arbitrary](differ: Differ[A]) = {
+    forAll { (l: A, r: A) =>
+      (l != r) ==> {
+        val res = differ.diff(l, r)
+        assert(!res.isOk)
+      }
+    }
+  }
+
+  private def assertIsOkIfIgnoredProp[A: Arbitrary](differ: Differ[A]) = {
+    val differIgnored = differ.updateByStrPathUnsafe(DifferOp.ignore)
+    val differUnignored = differIgnored.updateByStrPathUnsafe(DifferOp.unignored)
+    forAll { (l: A, r: A) =>
+      val ignoredResult = differIgnored.diff(l, r)
+      assert(ignoredResult.isOk)
+      assertDiffResultRender(
+        ignoredResult,
+        expectedOutputStr = grayIgnoredStr,
+      )
+      if (l == r) assert(differUnignored.diff(l, r).isOk)
+      else assert(!differUnignored.diff(l, r).isOk)
+    }
+  }
+
 }
 
 case class CC(i: Int, s: String, dd: Double)
