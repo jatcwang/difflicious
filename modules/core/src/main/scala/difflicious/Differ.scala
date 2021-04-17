@@ -79,6 +79,7 @@ object Differ {
   def useEquals[T](implicit encoder: Encoder[T]): ValueDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, encoder = encoder)
 
+  // FIXME: better reporting for string error
   implicit val stringDiff: ValueDiffer[String] = useEquals[String]
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean]

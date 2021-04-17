@@ -160,12 +160,100 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Seq ignored result should print [IGNORED]") {
+  test("Set: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Differ.setDiffer[Set, CC])
+  }
+
+  test("Set: isOk == false if two values are not equal") {
+    assertNotOkIfNotEqualProp(Differ.setDiffer[Set, CC])
+  }
+
+  test("Set: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Differ.setDiffer[Set, CC])
+  }
+
+  test("Set: match entries base on item identity by default") {
     assertConsoleDiffOutput(
-      differ = Differ.seqDiffer[Seq, Int].updateByStrPathUnsafe(DifferOp.ignore),
-      actual = Seq(1),
-      expected = Seq(1),
-      expectedOutputStr = grayIgnoredStr,
+      Differ
+        .setDiffer[Set, CC]
+        .updateByStrPathUnsafe(DifferOp.ignore, "each", "dd"),
+      Set(
+        CC(1, "s1", 1),
+        CC(2, "s2", 2),
+        CC(3, "s2", 2),
+      ),
+      Set(
+        CC(1, "s2", 1),
+        CC(2, "s1", 2),
+        CC(3, "s2", 2),
+      ),
+      s"""Set(
+         |  ${R}CC(
+         |    i: 1,
+         |    s: "s1",
+         |    dd: $justIgnoredStr,
+         |  )$X,
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "s2",
+         |    dd: $justIgnoredStr,
+         |  )$X,
+         |  CC(
+         |    i: 3,
+         |    s: "s2",
+         |    dd: $grayIgnoredStr,
+         |  ),
+         |  ${G}CC(
+         |    i: 1,
+         |    s: "s2",
+         |    dd: $justIgnoredStr,
+         |  )${X},
+         |  ${G}CC(
+         |    i: 2,
+         |    s: "s1",
+         |    dd: $justIgnoredStr,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Set: with alternative matchBy should match by the resolved value instead of index") {
+    assertConsoleDiffOutput(
+      Differ
+        .setDiffer[Set, CC]
+        .matchBy(_.i),
+      Set(
+        CC(1, "s1", 1),
+        CC(2, "s2", 2),
+        CC(3, "s2", 3),
+      ),
+      Set(
+        CC(2, "s1", 2),
+        CC(4, "s2", 4),
+        CC(1, "s2", 1),
+      ),
+      s"""Set(
+         |  CC(
+         |    i: 1,
+         |    s: $R"s1"$X -> $G"s2"$X,
+         |    dd: 1.0,
+         |  ),
+         |  CC(
+         |    i: 2,
+         |    s: $R"s2"$X -> $G"s1"$X,
+         |    dd: 2.0,
+         |  ),
+         |  ${R}CC(
+         |    i: 3,
+         |    s: "s2",
+         |    dd: 3.0,
+         |  )${X},
+         |  ${G}CC(
+         |    i: 4,
+         |    s: "s2",
+         |    dd: 4.0,
+         |  )${X},
+         |)""".stripMargin,
     )
   }
 

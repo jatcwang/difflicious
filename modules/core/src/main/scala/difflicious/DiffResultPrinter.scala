@@ -12,7 +12,7 @@ object DiffResultPrinter {
 
   private val indentStep = 2
 
-  val ignoredStr: Str = Str("[IGNORED]").overlay(colorIgnored)
+  private val ignoredStr: Str = Str("[IGNORED]").overlay(colorIgnored)
 
   def consolePrint(
     res: DiffResult,
