@@ -23,6 +23,8 @@ class DifferSpec extends ScalaCheckSuite {
   // Sometimes the [IGNORE] field exist in a actual/expected-only object so it won't be colored
   private val justIgnoredStr = s"[IGNORED]"
 
+  // FIXME: test deep path updates
+
   test("Map: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.mapDiffer[Map, MapKey, CC])
   }
@@ -37,7 +39,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map diff shows both matched entries (based on key equals) and also one-side-only entries") {
     assertConsoleDiffOutput(
-      Differ.mapDiffer[Map, MapKey, CC].updateByStrPathUnsafe(DifferOp.ignore, "each", "i"),
+      Differ.mapDiffer[Map, MapKey, CC].updateByStrPathOrFail(DifferOp.ignore, "each", "i"),
       Map(
         MapKey(1, "s") -> CC(1, "s1", 1),
         MapKey(2, "sa") -> CC(2, "s2", 2),
@@ -89,7 +91,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
-        .updateByStrPathUnsafe(DifferOp.ignore, "each", "dd"),
+        .updateByStrPathOrFail(DifferOp.ignore, "each", "dd"),
       List(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -176,7 +178,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .setDiffer[Set, CC]
-        .updateByStrPathUnsafe(DifferOp.ignore, "each", "dd"),
+        .updateByStrPathOrFail(DifferOp.ignore, "each", "dd"),
       Set(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -299,8 +301,8 @@ class DifferSpec extends ScalaCheckSuite {
   }
 
   private def assertIsOkIfIgnoredProp[A: Arbitrary](differ: Differ[A]) = {
-    val differIgnored = differ.updateByStrPathUnsafe(DifferOp.ignore)
-    val differUnignored = differIgnored.updateByStrPathUnsafe(DifferOp.unignored)
+    val differIgnored = differ.updateByStrPathOrFail(DifferOp.ignore)
+    val differUnignored = differIgnored.updateByStrPathOrFail(DifferOp.unignored)
     forAll { (l: A, r: A) =>
       val ignoredResult = differIgnored.diff(l, r)
       assert(ignoredResult.isOk)
