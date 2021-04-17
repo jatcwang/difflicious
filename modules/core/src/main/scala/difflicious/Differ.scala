@@ -114,7 +114,7 @@ object Differ {
 
   final class RecordDiffer[T](
     fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
-    ignored: Boolean,
+    isIgnored: Boolean,
     tag: Tag[T],
   ) extends Differ[T] {
     override type R = DiffResult.RecordResult
@@ -136,8 +136,8 @@ object Differ {
             typeName = typeName,
             fields = diffResults,
             matchType = MatchType.Both,
-            isIgnored = ignored,
-            isOk = ignored || diffResults.values.forall(_.isOk),
+            isIgnored = isIgnored,
+            isOk = isIgnored || diffResults.values.forall(_.isOk),
           )
       }
       case Ior.Left(value) => {
@@ -154,8 +154,8 @@ object Differ {
             typeName = typeName,
             fields = diffResults,
             matchType = MatchType.ActualOnly,
-            isIgnored = ignored,
-            isOk = diffResults.values.forall(_.isOk),
+            isIgnored = isIgnored,
+            isOk = isIgnored,
           )
       }
       case Ior.Right(expected) => {
@@ -172,8 +172,8 @@ object Differ {
             typeName = typeName,
             fields = diffResults,
             matchType = MatchType.ExpectedOnly,
-            isIgnored = ignored,
-            isOk = diffResults.values.forall(_.isOk),
+            isIgnored = isIgnored,
+            isOk = isIgnored,
           )
       }
     }
@@ -189,20 +189,20 @@ object Differ {
             newFieldDiffer <- fieldDiffer.updateWith(nextPath, op)
           } yield new RecordDiffer[T](
             fieldDiffers = fieldDiffers.updated(fieldName, (getter, newFieldDiffer)),
-            ignored = this.ignored,
+            isIgnored = this.isIgnored,
             tag = tag,
           )
         case None =>
           op match {
             case DifferOp.SetIgnored(newIgnored) =>
-              Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, ignored = newIgnored, tag = tag))
+              Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, tag = tag))
             case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
           }
 
       }
     }
 
-    def unsafeIgnoreField(fieldName: String): RecordDiffer[T] =
+    def ignoreFieldUnsafe(fieldName: String): RecordDiffer[T] =
       updateWith(UpdatePath.of(UpdateStep.DownPath(fieldName)), DifferOp.SetIgnored(true)) match {
         case Left(_) =>
           throw new IllegalArgumentException(s"Cannot ignore field: field '$fieldName' is not part of record")
@@ -466,6 +466,11 @@ object Differ {
               }
           }
       }
+    }
+
+    def matchBy[B](func: A => B): SeqDiffer[F, A] = {
+      // Should always succeed, because method signature guarantees func takes an A
+      updateWith(UpdatePath.current, MatchBy.ByFunc(func, itemTag)).unsafeGet
     }
   }
 

@@ -5,6 +5,7 @@ Must have:
 - Ignore fields
 - Swap two fields of the same type! (or a subtype to a super type)
 - Dynamic ignore (add new field ignores at runtime)
+// FIXME: rename actual => obtained
   
 Nice to have:
 - Print a single value (i.e. no need for pprint if you want nice printout)

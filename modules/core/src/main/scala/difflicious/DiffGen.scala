@@ -19,7 +19,7 @@ object DiffGen {
           p.label -> Tuple2(getter.asInstanceOf[(T => Any)], p.typeclass.asInstanceOf[Differ[Any]])
         }
         .to(ListMap),
-      ignored = false,
+      isIgnored = false,
       tag = tag,
     )
   }

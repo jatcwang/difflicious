@@ -12,7 +12,6 @@ sealed trait DiffResult {
 }
 
 object DiffResult {
-  // FIXME: add class types
   final case class ListResult(
     typeName: TypeName,
     items: Vec[DiffResult],

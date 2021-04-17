@@ -1,3 +1,5 @@
+val munitVersion = "0.7.23"
+
 lazy val root = Project("root", file("."))
   .aggregate(core, coretest, benchmarks)
   .settings(commonSettings, noPublishSettings)
@@ -21,7 +23,8 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
   .settings(
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % "0.7.22",
+      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
 
