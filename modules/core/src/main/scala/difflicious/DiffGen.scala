@@ -1,7 +1,7 @@
 package difflicious
 import cats.data.Ior
 import difflicious.DiffResult.MismatchTypeResult
-import difflicious.Differ.RecordDiffer
+import difflicious.differ.RecordDiffer
 import izumi.reflect.Tag
 import magnolia._
 import difflicious.utils.{TypeName => DTypeName}

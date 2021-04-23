@@ -259,6 +259,38 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("Record: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(CC.differ)
+  }
+
+  test("Record: isOk == false if two values are not equal") {
+    assertNotOkIfNotEqualProp(CC.differ)
+  }
+
+  test("Record: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(CC.differ)
+  }
+
+  test("Record: Attempting to update nonexistent field fails") {
+    assertEquals(
+      CC.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("nonexistent")), DifferOp.ignore),
+      Left(
+        DifferUpdateError
+          .NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nonexistent")), List.empty), "nonexistent"),
+      ),
+    )
+  }
+
+  test("Record: Trying to update the differ with MatchBy op should fail") {
+    assertEquals(
+      CC.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("dd")), DifferOp.MatchBy.Index),
+      Left(
+        DifferUpdateError
+          .InvalidDifferOp(UpdatePath(Vector(UpdateStep.DownPath("dd")), List.empty), DifferOp.MatchBy.Index, "record"),
+      ),
+    )
+  }
+
   private def assertConsoleDiffOutput[A](
     differ: Differ[A],
     actual: A,

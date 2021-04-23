@@ -1,4 +1,4 @@
-package difflicious.differs
+package difflicious.differ
 
 import io.circe.Encoder
 import cats.data.Ior
