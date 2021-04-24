@@ -1,12 +1,9 @@
 package difflicious
 
-import difflicious.DiffResult.{ListResult, MapResult}
 import difflicious.DiffResultPrinter.consoleOutput
 import difflicious.Differ.ValueDiffer
 import munit.ScalaCheckSuite
-import difflicious.utils._
 import difflicious.implicits._
-import difflicious.testutils.Inside.inside
 import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import org.scalacheck.Arbitrary

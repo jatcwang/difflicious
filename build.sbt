@@ -1,4 +1,25 @@
-val munitVersion = "0.7.23"
+val munitVersion = "0.7.25"
+
+val scala213 = "2.13.5"
+val scala3 = "3.0.0-RC2"
+
+inThisBuild(
+  List(
+    scalaVersion := scala213,
+    crossScalaVersions := Seq(scala213 /*, scala3*/ ),
+    organization := "com.github.jatcwang",
+    homepage := Some(url("https://github.com/jatcwang/difflicious")),
+    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer(
+        "jatcwang",
+        "Jacob Wang",
+        "jatcwang@gmail.com",
+        url("https://almostfunctional.com"),
+      ),
+    ),
+  ),
+)
 
 lazy val root = Project("root", file("."))
   .aggregate(core, coretest, benchmarks)
@@ -8,12 +29,16 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.4.2",
-      "io.circe" %% "circe-generic" % "0.13.0",
+      "org.typelevel" %% "cats-core" % "2.6.0",
+      "io.circe" %% "circe-generic" % "0.14.0-M5",
       "com.propensive" %% "magnolia" % "0.17.0",
-      "dev.zio" %% "izumi-reflect" % "1.0.0-M16",
-      "com.lihaoyi" %% "fansi" % "0.2.10",
-      "com.softwaremill.diffx" %% "diffx-core" % "0.4.4", // FIXME:
+      "dev.zio" %% "izumi-reflect" % "1.1.1",
+      "com.lihaoyi" %% "fansi" % "0.2.12",
+    ) ++ (
+      if (scalaVersion.value.startsWith("2"))
+        Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
+      else
+        Seq.empty
     ),
   )
 
@@ -28,6 +53,38 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
     ).map(_ % Test),
   )
 
+lazy val docs = project
+  .dependsOn(core, coretest)
+  .enablePlugins(MicrositesPlugin)
+  .settings(
+    commonSettings,
+    publish / skip := true,
+  )
+  .settings(
+    mdocIn := file("docs/docs"),
+    mdocExtraArguments ++= Seq("--noLinkHygiene"),
+    micrositeName := "Difflicious",
+    micrositeDescription := "Flexible test assertions with actionable results",
+    micrositeUrl := "https://jatcwang.github.io",
+    micrositeBaseUrl := "/difflicious",
+    micrositeDocumentationUrl := s"${micrositeBaseUrl.value}/docs/difflicious",
+    micrositeAuthor := "Jacob Wang",
+    micrositeGithubOwner := "jatcwang",
+    micrositeGithubRepo := "difflicious",
+    micrositeHighlightTheme := "a11y-light",
+    micrositePushSiteWith := GitHub4s,
+    micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
+  )
+  .settings(
+    // Disble any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
+    // use implicit conversion to string
+    scalacOptions ~= { opts =>
+      val extraOpts = Seq("-Wconf:msg=\".*method any2stringadd.*\":i")
+      val removes = Set("-Wdead-code", "-Ywarn-dead-code") // we use ??? in various places
+      (opts ++ extraOpts).filterNot(removes)
+    },
+  )
+
 lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
   .dependsOn(coretest)
   .enablePlugins(JmhPlugin)
@@ -36,7 +93,6 @@ lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
 
 lazy val commonSettings = Seq(
   version := "0.1.0",
-  scalaVersion := "2.13.5",
   scalacOptions --= {
     if (sys.env.get("CI").isDefined) {
       Seq.empty
@@ -44,10 +100,56 @@ lazy val commonSettings = Seq(
       Seq("-Xfatal-warnings")
     }
   },
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+  libraryDependencies ++= Seq(
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+    compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+  ).filterNot(_ => scalaVersion.value.startsWith("3")),
 )
 
 lazy val noPublishSettings = Seq(
   publish / skip := true,
 )
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.11")
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+
+ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Sbt(
+    List("ci-release", "publishMicrosite"),
+    env = Map(
+      "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}",
+    ),
+  ),
+)
+
+val setupJekyllSteps = Seq(
+  WorkflowStep.Use(
+    UseRef.Public("actions", "setup-ruby", "v1"),
+    name = Some("Setup ruby"),
+    params = Map("ruby-version" -> "2.7"),
+  ),
+  WorkflowStep.Run(
+    List("gem install jekyll -v 4.1.1"),
+    name = Some("Install Jekyll (to build microsite)"),
+  ),
+)
+
+ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
+
+// Add makeMicrosite to the build step
+ThisBuild / githubWorkflowBuild ~= { steps =>
+  steps.map {
+    case w: WorkflowStep.Sbt if w.commands == List("test") =>
+      w.copy(commands = List("test", "makeMicrosite"))
+    case w => w
+  }
+}
+// Filter out MacOS and Windows cache steps to make yaml less noisy
+ThisBuild / githubWorkflowGeneratedCacheSteps ~= { currentSteps =>
+  currentSteps.filterNot(wf => wf.cond.exists(str => str.contains("macos") || str.contains("windows")))
+}

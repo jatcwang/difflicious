@@ -8,7 +8,6 @@ import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName
 import izumi.reflect.Tag
 
-import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 // FIXME: use LTag instead of Tag
