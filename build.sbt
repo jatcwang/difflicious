@@ -42,6 +42,15 @@ lazy val core = Project("difflicious-core", file("modules/core"))
     ),
   )
 
+lazy val munit = Project("difflicious-munit", file("modules/munit"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion,
+    ),
+  )
+
 lazy val coretest = Project("coretest", file("modules/coretest"))
   .dependsOn(core)
   .settings(commonSettings, noPublishSettings)
