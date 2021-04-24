@@ -1,6 +1,6 @@
 package difflicious.munit
 
-import difflicious.{Differ, DiffGen}
+import difflicious.Differ
 
 object FixmeGo {
   def main(args: Array[String]): Unit = {
@@ -12,6 +12,6 @@ object FixmeGo {
   case class Boo(i: Int, d: Double)
 
   object Boo {
-    val d: Differ[Boo] = DiffGen.derive[Boo]
+    val d: Differ[Boo] = Differ.derive[Boo]
   }
 }

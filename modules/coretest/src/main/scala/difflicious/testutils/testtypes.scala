@@ -1,7 +1,8 @@
 package difflicious.testutils
 
-import difflicious.{Differ, DiffGen}
+import difflicious.Differ
 
+// FIXME: ?
 object testtypes {
   final case class Big(
     i: Int,
@@ -12,7 +13,7 @@ object testtypes {
   )
 
   object Big {
-    implicit val diff: Differ[Big] = DiffGen.derive[Big]
+    implicit val diff: Differ[Big] = Differ.derive[Big]
   }
 
   final case class Dog(

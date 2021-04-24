@@ -8,7 +8,7 @@ import difflicious.utils.{TypeName => DTypeName}
 
 import scala.collection.immutable.ListMap
 
-object DiffGen {
+trait DifferGen {
   type Typeclass[T] = Differ[T]
 
   def combine[T](ctx: ReadOnlyCaseClass[Differ, T])(implicit tag: Tag[T]): Differ[T] = {

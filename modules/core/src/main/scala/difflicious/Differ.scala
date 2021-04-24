@@ -40,7 +40,7 @@ object DifferOp {
 
 }
 
-object Differ {
+object Differ extends DifferGen {
   // FIXME: need tag
   trait ValueDiffer[T] extends Differ[T] {
     final override type R = DiffResult.ValueResult

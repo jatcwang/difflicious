@@ -283,7 +283,11 @@ class DifferSpec extends ScalaCheckSuite {
       CC.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("dd")), DifferOp.MatchBy.Index),
       Left(
         DifferUpdateError
-          .InvalidDifferOp(UpdatePath(Vector(UpdateStep.DownPath("dd")), List.empty), DifferOp.MatchBy.Index, "record"),
+          .InvalidDifferOp(
+            UpdatePath(Vector(UpdateStep.DownPath("dd")), List.empty),
+            DifferOp.MatchBy.Index,
+            "NumericDiffer",
+          ),
       ),
     )
   }
@@ -355,13 +359,13 @@ object CC {
     dd <- Arbitrary.arbitrary[Double]
   } yield CC(i, s, dd))
 
-  implicit val differ: Differ[CC] = DiffGen.derive[CC]
+  implicit val differ: Differ[CC] = Differ.derive[CC]
 }
 
 sealed trait Foo
 
 object Foo {
-  implicit val differ: Differ[Foo] = DiffGen.derive[Foo]
+  implicit val differ: Differ[Foo] = Differ.derive[Foo]
 }
 
 case class Sub1(i: Int) extends Foo
