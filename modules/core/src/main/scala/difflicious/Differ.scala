@@ -6,11 +6,10 @@ import difflicious.DifferOp.MatchBy
 import difflicious.differ.NumericDiffer
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName
-import izumi.reflect.Tag
+import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 
-// FIXME: use LTag instead of Tag
 // FIXME: don't use cats Ior
 trait Differ[T] {
   type R <: DiffResult
@@ -35,7 +34,7 @@ object DifferOp {
   sealed trait MatchBy[-A] extends DifferOp
   object MatchBy {
     case object Index extends MatchBy[Any]
-    final case class ByFunc[A, B](func: A => B, aTag: Tag[A]) extends MatchBy[A]
+    final case class ByFunc[A, B](func: A => B, aTag: LTag[A]) extends MatchBy[A]
   }
 
 }
@@ -97,7 +96,7 @@ object Differ extends DifferGen {
   implicit def mapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
     implicit keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
-    tag: Tag[M[A, B]],
+    tag: LTag[M[A, B]],
   ): MapDiffer[M, A, B] =
     new MapDiffer(isIgnored = false, keyDiffer = keyDiffer, valueDiffer = valueDiffer, tag = tag)
 
@@ -106,7 +105,7 @@ object Differ extends DifferGen {
     isIgnored: Boolean,
     keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
-    tag: Tag[M[A, B]],
+    tag: LTag[M[A, B]],
   ) extends Differ[M[A, B]] {
     override type R = MapResult
 
@@ -212,8 +211,8 @@ object Differ extends DifferGen {
 
   implicit def seqDiffer[F[X] <: Seq[X], A](
     implicit itemDiffer: Differ[A],
-    fullTag: Tag[F[A]],
-    itemTag: Tag[A],
+    fullTag: LTag[F[A]],
+    itemTag: LTag[A],
   ): SeqDiffer[F, A] =
     new SeqDiffer[F, A](
       isIgnored = false,
@@ -228,8 +227,8 @@ object Differ extends DifferGen {
     isIgnored: Boolean,
     matchBy: MatchBy[A],
     itemDiffer: Differ[A],
-    fullTag: Tag[F[A]],
-    itemTag: Tag[A],
+    fullTag: LTag[F[A]],
+    itemTag: LTag[A],
   ) extends Differ[F[A]] {
     override type R = ListResult
 
@@ -360,8 +359,8 @@ object Differ extends DifferGen {
 
   implicit def setDiffer[F[X] <: Set[X], A](
     implicit itemDiffer: Differ[A],
-    fullTag: Tag[F[A]],
-    itemTag: Tag[A],
+    fullTag: LTag[F[A]],
+    itemTag: LTag[A],
   ): SetDiffer[F, A] =
     new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity, fullTag = fullTag, itemTag = itemTag)
 
@@ -370,8 +369,8 @@ object Differ extends DifferGen {
     isIgnored: Boolean,
     itemDiffer: Differ[A],
     matchFunc: A => Any,
-    fullTag: Tag[F[A]],
-    itemTag: Tag[A],
+    fullTag: LTag[F[A]],
+    itemTag: LTag[A],
   ) extends Differ[F[A]] {
     override type R = SetResult
 
