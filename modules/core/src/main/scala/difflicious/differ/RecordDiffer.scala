@@ -17,11 +17,11 @@ final class RecordDiffer[T](
   val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
 
   override def diff(inputs: Ior[T, T]): R = inputs match {
-    case Ior.Both(actual, expected) => {
+    case Ior.Both(obtained, expected) => {
       val diffResults = fieldDiffers
         .map {
           case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(getter(actual), getter(expected))
+            val diffResult = differ.diff(getter(obtained), getter(expected))
 
             fieldName -> diffResult
         }
@@ -48,7 +48,7 @@ final class RecordDiffer[T](
         .RecordResult(
           typeName = typeName,
           fields = diffResults,
-          matchType = MatchType.ActualOnly,
+          matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )

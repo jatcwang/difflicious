@@ -8,12 +8,12 @@ import org.scalacheck.{Prop, Arbitrary}
 
 package object testutils {
 
-  val R = "\u001b[31m" // actual (red)
+  val R = "\u001b[31m" // obtained (red)
   val G = "\u001b[32m" // expected (green)
   val I = "\u001b[90m" // ignore (dark grey)
   val X = "\u001b[39m" // terminal color reset
   val grayIgnoredStr = s"$I[IGNORED]$X"
-  // Sometimes the [IGNORE] field exist in a actual/expected-only object so it won't be colored
+  // Sometimes the [IGNORE] field exist in a obtained/expected-only object so it won't be colored
   val justIgnoredStr = s"[IGNORED]"
 
   def assertOkIfValuesEqualProp[A: Arbitrary](differ: Differ[A]): Prop = {
@@ -51,24 +51,24 @@ package object testutils {
     res: DiffResult,
     expectedOutputStr: String,
   ): Unit = {
-    val actualOutputStr = consoleOutput(res, 0).render
+    val obtainedOutputStr = consoleOutput(res, 0).render
 
-    if (actualOutputStr != expectedOutputStr) {
-      println("=== Actual Output === ")
-      println(actualOutputStr)
+    if (obtainedOutputStr != expectedOutputStr) {
+      println("=== Obtained Output === ")
+      println(obtainedOutputStr)
       println("=== Expected Output === ")
       println(expectedOutputStr)
-      assertEquals(actualOutputStr, expectedOutputStr)
+      assertEquals(obtainedOutputStr, expectedOutputStr)
     } else ()
   }
 
   def assertConsoleDiffOutput[A](
     differ: Differ[A],
-    actual: A,
+    obtained: A,
     expected: A,
     expectedOutputStr: String,
   ): Unit = {
-    val res = differ.diff(actual, expected)
+    val res = differ.diff(obtained, expected)
     assertDiffResultRender(res, expectedOutputStr)
   }
 

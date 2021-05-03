@@ -3,7 +3,7 @@ import CatsInstances._
 import cats.data._
 import difflicious.Differ
 import difflicious.Differ.{SetDiffer, SeqDiffer}
-import difflicious.testtypes.{CC, MapKey}
+import difflicious.testtypes.CC
 import difflicious.testutils._
 
 class CatsDataDiffSpec extends FunSuite {

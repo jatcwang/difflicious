@@ -5,7 +5,6 @@ Must have:
 - Ignore fields
 - Swap two fields of the same type! (or a subtype to a super type)
 - Dynamic ignore (add new field ignores at runtime)
-// FIXME: rename actual => obtained
   
 Nice to have:
 - Print a single value (i.e. no need for pprint if you want nice printout)
@@ -59,7 +58,7 @@ Example expected:
   }
 ]
 
-compare with actual
+compare with obtained
 
 [
   {
@@ -91,23 +90,23 @@ items:
         fields:
           str:
             archetype: string
-            actual: b
+            obtained: b
             expected: a
     
-  - type: actualOnly
+  - type: obtainedOnly
     value:
       cls: CaseCls
       archetype: record
       fields:
         f1:
-          type: actualOnly
+          type: obtainedOnly
           cls: F
           archetype: record
           fields:
             str:
-              type: actualOnly
+              type: obtainedOnly
               archetype: string
-              actual: c
+              obtained: c
     
 # Set
 Similar to list, just different available operations
@@ -127,7 +126,7 @@ archetype: map
 entries:
   - key:
       archetype: string
-      actual: k1
+      obtained: k1
     value:
       archetype: record
       type: matching
@@ -135,10 +134,10 @@ entries:
         ...
   - key:
       archetype: string
-      actual: k2
+      obtained: k2
     value:
       archetype: record
-      type: actualOnly
+      type: obtainedOnly
       fields:
 ```
   

@@ -16,7 +16,7 @@ trait Differ[T] {
 
   def diff(inputs: Ior[T, T]): R
 
-  final def diff(actual: T, expected: T): R = diff(Ior.Both(actual, expected))
+  final def diff(obtained: T, expected: T): R = diff(Ior.Both(obtained, expected))
 
   /**
     * Create an new Differ instance where the given path will produce an ignored DiffResult
@@ -54,16 +54,16 @@ object Differ extends DifferGen {
 
   final class EqualsDiffer[T](isIgnored: Boolean, encoder: Encoder[T]) extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
-      case Ior.Both(actual, expected) =>
+      case Ior.Both(obtained, expected) =>
         DiffResult.ValueResult
           .Both(
-            actual = encoder.apply(actual),
+            obtained = encoder.apply(obtained),
             expected = encoder.apply(expected),
-            isSame = actual == expected,
+            isSame = obtained == expected,
             isIgnored = isIgnored,
           )
-      case Ior.Left(actual) =>
-        DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = isIgnored)
+      case Ior.Left(obtained) =>
+        DiffResult.ValueResult.ObtainedOnly(encoder.apply(obtained), isIgnored = isIgnored)
       case Ior.Right(expected) =>
         DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = isIgnored)
     }
@@ -125,11 +125,11 @@ object Differ extends DifferGen {
 
     override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs.bimap(asMap.asMap, asMap.asMap) match {
       // FIXME: consolidate all 3 cases
-      case Ior.Both(actual, expected) =>
-        val actualOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
+      case Ior.Both(obtained, expected) =>
+        val obtainedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
         val both = mutable.ArrayBuffer.empty[MapResult.Entry]
         val expectedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
-        actual.foreach {
+        obtained.foreach {
           case (k, actualV) =>
             expected.get(k) match {
               case Some(expectedV) =>
@@ -138,7 +138,7 @@ object Differ extends DifferGen {
                   valueDiffer.diff(actualV, expectedV),
                 )
               case None =>
-                actualOnly += MapResult.Entry(
+                obtainedOnly += MapResult.Entry(
                   jsonForKey(k, keyDiffer),
                   valueDiffer.diff(Ior.Left(actualV)),
                 )
@@ -146,8 +146,8 @@ object Differ extends DifferGen {
         }
         expected.foreach {
           case (k, expectedV) =>
-            if (actual.contains(k)) {
-              // Do nothing, already compared when iterating through actual
+            if (obtained.contains(k)) {
+              // Do nothing, already compared when iterating through obtained
             } else {
               expectedOnly += MapResult.Entry(
                 jsonForKey(k, keyDiffer),
@@ -155,22 +155,22 @@ object Differ extends DifferGen {
               )
             }
         }
-        (actualOnly ++ both ++ expectedOnly).toVector
+        (obtainedOnly ++ both ++ expectedOnly).toVector
         MapResult(
           typeName = typeName,
-          (actualOnly ++ both ++ expectedOnly).toVector,
+          (obtainedOnly ++ both ++ expectedOnly).toVector,
           MatchType.Both,
           isIgnored = isIgnored,
-          isOk = isIgnored || actualOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isOk),
+          isOk = isIgnored || obtainedOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isOk),
         )
-      case Ior.Left(actual) =>
+      case Ior.Left(obtained) =>
         DiffResult.MapResult(
           typeName = typeName,
-          entries = actual.map {
+          entries = obtained.map {
             case (k, v) =>
               MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Left(v)))
           }.toVector,
-          matchType = MatchType.ActualOnly,
+          matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -181,7 +181,7 @@ object Differ extends DifferGen {
             case (k, v) =>
               MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
           }.toVector,
-          matchType = MatchType.ActualOnly,
+          matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -288,7 +288,7 @@ object Differ extends DifferGen {
           items = actual.map { a =>
             itemDiffer.diff(Ior.Left(a))
           }.toVector,
-          matchType = MatchType.ActualOnly,
+          matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -361,7 +361,7 @@ object Differ extends DifferGen {
                   } else {
                     Left(
                       DifferUpdateError
-                        .MatchByTypeMismatch(nextPath, actualTag = m.aTag.tag, expectedTag = itemTag.tag),
+                        .MatchByTypeMismatch(nextPath, obtainedTag = m.aTag.tag, expectedTag = itemTag.tag),
                     )
                   }
               }
@@ -440,7 +440,7 @@ object Differ extends DifferGen {
           actual.toVector.map { a =>
             itemDiffer.diff(Ior.Left(a))
           },
-          MatchType.ActualOnly,
+          MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -454,8 +454,8 @@ object Differ extends DifferGen {
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
-      case Ior.Both(actual, expected) => {
-        val (results, overallIsSame) = diffMatchByFunc(actual.toSeq, expected.toSeq, matchFunc, itemDiffer)
+      case Ior.Both(obtained, expected) => {
+        val (results, overallIsSame) = diffMatchByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
         SetResult(
           typeName = typeName,
           items = results,
@@ -529,7 +529,7 @@ object Differ extends DifferGen {
   // (where "matching" means ==). For example we might want to items by
   // person name.
   private def diffMatchByFunc[A](
-    actual: Seq[A],
+    obtained: Seq[A],
     expected: Seq[A],
     func: A => Any,
     itemDiffer: Differ[A],
@@ -538,7 +538,7 @@ object Differ extends DifferGen {
     val results = mutable.ArrayBuffer.empty[DiffResult]
     val expWithIdx = expected.zipWithIndex
     var allIsOk = true
-    actual.foreach { a =>
+    obtained.foreach { a =>
       val aMatchVal = func(a)
       val found = expWithIdx.find {
         case (e, idx) =>
@@ -574,8 +574,8 @@ object Differ extends DifferGen {
 
   private def jsonForKey[T](k: T, keyDiffer: ValueDiffer[T]): Json = {
     keyDiffer.diff(Ior.Left(k)) match {
-      case r: ValueResult.ActualOnly   => r.actual
-      case r: ValueResult.Both         => r.actual
+      case r: ValueResult.ObtainedOnly => r.obtained
+      case r: ValueResult.Both         => r.obtained
       case r: ValueResult.ExpectedOnly => r.expected
     }
   }

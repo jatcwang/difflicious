@@ -9,15 +9,15 @@ import difflicious.Differ.ValueDiffer
 final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], encoder: Encoder[T], tag: Tag[T])
     extends ValueDiffer[T] {
   override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
-    case Ior.Both(actual, expected) => {
+    case Ior.Both(obtained, expected) => {
       DiffResult.ValueResult.Both(
-        encoder.apply(actual),
+        encoder.apply(obtained),
         encoder.apply(expected),
-        isSame = numeric.equiv(actual, expected),
+        isSame = numeric.equiv(obtained, expected),
         isIgnored = isIgnored,
       )
     }
-    case Ior.Left(actual)    => DiffResult.ValueResult.ActualOnly(encoder.apply(actual), isIgnored = isIgnored)
+    case Ior.Left(obtained)  => DiffResult.ValueResult.ObtainedOnly(encoder.apply(obtained), isIgnored = isIgnored)
     case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = isIgnored)
   }
 

@@ -23,7 +23,7 @@ inThisBuild(
 )
 
 lazy val root = Project("root", file("."))
-  .aggregate(core, coretest, benchmarks)
+  .aggregate(core, coretest, benchmarks, cats)
   .settings(commonSettings, noPublishSettings)
 
 lazy val core = Project("difflicious-core", file("modules/core"))

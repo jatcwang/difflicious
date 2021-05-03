@@ -49,8 +49,8 @@ object DiffResult {
   }
 
   final case class MismatchTypeResult(
-    actual: DiffResult,
-    actualTypeName: TypeName,
+    obtained: DiffResult,
+    obtainedTypeName: TypeName,
     expected: DiffResult,
     expectedTypeName: TypeName,
     matchType: MatchType,
@@ -63,12 +63,12 @@ object DiffResult {
 
   object ValueResult {
     // FIXME: rename isOk to isIdentical for value result
-    final case class Both(actual: Json, expected: Json, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
+    final case class Both(obtained: Json, expected: Json, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.Both
       override def isOk: Boolean = isIgnored || isSame
     }
-    final case class ActualOnly(actual: Json, isIgnored: Boolean) extends ValueResult {
-      override def matchType: MatchType = MatchType.ActualOnly
+    final case class ObtainedOnly(obtained: Json, isIgnored: Boolean) extends ValueResult {
+      override def matchType: MatchType = MatchType.ObtainedOnly
       override def isOk: Boolean = false
     }
     final case class ExpectedOnly(expected: Json, isIgnored: Boolean) extends ValueResult {

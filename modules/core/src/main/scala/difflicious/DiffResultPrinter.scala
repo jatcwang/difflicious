@@ -6,7 +6,7 @@ import difflicious.utils.TypeName
 import fansi.{Str, Color}
 
 object DiffResultPrinter {
-  private val colorActual = Color.Red
+  private val colorObtained = Color.Red
   private val colorExpected = Color.Green
   private val colorIgnored = Color.DarkGray
 
@@ -79,16 +79,16 @@ object DiffResultPrinter {
           colorOnMatchType(allStr, r.matchType)
         }
         case r: DiffResult.MismatchTypeResult => {
-          val titleStr = Str(r.actualTypeName.short).overlay(colorActual) ++ " != " ++ Str(r.expectedTypeName.short)
+          val titleStr = Str(r.obtainedTypeName.short).overlay(colorObtained) ++ " != " ++ Str(r.expectedTypeName.short)
             .overlay(colorExpected)
           val allStr = if (r.isIgnored) {
             titleStr
           } else {
-            val actualStr = consoleOutput(r.actual, indentLevel)
+            val obtainedStr = consoleOutput(r.obtained, indentLevel)
             val expectedStr = consoleOutput(r.expected, indentLevel)
             val indentSplitStr = Str(s"\n${indentLevel.asSpaces}")
             titleStr ++
-              indentSplitStr ++ (Str("=== Actual ===") ++ indentSplitStr ++ actualStr).overlay(colorActual) ++
+              indentSplitStr ++ (Str("=== Obtained ===") ++ indentSplitStr ++ obtainedStr).overlay(colorObtained) ++
               indentSplitStr ++ (Str("=== Expected ===") ++ indentSplitStr ++ expectedStr).overlay(colorExpected)
           }
           colorOnMatchType(str = allStr, matchType = r.matchType)
@@ -96,15 +96,15 @@ object DiffResultPrinter {
         case result: DiffResult.ValueResult =>
           result match {
             case r: ValueResult.Both => {
-              val actualStr = Str(r.actual.noSpaces)
+              val obtainedStr = Str(r.obtained.noSpaces)
               if (r.isSame) {
-                actualStr
+                obtainedStr
               } else {
                 val expectedStr = Str(r.expected.noSpaces)
-                actualStr.overlay(colorActual) ++ " -> " ++ expectedStr.overlay(colorExpected)
+                obtainedStr.overlay(colorObtained) ++ " -> " ++ expectedStr.overlay(colorExpected)
               }
             }
-            case ValueResult.ActualOnly(actual, _)     => fansi.Str(actual.noSpaces)
+            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained.noSpaces)
             case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected.noSpaces)
           }
       }
@@ -132,7 +132,7 @@ object DiffResultPrinter {
   ): Str = {
     matchType match {
       case MatchType.Both         => str
-      case MatchType.ActualOnly   => str.overlay(colorActual)
+      case MatchType.ObtainedOnly => str.overlay(colorObtained)
       case MatchType.ExpectedOnly => str.overlay(colorExpected)
     }
   }

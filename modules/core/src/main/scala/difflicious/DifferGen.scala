@@ -28,18 +28,18 @@ trait DifferGen {
     override type R = DiffResult
 
     override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
-      case Ior.Left(actual)    => ctx.dispatch(actual)(sub => sub.typeclass.diff(Ior.Left(sub.cast(actual))))
+      case Ior.Left(obtained)  => ctx.dispatch(obtained)(sub => sub.typeclass.diff(Ior.Left(sub.cast(obtained))))
       case Ior.Right(expected) => ctx.dispatch(expected)(sub => sub.typeclass.diff(Ior.Right(sub.cast(expected))))
-      case Ior.Both(actual, expected) => {
-        ctx.dispatch(actual) { actualSubtype =>
+      case Ior.Both(obtained, expected) => {
+        ctx.dispatch(obtained) { actualSubtype =>
           ctx.dispatch(expected) { expectedSubtype =>
             if (actualSubtype.typeName.short == expectedSubtype.typeName.short) {
               actualSubtype.typeclass
-                .diff(actualSubtype.cast(actual), expectedSubtype.cast(expected).asInstanceOf[actualSubtype.SType])
+                .diff(actualSubtype.cast(obtained), expectedSubtype.cast(expected).asInstanceOf[actualSubtype.SType])
             } else {
               MismatchTypeResult(
-                actual = actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(actual))),
-                actualTypeName = toDiffliciousTypeName(actualSubtype.typeName),
+                obtained = actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(obtained))),
+                obtainedTypeName = toDiffliciousTypeName(actualSubtype.typeName),
                 expected = expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
                 expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeName),
                 matchType = MatchType.Both,
