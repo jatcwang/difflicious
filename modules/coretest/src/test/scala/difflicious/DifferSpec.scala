@@ -4,6 +4,7 @@ import munit.ScalaCheckSuite
 import difflicious.implicits._
 import difflicious.testutils._
 import difflicious.testtypes._
+import izumi.reflect.macrortti.LTag
 
 // FIXME:
 class DifferSpec extends ScalaCheckSuite {
@@ -147,6 +148,16 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("Set: match by where the item tag does not match the expected should fail") {
+    assertEquals(
+      Differ.seqDiffer[List, CC].updateWith(UpdatePath.current, DifferOp.MatchBy.func[Int, Double](_.toDouble)),
+      Left(
+        DifferUpdateError
+          .MatchByTypeMismatch(UpdatePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
+      ),
+    )
+  }
+
   test("Set: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.setDiffer[Set, CC])
   }
@@ -201,6 +212,16 @@ class DifferSpec extends ScalaCheckSuite {
          |    dd: $justIgnoredStr,
          |  )$X,
          |)""".stripMargin,
+    )
+  }
+
+  test("Set: match by where the item tag does not match the expected should fail") {
+    assertEquals(
+      Differ.setDiffer[Set, CC].updateWith(UpdatePath.current, DifferOp.MatchBy.func[Int, Double](_.toDouble)),
+      Left(
+        DifferUpdateError
+          .MatchByTypeMismatch(UpdatePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
+      ),
     )
   }
 

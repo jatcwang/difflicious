@@ -2,6 +2,7 @@ import munit.FunSuite
 import CatsInstances._
 import cats.data._
 import difflicious.Differ
+import difflicious.Differ.{SetDiffer, SeqDiffer}
 import difflicious.testtypes.{CC, MapKey}
 import difflicious.testutils._
 
@@ -80,6 +81,37 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
+  test("NonEmptyList: matchBy") {
+    assertConsoleDiffOutput(
+      implicitly[SeqDiffer[NonEmptyList, CC]].matchBy(_.s),
+      NonEmptyList.of(
+        CC(1, "1", 1),
+        CC(2, "2", 2),
+      ),
+      NonEmptyList.of(
+        CC(2, "1", 2),
+        CC(2, "3", 2),
+      ),
+      s"""NonEmptyList(
+         |  CC(
+         |    i: ${R}1$X -> ${G}2$X,
+         |    s: "1",
+         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |  ),
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 2.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 2,
+         |    s: "3",
+         |    dd: 2.0,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
   test("NonEmptyVector: Has list-like diff result") {
     assertConsoleDiffOutput(
       Differ[NonEmptyVector[CC]],
@@ -107,6 +139,37 @@ class CatsDataDiffSpec extends FunSuite {
          |    i: 1,
          |    s: "x",
          |    dd: 1.0,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("NonEmptyVector: matchBy") {
+    assertConsoleDiffOutput(
+      implicitly[SeqDiffer[NonEmptyVector, CC]].matchBy(_.s),
+      NonEmptyVector.of(
+        CC(1, "1", 1),
+        CC(2, "2", 2),
+      ),
+      NonEmptyVector.of(
+        CC(2, "1", 2),
+        CC(2, "3", 2),
+      ),
+      s"""NonEmptyVector(
+         |  CC(
+         |    i: ${R}1$X -> ${G}2$X,
+         |    s: "1",
+         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |  ),
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 2.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 2,
+         |    s: "3",
+         |    dd: 2.0,
          |  )$X,
          |)""".stripMargin,
     )
@@ -144,6 +207,37 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
+  test("Chain: matchBy") {
+    assertConsoleDiffOutput(
+      implicitly[SeqDiffer[Chain, CC]].matchBy(_.s),
+      Chain(
+        CC(1, "1", 1),
+        CC(2, "2", 2),
+      ),
+      Chain(
+        CC(2, "1", 2),
+        CC(2, "3", 2),
+      ),
+      s"""Chain(
+         |  CC(
+         |    i: ${R}1$X -> ${G}2$X,
+         |    s: "1",
+         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |  ),
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 2.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 2,
+         |    s: "3",
+         |    dd: 2.0,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
   test("NonEmptyChain: Has list-like diff result") {
     assertConsoleDiffOutput(
       Differ[NonEmptyChain[CC]],
@@ -176,6 +270,37 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
+  test("NonEmptyChain: matchBy") {
+    assertConsoleDiffOutput(
+      implicitly[SeqDiffer[NonEmptyChain, CC]].matchBy(_.s),
+      NonEmptyChain(
+        CC(1, "1", 1),
+        CC(2, "2", 2),
+      ),
+      NonEmptyChain(
+        CC(2, "1", 2),
+        CC(2, "3", 2),
+      ),
+      s"""NonEmptyChain(
+         |  CC(
+         |    i: ${R}1$X -> ${G}2$X,
+         |    s: "1",
+         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |  ),
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 2.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 2,
+         |    s: "3",
+         |    dd: 2.0,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
   test("NonEmptySet: Has set-like diff result") {
     assertConsoleDiffOutput(
       Differ[NonEmptySet[CC]],
@@ -189,11 +314,11 @@ class CatsDataDiffSpec extends FunSuite {
         CC(1, "x", 1),
       ),
       s"""NonEmptySet(
-         |  CC(
+         |  ${R}CC(
          |    i: 1,
-         |    s: $R"1"$X -> $G"2"$X,
+         |    s: "1",
          |    dd: 1.0,
-         |  ),
+         |  )$X,
          |  CC(
          |    i: 2,
          |    s: "2",
@@ -201,8 +326,44 @@ class CatsDataDiffSpec extends FunSuite {
          |  ),
          |  ${G}CC(
          |    i: 1,
+         |    s: "2",
+         |    dd: 1.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 1,
          |    s: "x",
          |    dd: 1.0,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("NonEmptySet: with matchBy") {
+    assertConsoleDiffOutput(
+      implicitly[SetDiffer[NonEmptySet, CC]].matchBy(_.i),
+      NonEmptySet.of(
+        CC(1, "1", 1),
+        CC(2, "2", 2),
+      ),
+      NonEmptySet.of(
+        CC(1, "2", 1),
+        CC(3, "3", 3),
+      ),
+      s"""NonEmptySet(
+         |  CC(
+         |    i: 1,
+         |    s: $R"1"$X -> $G"2"$X,
+         |    dd: 1.0,
+         |  ),
+         |  ${R}CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 2.0,
+         |  )$X,
+         |  ${G}CC(
+         |    i: 3,
+         |    s: "3",
+         |    dd: 3.0,
          |  )$X,
          |)""".stripMargin,
     )

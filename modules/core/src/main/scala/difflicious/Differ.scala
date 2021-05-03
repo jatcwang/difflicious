@@ -34,7 +34,9 @@ object DifferOp {
   sealed trait MatchBy[-A] extends DifferOp
   object MatchBy {
     case object Index extends MatchBy[Any]
-    final case class ByFunc[A, B](func: A => B, aTag: LTag[A]) extends MatchBy[A]
+    final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends MatchBy[A]
+
+    def func[A, B](func: A => B)(implicit aTag: LTag[A]): ByFunc[A, B] = ByFunc(func, aTag)
   }
 
 }
