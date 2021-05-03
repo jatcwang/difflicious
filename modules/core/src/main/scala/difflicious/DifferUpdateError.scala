@@ -11,7 +11,9 @@ object DifferUpdateError {
   final case class NonExistentField(path: UpdatePath, fieldName: String) extends DifferUpdateError
   final case class PathTooLong(path: UpdatePath) extends DifferUpdateError
   final case class InvalidSubType(path: UpdatePath, allowedTypes: Vec[String]) extends DifferUpdateError
+  // FIXME: align use of actualDifferType param
   final case class UnexpectedDifferType(path: UpdatePath, actualDifferType: String) extends DifferUpdateError
+  // FIXME: align use of differType param
   final case class InvalidDifferOp(path: UpdatePath, op: DifferOp, differType: String) extends DifferUpdateError
   final case class MatchByTypeMismatch(path: UpdatePath, actualTag: LightTypeTag, expectedTag: LightTypeTag)
       extends DifferUpdateError

@@ -1,24 +1,12 @@
 package difflicious
 
-import difflicious.DiffResultPrinter.consoleOutput
-import difflicious.Differ.ValueDiffer
 import munit.ScalaCheckSuite
 import difflicious.implicits._
-import io.circe.{Encoder, Json}
-import io.circe.syntax._
-import org.scalacheck.Arbitrary
-import org.scalacheck.Prop._
+import difflicious.testutils._
+import difflicious.testtypes._
 
 // FIXME:
 class DifferSpec extends ScalaCheckSuite {
-
-  private val R = "\u001b[31m" // actual (red)
-  private val G = "\u001b[32m" // expected (green)
-  private val I = "\u001b[90m" // ignore (dark grey)
-  private val X = "\u001b[39m" // terminal color reset
-  private val grayIgnoredStr = s"$I[IGNORED]$X"
-  // Sometimes the [IGNORE] field exist in a actual/expected-only object so it won't be colored
-  private val justIgnoredStr = s"[IGNORED]"
 
   // FIXME: test deep path updates
 
@@ -292,96 +280,4 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  private def assertConsoleDiffOutput[A](
-    differ: Differ[A],
-    actual: A,
-    expected: A,
-    expectedOutputStr: String,
-  ): Unit = {
-    val res = differ.diff(actual, expected)
-    assertDiffResultRender(res, expectedOutputStr)
-  }
-
-  private def assertDiffResultRender(
-    res: DiffResult,
-    expectedOutputStr: String,
-  ): Unit = {
-    val actualOutputStr = consoleOutput(res, 0).render
-
-    if (actualOutputStr != expectedOutputStr) {
-      println("=== Actual Output === ")
-      println(actualOutputStr)
-      println("=== Expected Output === ")
-      println(expectedOutputStr)
-      assertEquals(actualOutputStr, expectedOutputStr)
-    } else ()
-  }
-
-  private def assertOkIfValuesEqualProp[A: Arbitrary](differ: Differ[A]) = {
-    forAll { l: A =>
-      val res = differ.diff(l, l)
-      assert(res.isOk)
-    }
-  }
-
-  private def assertNotOkIfNotEqualProp[A: Arbitrary](differ: Differ[A]) = {
-    forAll { (l: A, r: A) =>
-      (l != r) ==> {
-        val res = differ.diff(l, r)
-        assert(!res.isOk)
-      }
-    }
-  }
-
-  private def assertIsOkIfIgnoredProp[A: Arbitrary](differ: Differ[A]) = {
-    val differIgnored = differ.updateByStrPathOrFail(DifferOp.ignore)
-    val differUnignored = differIgnored.updateByStrPathOrFail(DifferOp.unignored)
-    forAll { (l: A, r: A) =>
-      val ignoredResult = differIgnored.diff(l, r)
-      assert(ignoredResult.isOk)
-      assertDiffResultRender(
-        ignoredResult,
-        expectedOutputStr = grayIgnoredStr,
-      )
-      if (l == r) assert(differUnignored.diff(l, r).isOk)
-      else assert(!differUnignored.diff(l, r).isOk)
-    }
-  }
-
-}
-
-case class CC(i: Int, s: String, dd: Double)
-
-object CC {
-  implicit val arb: Arbitrary[CC] = Arbitrary(for {
-    i <- Arbitrary.arbitrary[Int]
-    s <- Arbitrary.arbitrary[String]
-    dd <- Arbitrary.arbitrary[Double]
-  } yield CC(i, s, dd))
-
-  implicit val differ: Differ[CC] = Differ.derive[CC]
-}
-
-sealed trait Foo
-
-object Foo {
-  implicit val differ: Differ[Foo] = Differ.derive[Foo]
-}
-
-case class Sub1(i: Int) extends Foo
-
-sealed trait Foo2 extends Foo
-case class SubSub1(d: Double) extends Foo2
-case class SubSub2(i: Int) extends Foo2
-
-final case class MapKey(a: Int, b: String)
-
-object MapKey {
-  private implicit val encoder: Encoder[MapKey] = value => Json.obj("a" -> value.a.asJson, "bb" -> value.b.asJson)
-  implicit val differ: ValueDiffer[MapKey] = Differ.useEquals
-
-  implicit val arb: Arbitrary[MapKey] = Arbitrary(for {
-    a <- Arbitrary.arbitrary[Int]
-    b <- Arbitrary.arbitrary[String]
-  } yield MapKey(a, b))
 }

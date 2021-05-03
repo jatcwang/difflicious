@@ -1,4 +1,5 @@
 val munitVersion = "0.7.25"
+val catsVersion = "2.6.0"
 
 val scala213 = "2.13.5"
 val scala3 = "3.0.0-RC2"
@@ -29,8 +30,8 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.6.0",
-      "io.circe" %% "circe-generic" % "0.14.0-M5",
+      "org.typelevel" %% "cats-core" % catsVersion, // FIXME:
+      "io.circe" %% "circe-generic" % "0.14.0-M5", // FIXME:
       "com.propensive" %% "magnolia" % "0.17.0",
       "dev.zio" %% "izumi-reflect" % "1.1.1",
       "com.lihaoyi" %% "fansi" % "0.2.12",
@@ -48,6 +49,15 @@ lazy val munit = Project("difflicious-munit", file("modules/munit"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion,
+    ),
+  )
+
+lazy val cats = Project("difflicious-cats", file("modules/cats"))
+  .dependsOn(core, coretest % "test->test")
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % catsVersion,
     ),
   )
 

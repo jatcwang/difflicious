@@ -14,7 +14,7 @@ final class RecordDiffer[T](
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
 
-  val typeName: TypeName = TypeName.fromTag(tag.tag)
+  val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
 
   override def diff(inputs: Ior[T, T]): R = inputs match {
     case Ior.Both(actual, expected) => {

@@ -106,7 +106,7 @@ trait DifferGen {
     DTypeName(
       long = typeName.full,
       short = typeName.short,
-      typeArguments = typeName.typeArguments.map(toDiffliciousTypeName).toVector,
+      typeArguments = typeName.typeArguments.map(toDiffliciousTypeName).toList,
     )
   }
 }

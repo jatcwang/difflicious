@@ -1,7 +1,5 @@
 package difflicious
 
-import difflicious.testutils.testtypes.Big
-
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
@@ -32,3 +30,25 @@ class DiffBench {
     bh.consume(big == bigClone)
   }
 }
+
+final case class Big(
+  i: Int,
+  s: String,
+  //    map: Map[Key, Dog],
+  //    list: Vector[Dog],
+  //    set: Set[Dog],
+)
+
+object Big {
+  implicit val diff: Differ[Big] = Differ.derive[Big]
+}
+
+final case class Dog(
+  name: String,
+  age: Double,
+)
+
+final case class Key(
+  name: String,
+  x: Int,
+)

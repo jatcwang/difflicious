@@ -5,7 +5,7 @@ import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.DifferOp.MatchBy
 import difflicious.differ.NumericDiffer
 import difflicious.internal.EitherGetSyntax._
-import difflicious.utils.TypeName
+import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
 import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
@@ -40,6 +40,9 @@ object DifferOp {
 }
 
 object Differ extends DifferGen {
+
+  def apply[A](implicit differ: Differ[A]): Differ[A] = differ
+
   // FIXME: need tag
   trait ValueDiffer[T] extends Differ[T] {
     final override type R = DiffResult.ValueResult
@@ -92,26 +95,33 @@ object Differ extends DifferGen {
   implicit val bigIntDiff: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
 
   // FIXME: tuple instances
-
-  implicit def mapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
+  implicit def mapDiffer[M[_, _], A, B](
     implicit keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
     tag: LTag[M[A, B]],
-  ): MapDiffer[M, A, B] =
-    new MapDiffer(isIgnored = false, keyDiffer = keyDiffer, valueDiffer = valueDiffer, tag = tag)
+    asMap: AsMap[M],
+  ): MapDiffer[M, A, B] = {
+    val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
+    new MapDiffer(
+      isIgnored = false,
+      keyDiffer = keyDiffer,
+      valueDiffer = valueDiffer,
+      typeName = typeName,
+      asMap = asMap,
+    )
+  }
 
   // FIXME: probably want some sort of ordering to maintain consistent order
-  final class MapDiffer[M[KK, VV] <: Map[KK, VV], A, B](
+  class MapDiffer[M[_, _], A, B](
     isIgnored: Boolean,
     keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
-    tag: LTag[M[A, B]],
+    typeName: TypeName,
+    asMap: AsMap[M],
   ) extends Differ[M[A, B]] {
     override type R = MapResult
 
-    val typeName: TypeName = TypeName.fromTag(tag.tag)
-
-    override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs match {
+    override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs.bimap(asMap.asMap, asMap.asMap) match {
       // FIXME: consolidate all 3 cases
       case Ior.Both(actual, expected) =>
         val actualOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
@@ -186,7 +196,8 @@ object Differ extends DifferGen {
                 isIgnored = isIgnored,
                 keyDiffer = keyDiffer,
                 valueDiffer = newValueDiffer,
-                tag = tag,
+                typeName = typeName,
+                asMap = asMap,
               )
             }
           } else
@@ -199,7 +210,8 @@ object Differ extends DifferGen {
                   isIgnored = newIsIgnored,
                   keyDiffer = keyDiffer,
                   valueDiffer = valueDiffer,
-                  tag = tag,
+                  typeName = typeName,
+                  asMap = asMap,
                 ),
               )
             case _: MatchBy[_] =>
@@ -209,32 +221,32 @@ object Differ extends DifferGen {
     }
   }
 
-  implicit def seqDiffer[F[X] <: Seq[X], A](
+  implicit def seqDiffer[F[_], A](
     implicit itemDiffer: Differ[A],
     fullTag: LTag[F[A]],
     itemTag: LTag[A],
-  ): SeqDiffer[F, A] =
-    new SeqDiffer[F, A](
-      isIgnored = false,
-      matchBy = MatchBy.Index,
+    asSeq: AsSeq[F],
+  ): SeqDiffer[F, A] = {
+    val typeName = TypeName.fromLightTypeTag(fullTag.tag)
+    SeqDiffer.create(
       itemDiffer = itemDiffer,
-      fullTag = fullTag,
+      typeName = typeName,
       itemTag = itemTag,
+      asSeq = asSeq,
     )
+  }
 
-  // FIXME: add matchBy
-  final class SeqDiffer[F[X] <: Seq[X], A](
+  final class SeqDiffer[F[_], A](
     isIgnored: Boolean,
     matchBy: MatchBy[A],
     itemDiffer: Differ[A],
-    fullTag: LTag[F[A]],
+    typeName: TypeName,
     itemTag: LTag[A],
+    asSeq: AsSeq[F],
   ) extends Differ[F[A]] {
     override type R = ListResult
 
-    val typeName: TypeName = TypeName.fromTag(fullTag.tag)
-
-    override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
+    override def diff(inputs: Ior[F[A], F[A]]): R = inputs.bimap(asSeq.asSeq, asSeq.asSeq) match {
       case Ior.Both(actual, expected) => {
         matchBy match {
           case MatchBy.Index => {
@@ -300,8 +312,9 @@ object Differ extends DifferGen {
                 isIgnored = isIgnored,
                 matchBy = matchBy,
                 itemDiffer = newItemDiffer,
-                fullTag = fullTag,
+                typeName = typeName,
                 itemTag = itemTag,
+                asSeq = asSeq,
               )
             }
           } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
@@ -313,8 +326,9 @@ object Differ extends DifferGen {
                   isIgnored = newIsIgnored,
                   matchBy = matchBy,
                   itemDiffer = itemDiffer,
-                  fullTag = fullTag,
+                  typeName = typeName,
                   itemTag = itemTag,
+                  asSeq = asSeq,
                 ),
               )
             case matchBy: DifferOp.MatchBy[_] =>
@@ -325,8 +339,9 @@ object Differ extends DifferGen {
                       isIgnored = isIgnored,
                       matchBy = MatchBy.Index,
                       itemDiffer = itemDiffer,
-                      fullTag = fullTag,
+                      typeName = typeName,
                       itemTag = itemTag,
+                      asSeq = asSeq,
                     ),
                   )
                 case m: MatchBy.ByFunc[_, _] =>
@@ -336,8 +351,9 @@ object Differ extends DifferGen {
                         isIgnored = isIgnored,
                         matchBy = m.asInstanceOf[DifferOp.MatchBy[A]],
                         itemDiffer = itemDiffer,
-                        fullTag = fullTag,
+                        typeName = typeName,
                         itemTag = itemTag,
+                        asSeq = asSeq,
                       ),
                     )
                   } else {
@@ -357,26 +373,65 @@ object Differ extends DifferGen {
     }
   }
 
-  implicit def setDiffer[F[X] <: Set[X], A](
+  object SeqDiffer {
+    def create[F[_], A](
+      itemDiffer: Differ[A],
+      typeName: TypeName,
+      itemTag: LTag[A],
+      asSeq: AsSeq[F],
+    ): SeqDiffer[F, A] = new SeqDiffer[F, A](
+      isIgnored = false,
+      matchBy = MatchBy.Index,
+      itemDiffer = itemDiffer,
+      typeName = typeName,
+      itemTag = itemTag,
+      asSeq = asSeq,
+    )
+  }
+
+  implicit def setDiffer[F[_], A](
     implicit itemDiffer: Differ[A],
     fullTag: LTag[F[A]],
     itemTag: LTag[A],
-  ): SetDiffer[F, A] =
-    new SetDiffer[F, A](isIgnored = false, itemDiffer, matchFunc = identity, fullTag = fullTag, itemTag = itemTag)
+    asSet: AsSet[F],
+  ): SetDiffer[F, A] = {
+    val typeName = TypeName.fromLightTypeTag(fullTag.tag)
+    SetDiffer.create[F, A](
+      itemDiffer = itemDiffer,
+      typeName = typeName,
+      itemTag = itemTag,
+      asSet = asSet,
+    )
+  }
+
+  object SetDiffer {
+    def create[F[_], A](
+      itemDiffer: Differ[A],
+      typeName: TypeName,
+      itemTag: LTag[A],
+      asSet: AsSet[F],
+    ): SetDiffer[F, A] = new SetDiffer[F, A](
+      isIgnored = false,
+      itemDiffer,
+      matchFunc = identity,
+      typeName = typeName,
+      itemTag = itemTag,
+      asSet = asSet,
+    )
+  }
 
   // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
-  final class SetDiffer[F[X] <: Set[X], A](
+  final class SetDiffer[F[_], A](
     isIgnored: Boolean,
     itemDiffer: Differ[A],
     matchFunc: A => Any,
-    fullTag: LTag[F[A]],
+    typeName: TypeName,
     itemTag: LTag[A],
+    asSet: AsSet[F],
   ) extends Differ[F[A]] {
     override type R = SetResult
 
-    val typeName: TypeName = TypeName.fromTag(fullTag.tag)
-
-    override def diff(inputs: Ior[F[A], F[A]]): R = inputs match {
+    override def diff(inputs: Ior[F[A], F[A]]): R = inputs.bimap(asSet.asSet, asSet.asSet) match {
       case Ior.Left(actual) =>
         SetResult(
           typeName = typeName,
@@ -419,8 +474,9 @@ object Differ extends DifferGen {
                 isIgnored = isIgnored,
                 itemDiffer = updatedItemDiffer,
                 matchFunc = matchFunc,
-                fullTag = fullTag,
+                typeName = typeName,
                 itemTag = itemTag,
+                asSet = asSet,
               )
             }
           } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
@@ -432,8 +488,9 @@ object Differ extends DifferGen {
                   isIgnored = newIsIgnored,
                   itemDiffer = itemDiffer,
                   matchFunc = matchFunc,
-                  fullTag = fullTag,
+                  typeName = typeName,
                   itemTag = itemTag,
+                  asSet = asSet,
                 ),
               )
             case m: MatchBy[_] =>
@@ -446,12 +503,13 @@ object Differ extends DifferGen {
                         isIgnored = isIgnored,
                         itemDiffer = itemDiffer,
                         matchFunc = m.func.asInstanceOf[A => Any],
-                        fullTag = fullTag,
+                        typeName = typeName,
                         itemTag = itemTag,
+                        asSet = asSet,
                       ),
                     )
                   } else {
-                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, fullTag.tag, m.aTag.tag))
+                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, m.aTag.tag, itemTag.tag))
                   }
               }
           }
