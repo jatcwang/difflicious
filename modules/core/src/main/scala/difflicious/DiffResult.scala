@@ -14,7 +14,7 @@ sealed trait DiffResult {
 object DiffResult {
   final case class ListResult(
     typeName: TypeName,
-    items: Vec[DiffResult],
+    items: Vector[DiffResult],
     matchType: MatchType,
     isIgnored: Boolean,
     isOk: Boolean,
@@ -22,7 +22,7 @@ object DiffResult {
 
   final case class SetResult(
     typeName: TypeName,
-    items: Vec[DiffResult],
+    items: Vector[DiffResult],
     matchType: MatchType,
     isIgnored: Boolean,
     isOk: Boolean,
@@ -38,7 +38,7 @@ object DiffResult {
 
   final case class MapResult(
     typeName: TypeName,
-    entries: Vec[MapResult.Entry],
+    entries: Vector[MapResult.Entry],
     matchType: MatchType,
     isIgnored: Boolean,
     isOk: Boolean,

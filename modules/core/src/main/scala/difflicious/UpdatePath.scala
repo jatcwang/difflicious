@@ -1,6 +1,6 @@
 package difflicious
 
-final case class UpdatePath(resolvedSteps: Vec[UpdateStep], unresolvedSteps: List[UpdateStep]) {
+final case class UpdatePath(resolvedSteps: Vector[UpdateStep], unresolvedSteps: List[UpdateStep]) {
   def next: (Option[UpdateStep], UpdatePath) = {
     // FIXME: Will be nicer to have a nicer named alternative than Option
     unresolvedSteps match {

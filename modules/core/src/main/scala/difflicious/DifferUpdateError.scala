@@ -10,7 +10,7 @@ object DifferUpdateError {
   // FIXME: errors should always contain the current differ type?
   final case class NonExistentField(path: UpdatePath, fieldName: String) extends DifferUpdateError
   final case class PathTooLong(path: UpdatePath) extends DifferUpdateError
-  final case class InvalidSubType(path: UpdatePath, allowedTypes: Vec[String]) extends DifferUpdateError
+  final case class InvalidSubType(path: UpdatePath, allowedTypes: Vector[String]) extends DifferUpdateError
   // FIXME: align use of expectedDifferType param
   final case class UnexpectedDifferType(path: UpdatePath, expectedDifferType: String) extends DifferUpdateError
   // FIXME: align use of differType param

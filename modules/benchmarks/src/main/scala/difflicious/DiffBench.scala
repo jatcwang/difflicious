@@ -22,7 +22,7 @@ class DiffBench {
 
   @Benchmark
   def usingDiff(bh: Blackhole): Unit = {
-    bh.consume(checkDiff(big, bigClone))
+    bh.consume(Big.diff.diff(big, bigClone))
   }
 
   @Benchmark
