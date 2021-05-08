@@ -11,6 +11,35 @@ class DifferSpec extends ScalaCheckSuite {
 
   // FIXME: test deep path updates
 
+  test("Tuple2: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Differ[(String, CC)])
+  }
+
+  test("Tuple2: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(Differ[(String, CC)])
+  }
+
+  test("Tuple2: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Differ[(CC, Int)])
+  }
+
+  test("Tuple3: compared like a record") {
+    assertConsoleDiffOutput(
+      Differ[(String, Int, CC)],
+      Tuple3("asdf", 1, CC(1, "1", 1.0)),
+      Tuple3("s", 2, CC(2, "2", 3.0)),
+      s"""Tuple3(
+         |  _1: $R"asdf"$X -> $G"s"$X,
+         |  _2: ${R}1$X -> ${G}2$X,
+         |  _3: CC(
+         |    i: ${R}1$X -> ${G}2$X,
+         |    s: ${R}"1"$X -> ${G}"2"$X,
+         |    dd: ${R}1.0$X -> ${G}3.0$X,
+         |  ),
+         |)""".stripMargin,
+    )
+  }
+
   test("Map: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.mapDiffer[Map, MapKey, CC])
   }

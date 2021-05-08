@@ -41,7 +41,7 @@ object DifferOp {
 
 }
 
-object Differ extends DifferGen {
+object Differ extends DifferTupleInstances with DifferGen {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 

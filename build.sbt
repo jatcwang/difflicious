@@ -41,6 +41,11 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       else
         Seq.empty
     ),
+    Compile / sourceGenerators += Def.task {
+      val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstancesGen.scala"
+      IO.write(file, TupleDifferInstancesGen.fileContent)
+      Seq(file)
+    }.taskValue,
   )
 
 lazy val munit = Project("difflicious-munit", file("modules/munit"))

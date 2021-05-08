@@ -20,7 +20,7 @@ trait DifferGen {
         }
         .to(ListMap),
       isIgnored = false,
-      tag = tag,
+      typeName = DTypeName.fromLightTypeTag(tag.tag),
     )
   }
 

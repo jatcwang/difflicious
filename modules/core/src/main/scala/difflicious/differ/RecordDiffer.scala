@@ -1,6 +1,5 @@
 package difflicious.differ
 
-import izumi.reflect.Tag
 import cats.data.Ior
 
 import scala.collection.immutable.ListMap
@@ -10,11 +9,9 @@ import difflicious._
 final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
   isIgnored: Boolean,
-  tag: Tag[T],
+  typeName: TypeName,
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
-
-  val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
 
   override def diff(inputs: Ior[T, T]): R = inputs match {
     case Ior.Both(obtained, expected) => {
@@ -85,12 +82,12 @@ final class RecordDiffer[T](
         } yield new RecordDiffer[T](
           fieldDiffers = fieldDiffers.updated(fieldName, (getter, newFieldDiffer)),
           isIgnored = this.isIgnored,
-          tag = tag,
+          typeName = typeName,
         )
       case None =>
         op match {
           case DifferOp.SetIgnored(newIgnored) =>
-            Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, tag = tag))
+            Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName))
           case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
         }
 

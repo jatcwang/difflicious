@@ -14,17 +14,6 @@ object DiffResultPrinter {
 
   private val ignoredStr: Str = Str("[IGNORED]").overlay(colorIgnored)
 
-  def consolePrint(
-    res: DiffResult,
-  ): Unit = {
-    println(
-      consoleOutput(
-        res,
-        indentLevel = 0,
-      ).render,
-    )
-  }
-
   def consoleOutput(
     res: DiffResult,
     indentLevel: Int,
