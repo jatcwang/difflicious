@@ -3,8 +3,8 @@ package difflicious
 import cats.kernel.Order
 import io.circe._
 import io.circe.syntax._
-import org.scalacheck.Arbitrary
-import difflicious.Differ.ValueDiffer
+import org.scalacheck.{Arbitrary, Gen}
+import difflicious.Differ.{ValueDiffer, EqualsDiffer}
 
 object testtypes {
 
@@ -22,17 +22,42 @@ object testtypes {
     implicit val order: Order[CC] = Order.by(a => (a.i, a.s, a.dd))
   }
 
-  sealed trait Foo
+  final case class EqClass(int: Int)
 
-  object Foo {
-    implicit val differ: Differ[Foo] = Differ.derive[Foo]
+  object EqClass {
+    implicit val arb: Arbitrary[EqClass] = Arbitrary.apply(Arbitrary.arbitrary[Int].map(EqClass(_)))
+
+    private implicit val encoder: Encoder[EqClass] = c =>
+      Json.obj(
+        "int" := c.int,
+      )
+
+    implicit val differ: EqualsDiffer[EqClass] = Differ.useEquals[EqClass]
   }
 
-  case class Sub1(i: Int) extends Foo
+  sealed trait Sealed
 
-  sealed trait Foo2 extends Foo
-  case class SubSub1(d: Double) extends Foo2
-  case class SubSub2(i: Int) extends Foo2
+  object Sealed {
+    implicit val differ: Differ[Sealed] = Differ.derive[Sealed]
+
+    private val genSub1: Gen[Sub1] = Arbitrary.arbitrary[Int].map(Sub1)
+    private val genSubSub1: Gen[SubSub1] = Arbitrary.arbitrary[Double].map(SubSub1(_))
+    private val genSubSub2: Gen[SubSub2] = Arbitrary.arbitrary[List[CC]].map(SubSub2)
+
+    implicit val arb: Arbitrary[Sealed] = Arbitrary(
+      Gen.oneOf(
+        genSub1,
+        genSubSub1,
+        genSubSub2,
+      ),
+    )
+  }
+
+  case class Sub1(i: Int) extends Sealed
+
+  sealed trait SubSealed extends Sealed
+  case class SubSub1(d: Double) extends SubSealed
+  case class SubSub2(list: List[CC]) extends SubSealed
 
   final case class MapKey(a: Int, b: String)
 

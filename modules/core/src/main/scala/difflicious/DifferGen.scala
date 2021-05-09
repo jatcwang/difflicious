@@ -84,12 +84,35 @@ trait DifferGen {
             case None =>
               Left(DifferUpdateError.InvalidSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
           }
-        case Some(_) => Left(DifferUpdateError.UnexpectedDifferType(nextPath, "sealed trait"))
         case None =>
           op match {
-            case DifferOp.SetIgnored(newIgnored) =>
-              Right(new SealedTraitDiffer[T](ctx, isIgnored = newIgnored))
-            case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+            case ignoreOp @ DifferOp.SetIgnored(newIgnored) => {
+              import cats.implicits._
+              ctx.subtypes.toList
+                .traverse { sub =>
+                  sub.typeclass.updateWith(path, ignoreOp).map { newDiffer =>
+                    Subtype(
+                      name = sub.typeName,
+                      idx = sub.index,
+                      anns = sub.annotationsArray,
+                      tpeAnns = sub.typeAnnotationsArray,
+                      tc = CallByNeed(newDiffer),
+                      isType = sub.cast.isDefinedAt,
+                      asType = sub.cast.apply,
+                    )
+                  }
+                }
+                .map { newSubTypes =>
+                  val newSealedTrait = new SealedTrait(
+                    typeName = ctx.typeName,
+                    subtypesArray = newSubTypes.toArray,
+                    annotationsArray = ctx.annotations.toArray,
+                    typeAnnotationsArray = ctx.typeAnnotations.toArray,
+                  )
+                  new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
+                }
+            }
+            case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "sealed trait"))
           }
 
       }

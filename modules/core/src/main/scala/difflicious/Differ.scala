@@ -10,6 +10,7 @@ import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 
+// FIXME: anyval?
 // FIXME: don't use cats Ior
 trait Differ[T] {
   type R <: DiffResult
@@ -79,7 +80,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     }
   }
 
-  def useEquals[T](implicit encoder: Encoder[T]): ValueDiffer[T] =
+  def useEquals[T](implicit encoder: Encoder[T]): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, encoder = encoder)
 
   // FIXME: better reporting for string error
@@ -181,7 +182,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             case (k, v) =>
               MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
           }.toVector,
-          matchType = MatchType.ObtainedOnly,
+          matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -217,7 +218,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                 ),
               )
             case _: MatchBy[_] =>
-              Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "Map"))
+              Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "MapDiffer"))
           }
       }
     }
@@ -372,6 +373,11 @@ object Differ extends DifferTupleInstances with DifferGen {
     def matchBy[B](func: A => B): SeqDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
       updateWith(UpdatePath.current, MatchBy.ByFunc(func, itemTag)).unsafeGet
+    }
+
+    def matchByIndex: SeqDiffer[F, A] = {
+      // Should always succeed, because method signature guarantees func takes an A
+      updateWith(UpdatePath.current, MatchBy.Index).unsafeGet
     }
   }
 
@@ -575,8 +581,10 @@ object Differ extends DifferTupleInstances with DifferGen {
   private def jsonForKey[T](k: T, keyDiffer: ValueDiffer[T]): Json = {
     keyDiffer.diff(Ior.Left(k)) match {
       case r: ValueResult.ObtainedOnly => r.obtained
+      // $COVERAGE-OFF$
       case r: ValueResult.Both         => r.obtained
       case r: ValueResult.ExpectedOnly => r.expected
+      // $COVERAGE-ON$
     }
   }
 

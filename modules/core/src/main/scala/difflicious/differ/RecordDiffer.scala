@@ -93,11 +93,4 @@ final class RecordDiffer[T](
 
     }
   }
-
-  def ignoreFieldByNameOrFail(fieldName: String): RecordDiffer[T] =
-    updateWith(UpdatePath.of(UpdateStep.DownPath(fieldName)), DifferOp.SetIgnored(true)) match {
-      case Left(_) =>
-        throw new IllegalArgumentException(s"Cannot ignore field: field '$fieldName' is not part of record")
-      case Right(differ) => differ
-    }
 }

@@ -1,15 +1,52 @@
 package difflicious
 
+import difflicious.DifferUpdateError.InvalidDifferOp
 import munit.ScalaCheckSuite
 import difflicious.implicits._
 import difflicious.testutils._
 import difflicious.testtypes._
 import izumi.reflect.macrortti.LTag
+import difflicious.internal.EitherGetSyntax._
+
+import scala.collection.immutable.HashSet
 
 // FIXME:
 class DifferSpec extends ScalaCheckSuite {
 
   // FIXME: test deep path updates
+
+  test("NumericDiffer: updateWith fails if path is not terminal") {
+    assertEquals(
+      Differ[Int].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
+      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty))),
+    )
+  }
+
+  test("EqualsDiffer: updateWith fails if path is not terminal") {
+    assertEquals(
+      EqClass.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("asdf")), DifferOp.ignore),
+      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector(UpdateStep.DownPath("asdf")), List.empty))),
+    )
+  }
+
+  test("EqualsDiffer: updateWith fails if op is not setting ignore") {
+    assertEquals(
+      EqClass.differ.updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
+      Left(InvalidDifferOp(UpdatePath(Vector.empty, List.empty), DifferOp.MatchBy.Index, "EqualsDiffer")),
+    )
+  }
+
+  test("EqualsDiffer: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(EqClass.differ)
+  }
+
+  test("EqualsDiffer: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(EqClass.differ)
+  }
+
+  test("EqualsDiffer: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(EqClass.differ)
+  }
 
   test("Tuple2: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ[(String, CC)])
@@ -21,6 +58,18 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Tuple2: isOk always true if differ is marked ignored") {
     assertIsOkIfIgnoredProp(Differ[(CC, Int)])
+  }
+
+  test("Tuple3: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Differ[Tuple3[String, CC, Int]])
+  }
+
+  test("Tuple3: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(Differ[Tuple3[String, CC, Int]])
+  }
+
+  test("Tuple3: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Differ[Tuple3[String, CC, Int]])
   }
 
   test("Tuple3: compared like a record") {
@@ -90,6 +139,83 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("Map: When only 'obtained' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Map[MapKey, CC]]],
+      List(
+        Map(
+          MapKey(1, "s") -> CC(1, "s1", 1),
+        ),
+      ),
+      List.empty,
+      s"""List(
+         |  ${R}Map(
+         |    {"a":1,"bb":"s"} -> CC(
+         |        i: 1,
+         |        s: "s1",
+         |        dd: 1.0,
+         |      ),
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Map: When only 'expected' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Map[MapKey, CC]]],
+      List.empty,
+      List(
+        Map(
+          MapKey(1, "s") -> CC(1, "s1", 1),
+        ),
+      ),
+      s"""List(
+         |  ${G}Map(
+         |    {"a":1,"bb":"s"} -> CC(
+         |        i: 1,
+         |        s: "s1",
+         |        dd: 1.0,
+         |      ),
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Map: Allow updating value differs using the path 'each'") {
+    val differ = Differ[Map[String, List[CC]]]
+      .updateWith(UpdatePath.of(UpdateStep.DownPath("each")), DifferOp.MatchBy.func((s: CC) => s.i))
+      .unsafeGet
+    val diffResult = differ.diff(
+      Map(
+        "a" -> List(
+          CC(1, "1", 1),
+          CC(2, "2", 2),
+        ),
+      ),
+      Map(
+        "a" -> List(
+          CC(2, "2", 2),
+          CC(1, "1", 1),
+        ),
+      ),
+    )
+    assert(diffResult.isOk)
+  }
+
+  test("Map: Update fails if field name isn't 'each'") {
+    assertEquals(
+      Differ[Map[String, String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
+    )
+  }
+
+  test("Map: Update fails if operation isn't ignore") {
+    assertEquals(
+      Differ[Map[String, String]].updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
+      Left(InvalidDifferOp(UpdatePath(Vector.empty, List.empty), DifferOp.MatchBy.Index, "MapDiffer")),
+    )
+  }
+
   test("Seq: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.seqDiffer[List, CC])
   }
@@ -102,7 +228,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertIsOkIfIgnoredProp(Differ.seqDiffer[Seq, CC])
   }
 
-  test("Seq match entries base on item index by default") {
+  test("Seq: match entries base on item index by default") {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
@@ -137,7 +263,7 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Seq with alternative matchBy should match by the resolved value instead of index") {
+  test("Seq: with alternative matchBy should match by the resolved value instead of index") {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
@@ -174,6 +300,91 @@ class DifferSpec extends ScalaCheckSuite {
          |    dd: 4.0,
          |  )${X},
          |)""".stripMargin,
+    )
+  }
+
+  test("Seq: Can set matchBy to match by index again") {
+    assertConsoleDiffOutput(
+      Differ
+        .seqDiffer[List, Int]
+        .matchBy(identity)
+        .matchByIndex,
+      List(
+        1,
+        2,
+      ),
+      List(
+        2,
+        1,
+      ),
+      s"""List(
+         |  ${R}1$X -> ${G}2$X,
+         |  ${R}2$X -> ${G}1$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Seq: Only 'obtained' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[Map[String, List[Int]]],
+      Map(
+        "a" -> List(1, 2, 3),
+      ),
+      Map.empty[String, List[Int]],
+      s"""Map(
+         |  $R"a"$X -> ${R}List(
+         |      1,
+         |      2,
+         |      3,
+         |    )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Seq: Only 'expected' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[Map[String, List[Int]]],
+      Map.empty[String, List[Int]],
+      Map(
+        "a" -> List(1, 2, 3),
+      ),
+      s"""Map(
+         |  $G"a"$X -> ${G}List(
+         |      1,
+         |      2,
+         |      3,
+         |    )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Seq: Allow modifying element differs using the path 'each'") {
+    val differ = Differ[List[CC]]
+      .updateWith(UpdatePath.of(UpdateStep.DownPath("each"), UpdateStep.DownPath("i")), DifferOp.ignore)
+      .unsafeGet
+    val diffResult = differ.diff(
+      List(
+        CC(
+          1,
+          "2",
+          3.0,
+        ),
+      ),
+      List(
+        CC(
+          2,
+          "2",
+          3.0,
+        ),
+      ),
+    )
+    assert(diffResult.isOk)
+  }
+
+  test("Seq: Update fails if field name isn't 'each'") {
+    assertEquals(
+      Differ[Seq[String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
     )
   }
 
@@ -244,12 +455,87 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("Set: When only 'obtained' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Set[Int]]],
+      List(
+        Set(1, 2),
+      ),
+      List.empty,
+      s"""List(
+         |  ${R}Set(
+         |    1,
+         |    2,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Set: When only 'expected' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Set[Int]]],
+      List.empty,
+      List(
+        Set(1, 2),
+      ),
+      s"""List(
+         |  ${G}Set(
+         |    1,
+         |    2,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Set: Allow modifying element differs using the path 'each'") {
+    val differ = Differ[HashSet[CC]]
+      .updateWith(UpdatePath.of(UpdateStep.DownPath("each"), UpdateStep.DownPath("i")), DifferOp.ignore)
+      .flatMap(
+        _.updateWith(UpdatePath.current, DifferOp.MatchBy.func((c: CC) => c.s)),
+      )
+      .unsafeGet
+    val diffResult = differ.diff(
+      HashSet(
+        CC(
+          1,
+          "2",
+          3.0,
+        ),
+      ),
+      HashSet(
+        CC(
+          2,
+          "2",
+          3.0,
+        ),
+      ),
+    )
+    assert(diffResult.isOk)
+  }
+
+  test("Set: Update fails if field name isn't 'each'") {
+    assertEquals(
+      Differ[Set[String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
+    )
+  }
+
   test("Set: match by where the item tag does not match the expected should fail") {
     assertEquals(
       Differ.setDiffer[Set, CC].updateWith(UpdatePath.current, DifferOp.MatchBy.func[Int, Double](_.toDouble)),
       Left(
         DifferUpdateError
           .MatchByTypeMismatch(UpdatePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
+      ),
+    )
+  }
+
+  test("Set: errors when trying to update the set to match by index (since Set has no inherent order)") {
+    assertEquals(
+      Differ.setDiffer[Set, CC].updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
+      Left(
+        DifferUpdateError
+          .InvalidDifferOp(UpdatePath(Vector.empty, List.empty), DifferOp.MatchBy.Index, "Set"),
       ),
     )
   }
@@ -318,14 +604,179 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Record: Trying to update the differ with MatchBy op should fail") {
     assertEquals(
-      CC.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("dd")), DifferOp.MatchBy.Index),
+      CC.differ.updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
       Left(
         DifferUpdateError
           .InvalidDifferOp(
-            UpdatePath(Vector(UpdateStep.DownPath("dd")), List.empty),
+            UpdatePath(Vector.empty, List.empty),
             DifferOp.MatchBy.Index,
-            "NumericDiffer",
+            "record",
           ),
+      ),
+    )
+  }
+
+  test("Record: ignoreFieldByNameOrFail succeeds if field exists") {
+    assertEquals(
+      CC.differ.updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
+      Left(
+        DifferUpdateError
+          .InvalidDifferOp(
+            UpdatePath(Vector.empty, List.empty),
+            DifferOp.MatchBy.Index,
+            "record",
+          ),
+      ),
+    )
+  }
+
+  test("Sealed trait: should display obtained and expected types when mismatch") {
+    assertConsoleDiffOutput(
+      Sealed.differ,
+      Sub1(1),
+      SubSub1(1),
+      s"""${R}Sub1$X != ${G}SubSub1$X
+        |${R}=== Obtained ===
+        |Sub1(
+        |  i: 1,
+        |)$X
+        |$G=== Expected ===
+        |SubSub1(
+        |  d: 1.0,
+        |)$X""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Sealed.differ)
+  }
+
+  test("Sealed trait: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(Sealed.differ)
+  }
+
+  test("Sealed trait: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Sealed.differ)
+  }
+
+  test("Sealed trait: When only 'obtained' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Sealed]],
+      List(Sub1(1)),
+      List.empty[Sealed],
+      s"""List(
+         |  ${R}Sub1(
+         |    i: 1,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: When only 'expected' is provided when diffing") {
+    assertConsoleDiffOutput(
+      Differ[List[Sealed]],
+      List.empty[Sealed],
+      List(Sub1(1)),
+      s"""List(
+         |  ${G}Sub1(
+         |    i: 1,
+         |  )$X,
+         |)""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: update subtype differs by specifying the subtype name in the path") {
+    val differ = Differ[Sealed]
+      .updateWith(
+        UpdatePath
+          .of(UpdateStep.DownPath("SubSub2"), UpdateStep.DownPath("list")),
+        DifferOp.MatchBy.func((c: CC) => c.i),
+      )
+      .unsafeGet
+
+    val diffResult = differ.diff(
+      SubSub2(
+        List(
+          CC(1, "1", 1),
+          CC(2, "2", 2),
+        ),
+      ),
+      SubSub2(
+        List(
+          CC(2, "2", 2),
+          CC(1, "1", 1),
+        ),
+      ),
+    )
+
+    assert(diffResult.isOk)
+
+    assertConsoleDiffOutput(
+      differ,
+      SubSub2(
+        List(
+          CC(1, "1", 1),
+          CC(2, "2", 2),
+        ),
+      ),
+      SubSub2(
+        List(
+          CC(2, "2", 2),
+          CC(1, "2", 1),
+        ),
+      ),
+      s"""SubSub2(
+        |  list: List(
+        |    CC(
+        |      i: 1,
+        |      s: $R"1"$X -> $G"2"$X,
+        |      dd: 1.0,
+        |    ),
+        |    CC(
+        |      i: 2,
+        |      s: "2",
+        |      dd: 2.0,
+        |    ),
+        |  ),
+        |)""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: error if trying to update with an invalid subtype name as path") {
+    assertEquals(
+      Differ[Sealed]
+        .updateWith(
+          UpdatePath
+            .of(UpdateStep.DownPath("nope"), UpdateStep.DownPath("list")),
+          DifferOp.MatchBy.Index,
+        ),
+      Left(
+        DifferUpdateError.InvalidSubType(
+          UpdatePath(Vector(UpdateStep.DownPath("nope")), List(UpdateStep.DownPath("list"))),
+          Vector(
+            "difflicious.testtypes.Sub1",
+            "difflicious.testtypes.SubSub1",
+            "difflicious.testtypes.SubSub2",
+          ),
+        ),
+      ),
+    )
+  }
+
+  // FIXME: reword desc
+  test("Sealed trait: error if trying to update with an unsupported differ update op") {
+    assertEquals(
+      Differ[Sealed]
+        .updateWith(
+          UpdatePath.current,
+          DifferOp.MatchBy.Index,
+        ),
+      Left(
+        DifferUpdateError.InvalidDifferOp(
+          UpdatePath.current,
+          DifferOp.MatchBy.Index,
+          "sealed trait",
+        ),
       ),
     )
   }
