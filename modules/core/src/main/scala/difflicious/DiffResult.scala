@@ -62,7 +62,6 @@ object DiffResult {
   sealed trait ValueResult extends DiffResult
 
   object ValueResult {
-    // FIXME: rename isOk to isIdentical for value result
     final case class Both(obtained: Json, expected: Json, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.Both
       override def isOk: Boolean = isIgnored || isSame

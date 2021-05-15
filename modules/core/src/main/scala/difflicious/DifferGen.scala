@@ -129,7 +129,13 @@ trait DifferGen {
     DTypeName(
       long = typeName.full,
       short = typeName.short,
-      typeArguments = typeName.typeArguments.map(toDiffliciousTypeName).toList,
+      typeArguments = typeName.typeArguments
+        .map(
+          // $COVERAGE-OFF$ Type params aren't printed when type mismatches
+          toDiffliciousTypeName,
+          // $COVERAGE-ON$
+        )
+        .toList,
     )
   }
 }

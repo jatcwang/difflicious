@@ -1,5 +1,6 @@
 package difflicious
 
+import cats.data.Ior
 import difflicious.DifferUpdateError.InvalidDifferOp
 import munit.ScalaCheckSuite
 import difflicious.implicits._
@@ -10,16 +11,49 @@ import difflicious.internal.EitherGetSyntax._
 
 import scala.collection.immutable.HashSet
 
-// FIXME:
 class DifferSpec extends ScalaCheckSuite {
-
-  // FIXME: test deep path updates
-
   test("NumericDiffer: updateWith fails if path is not terminal") {
     assertEquals(
       Differ[Int].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
       Left(DifferUpdateError.PathTooLong(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty))),
     )
+  }
+
+  test("NumericDiffer: updateWith fails if differ op is SetIgnore") {
+    assertEquals(
+      Differ[Int].updateWith(UpdatePath.current, DifferOp.MatchBy.Index),
+      Left(
+        DifferUpdateError
+          .InvalidDifferOp(UpdatePath(Vector.empty, List.empty), DifferOp.MatchBy.Index, "NumericDiffer"),
+      ),
+    )
+  }
+
+  test("EqualsDiffer: return Both/ObtainedOnly/ExpectedOnly depending on whether both sides are present in diff") {
+    assertConsoleDiffOutput(
+      Differ.mapDiffer[Map, String, EqClass],
+      Map(
+        "a" -> EqClass(1),
+        "b" -> EqClass(2),
+      ),
+      Map(
+        "a" -> EqClass(1),
+        "c" -> EqClass(3),
+      ),
+      s"""Map(
+         |  $R"b"$X -> {"int":2},
+         |  "a" -> {"int":1},
+         |  $G"c"$X -> {"int":3},
+         |)""".stripMargin,
+    )
+  }
+
+  test("EqualsDiffer: ObtainedOnly#isOk should always be false") {
+    assertEquals(EqClass.differ.diff(Ior.Left(EqClass(1))).isOk, false)
+  }
+
+  test("EqualsDiffer: ObtainedOnly#isOk should always be false") {
+    assertEquals(EqClass.differ.diff(Ior.Right(EqClass(1))).isOk, false)
   }
 
   test("EqualsDiffer: updateWith fails if path is not terminal") {
@@ -644,6 +678,23 @@ class DifferSpec extends ScalaCheckSuite {
         |SubSub1(
         |  d: 1.0,
         |)$X""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: should display obtained and expected types when mismatch") {
+    assertConsoleDiffOutput(
+      Sealed.differ,
+      Sub1(1),
+      SubSub1(1),
+      s"""${R}Sub1$X != ${G}SubSub1$X
+         |${R}=== Obtained ===
+         |Sub1(
+         |  i: 1,
+         |)$X
+         |$G=== Expected ===
+         |SubSub1(
+         |  d: 1.0,
+         |)$X""".stripMargin,
     )
   }
 

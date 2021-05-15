@@ -70,9 +70,7 @@ object DiffResultPrinter {
         case r: DiffResult.MismatchTypeResult => {
           val titleStr = Str(r.obtainedTypeName.short).overlay(colorObtained) ++ " != " ++ Str(r.expectedTypeName.short)
             .overlay(colorExpected)
-          val allStr = if (r.isIgnored) {
-            titleStr
-          } else {
+          val allStr = {
             val obtainedStr = consoleOutput(r.obtained, indentLevel)
             val expectedStr = consoleOutput(r.expected, indentLevel)
             val indentSplitStr = Str(s"\n${indentLevel.asSpaces}")

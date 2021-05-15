@@ -9,10 +9,6 @@ object implicits {
     def updateByStrPathOrFail(op: DifferOp, paths: String*): Differ[T] = {
       differ.updateWith(UpdatePath.of(paths.map(UpdateStep.DownPath): _*), op).unsafeGet
     }
-
-    // FIXME:
-    def setIgnored() = {}
-
   }
 
 }
