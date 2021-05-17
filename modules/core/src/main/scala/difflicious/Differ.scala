@@ -192,7 +192,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownPath(fieldName)) =>
+        case Some(fieldName) =>
           if (fieldName == "each") {
             valueDiffer.updateWith(nextPath, op).map { newValueDiffer =>
               new MapDiffer[M, A, B](
@@ -308,7 +308,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownPath(fieldName)) =>
+        case Some(fieldName) =>
           if (fieldName == "each") {
             itemDiffer.updateWith(nextPath, op).map { newItemDiffer =>
               new SeqDiffer[F, A](
@@ -475,7 +475,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownPath(fieldName)) =>
+        case Some(fieldName) =>
           if (fieldName == "each") {
             itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
               new SetDiffer[F, A](

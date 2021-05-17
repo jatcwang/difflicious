@@ -73,7 +73,7 @@ final class RecordDiffer[T](
   override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, RecordDiffer[T]] = {
     val (step, nextPath) = path.next
     step match {
-      case Some(UpdateStep.DownPath(fieldName)) =>
+      case Some(fieldName) =>
         for {
           (getter, fieldDiffer) <- fieldDiffers
             .get(fieldName)

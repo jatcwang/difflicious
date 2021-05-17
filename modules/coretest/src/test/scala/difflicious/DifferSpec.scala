@@ -14,8 +14,8 @@ import scala.collection.immutable.HashSet
 class DifferSpec extends ScalaCheckSuite {
   test("NumericDiffer: updateWith fails if path is not terminal") {
     assertEquals(
-      Differ[Int].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
-      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty))),
+      Differ[Int].updateWith(UpdatePath.of("nono"), DifferOp.ignore),
+      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector("nono"), List.empty))),
     )
   }
 
@@ -58,8 +58,8 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("EqualsDiffer: updateWith fails if path is not terminal") {
     assertEquals(
-      EqClass.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("asdf")), DifferOp.ignore),
-      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector(UpdateStep.DownPath("asdf")), List.empty))),
+      EqClass.differ.updateWith(UpdatePath.of("asdf"), DifferOp.ignore),
+      Left(DifferUpdateError.PathTooLong(UpdatePath(Vector("asdf"), List.empty))),
     )
   }
 
@@ -217,7 +217,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map: Allow updating value differs using the path 'each'") {
     val differ = Differ[Map[String, List[CC]]]
-      .updateWith(UpdatePath.of(UpdateStep.DownPath("each")), DifferOp.MatchBy.func((s: CC) => s.i))
+      .updateWith(UpdatePath.of("each"), DifferOp.MatchBy.func((s: CC) => s.i))
       .unsafeGet
     val diffResult = differ.diff(
       Map(
@@ -238,8 +238,8 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map: Update fails if field name isn't 'each'") {
     assertEquals(
-      Differ[Map[String, String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
-      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
+      Differ[Map[String, String]].updateWith(UpdatePath.of("nono"), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -394,7 +394,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Seq: Allow modifying element differs using the path 'each'") {
     val differ = Differ[List[CC]]
-      .updateWith(UpdatePath.of(UpdateStep.DownPath("each"), UpdateStep.DownPath("i")), DifferOp.ignore)
+      .updateWith(UpdatePath.of("each", "i"), DifferOp.ignore)
       .unsafeGet
     val diffResult = differ.diff(
       List(
@@ -417,8 +417,8 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Seq: Update fails if field name isn't 'each'") {
     assertEquals(
-      Differ[Seq[String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
-      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
+      Differ[Seq[String]].updateWith(UpdatePath.of("nono"), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -523,7 +523,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Set: Allow modifying element differs using the path 'each'") {
     val differ = Differ[HashSet[CC]]
-      .updateWith(UpdatePath.of(UpdateStep.DownPath("each"), UpdateStep.DownPath("i")), DifferOp.ignore)
+      .updateWith(UpdatePath.of("each", "i"), DifferOp.ignore)
       .flatMap(
         _.updateWith(UpdatePath.current, DifferOp.MatchBy.func((c: CC) => c.s)),
       )
@@ -549,8 +549,8 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Set: Update fails if field name isn't 'each'") {
     assertEquals(
-      Differ[Set[String]].updateWith(UpdatePath.of(UpdateStep.DownPath("nono")), DifferOp.ignore),
-      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nono")), List.empty), "nono")),
+      Differ[Set[String]].updateWith(UpdatePath.of("nono"), DifferOp.ignore),
+      Left(DifferUpdateError.NonExistentField(UpdatePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -628,10 +628,10 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Record: Attempting to update nonexistent field fails") {
     assertEquals(
-      CC.differ.updateWith(UpdatePath.of(UpdateStep.DownPath("nonexistent")), DifferOp.ignore),
+      CC.differ.updateWith(UpdatePath.of("nonexistent"), DifferOp.ignore),
       Left(
         DifferUpdateError
-          .NonExistentField(UpdatePath(Vector(UpdateStep.DownPath("nonexistent")), List.empty), "nonexistent"),
+          .NonExistentField(UpdatePath(Vector("nonexistent"), List.empty), "nonexistent"),
       ),
     )
   }
@@ -740,7 +740,7 @@ class DifferSpec extends ScalaCheckSuite {
     val differ = Differ[Sealed]
       .updateWith(
         UpdatePath
-          .of(UpdateStep.DownPath("SubSub2"), UpdateStep.DownPath("list")),
+          .of("SubSub2", "list"),
         DifferOp.MatchBy.func((c: CC) => c.i),
       )
       .unsafeGet
@@ -798,12 +798,12 @@ class DifferSpec extends ScalaCheckSuite {
       Differ[Sealed]
         .updateWith(
           UpdatePath
-            .of(UpdateStep.DownPath("nope"), UpdateStep.DownPath("list")),
+            .of("nope", "list"),
           DifferOp.MatchBy.Index,
         ),
       Left(
         DifferUpdateError.InvalidSubType(
-          UpdatePath(Vector(UpdateStep.DownPath("nope")), List(UpdateStep.DownPath("list"))),
+          UpdatePath(Vector("nope"), List("list")),
           Vector(
             "difflicious.testtypes.Sub1",
             "difflicious.testtypes.SubSub1",

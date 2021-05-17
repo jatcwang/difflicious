@@ -55,7 +55,7 @@ trait DifferGen {
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Typeclass[T]] = {
       val (step, nextPath) = path.next
       step match {
-        case Some(UpdateStep.DownPath(shortName)) =>
+        case Some(shortName) =>
           ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.short == shortName } match {
             case Some((sub, idx)) =>
               sub.typeclass
