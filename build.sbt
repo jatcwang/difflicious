@@ -23,7 +23,7 @@ inThisBuild(
 )
 
 lazy val root = Project("root", file("."))
-  .aggregate(core, coretest, benchmarks, cats)
+  .aggregate(core, coretest, benchmarks, cats, docs)
   .settings(commonSettings, noPublishSettings)
 
 lazy val core = Project("difflicious-core", file("modules/core"))
@@ -78,7 +78,7 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
   )
 
 lazy val docs = project
-  .dependsOn(core, coretest)
+  .dependsOn(core, coretest, cats, munit)
   .enablePlugins(MicrositesPlugin)
   .settings(
     commonSettings,
