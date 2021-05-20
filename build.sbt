@@ -163,6 +163,8 @@ val setupJekyllSteps = Seq(
   ),
 )
 
+ThisBuild / githubWorkflowBuildPreamble ++= setupJekyllSteps
+
 ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
 
 // Add makeMicrosite to the build step

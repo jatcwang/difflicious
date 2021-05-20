@@ -1,0 +1,14 @@
+/*.highlighter-rouge {*/
+/*  color: #c7254e;*/
+/*  background-color: #f9f2f4;*/
+/*}*/
+
+/*.hljs-string {*/
+/*  line-height: inherit !important;*/
+/*}*/
+
+.diff-render {
+    background: aliceblue;
+    border-radius: 5px;
+    padding: 5px;
+}

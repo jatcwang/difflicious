@@ -6,7 +6,7 @@ import munit.Location
 
 trait MUnitDiff {
   implicit class DifferExtensions[A](differ: Differ[A]) {
-    def assertDiff(obtained: A, expected: A)(implicit loc: Location): Unit = {
+    def assertNoDiff(obtained: A, expected: A)(implicit loc: Location): Unit = {
       val result = differ.diff(obtained, expected)
       if (!result.isOk)
         fail(DiffResultPrinter.consoleOutput(result, 0).render)
