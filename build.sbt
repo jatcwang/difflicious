@@ -91,7 +91,7 @@ lazy val docs = project
     micrositeDescription := "Flexible test assertions with actionable results",
     micrositeUrl := "https://jatcwang.github.io",
     micrositeBaseUrl := "/difflicious",
-    micrositeDocumentationUrl := s"${micrositeBaseUrl.value}/docs/difflicious",
+    micrositeDocumentationUrl := s"${micrositeBaseUrl.value}/docs/overview",
     micrositeAuthor := "Jacob Wang",
     micrositeGithubOwner := "jatcwang",
     micrositeGithubRepo := "difflicious",
@@ -103,7 +103,13 @@ lazy val docs = project
     // Disble any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
     // use implicit conversion to string
     scalacOptions ~= { opts =>
-      val extraOpts = Seq("-Wconf:msg=\".*method any2stringadd.*\":i")
+      val extraOpts =
+        Seq(
+          "-Wconf:msg=\".*method any2stringadd.*\":i",
+          "-Wconf:msg=\".*The outer reference in this type test.*\":s", // This warning shows up if we use *final* case class in code blocks
+          "-Wconf:msg=\".*method right in class Either.*\":s",
+          "-Wconf:msg=\".*method get in class RightProjection.*\":s",
+        )
       val removes = Set("-Wdead-code", "-Ywarn-dead-code") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)
     },

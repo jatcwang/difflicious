@@ -46,6 +46,8 @@ object Differ extends DifferTupleInstances with DifferGen {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
+  // FIXME: better string diff (edit distance and a description of how to get there? this can help especially in cases like extra space or special char)
+
   // FIXME: need tag
   trait ValueDiffer[T] extends Differ[T] {
     final override type R = DiffResult.ValueResult
