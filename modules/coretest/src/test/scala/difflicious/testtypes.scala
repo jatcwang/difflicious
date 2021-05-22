@@ -1,8 +1,6 @@
 package difflicious
 
 import cats.kernel.Order
-import io.circe._
-import io.circe.syntax._
 import org.scalacheck.{Arbitrary, Gen}
 import difflicious.Differ.{ValueDiffer, EqualsDiffer}
 
@@ -27,12 +25,7 @@ object testtypes {
   object EqClass {
     implicit val arb: Arbitrary[EqClass] = Arbitrary.apply(Arbitrary.arbitrary[Int].map(EqClass(_)))
 
-    private implicit val encoder: Encoder[EqClass] = c =>
-      Json.obj(
-        "int" := c.int,
-      )
-
-    implicit val differ: EqualsDiffer[EqClass] = Differ.useEquals[EqClass]
+    implicit val differ: EqualsDiffer[EqClass] = Differ.useEquals[EqClass](_.toString)
   }
 
   sealed trait Sealed
@@ -62,8 +55,7 @@ object testtypes {
   final case class MapKey(a: Int, b: String)
 
   object MapKey {
-    private implicit val encoder: Encoder[MapKey] = value => Json.obj("a" -> value.a.asJson, "bb" -> value.b.asJson)
-    implicit val differ: ValueDiffer[MapKey] = Differ.useEquals
+    implicit val differ: ValueDiffer[MapKey] = Differ.useEquals(_.toString)
 
     implicit val arb: Arbitrary[MapKey] = Arbitrary(for {
       a <- Arbitrary.arbitrary[Int]

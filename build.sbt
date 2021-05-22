@@ -31,7 +31,6 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion, // FIXME:
-      "io.circe" %% "circe-generic" % "0.14.0-M5", // FIXME:
       "com.propensive" %% "magnolia" % "0.17.0",
       "dev.zio" %% "izumi-reflect" % "1.1.1",
       "com.lihaoyi" %% "fansi" % "0.2.12",

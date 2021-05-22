@@ -3,7 +3,6 @@ package difflicious
 import difflicious.utils.TypeName
 
 import scala.collection.immutable.ListMap
-import io.circe.Json
 
 sealed trait DiffResult {
   def isIgnored: Boolean
@@ -45,7 +44,7 @@ object DiffResult {
   ) extends DiffResult
 
   object MapResult {
-    final case class Entry(key: Json, value: DiffResult)
+    final case class Entry(key: String, value: DiffResult)
   }
 
   final case class MismatchTypeResult(
@@ -62,15 +61,15 @@ object DiffResult {
   sealed trait ValueResult extends DiffResult
 
   object ValueResult {
-    final case class Both(obtained: Json, expected: Json, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
+    final case class Both(obtained: String, expected: String, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.Both
       override def isOk: Boolean = isIgnored || isSame
     }
-    final case class ObtainedOnly(obtained: Json, isIgnored: Boolean) extends ValueResult {
+    final case class ObtainedOnly(obtained: String, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.ObtainedOnly
       override def isOk: Boolean = false
     }
-    final case class ExpectedOnly(expected: Json, isIgnored: Boolean) extends ValueResult {
+    final case class ExpectedOnly(expected: String, isIgnored: Boolean) extends ValueResult {
       override def matchType: MatchType = MatchType.ExpectedOnly
       override def isOk: Boolean = false
     }

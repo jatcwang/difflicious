@@ -55,7 +55,7 @@ object DiffResultPrinter {
             .map {
               case Entry(keyJson, valueDiff) => {
                 val keyStr =
-                  colorOnMatchType(str = Str(keyJson.noSpaces), matchType = valueDiff.matchType)
+                  colorOnMatchType(str = Str(keyJson), matchType = valueDiff.matchType)
                 val valueStr = consoleOutput(valueDiff, indentLevel + 2)
                 keyStr ++ " -> " ++ valueStr ++ ","
               }
@@ -83,16 +83,16 @@ object DiffResultPrinter {
         case result: DiffResult.ValueResult =>
           result match {
             case r: ValueResult.Both => {
-              val obtainedStr = Str(r.obtained.noSpaces)
+              val obtainedStr = Str(r.obtained)
               if (r.isSame) {
                 obtainedStr
               } else {
-                val expectedStr = Str(r.expected.noSpaces)
+                val expectedStr = Str(r.expected)
                 obtainedStr.overlay(colorObtained) ++ " -> " ++ expectedStr.overlay(colorExpected)
               }
             }
-            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained.noSpaces)
-            case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected.noSpaces)
+            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained)
+            case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected)
           }
       }
   }

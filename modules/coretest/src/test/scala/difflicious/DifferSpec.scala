@@ -41,9 +41,9 @@ class DifferSpec extends ScalaCheckSuite {
         "c" -> EqClass(3),
       ),
       s"""Map(
-         |  $R"b"$X -> {"int":2},
-         |  "a" -> {"int":1},
-         |  $G"c"$X -> {"int":3},
+         |  $R"b"$X -> EqClass(2),
+         |  "a" -> EqClass(1),
+         |  $G"c"$X -> EqClass(3),
          |)""".stripMargin,
     )
   }
@@ -149,22 +149,22 @@ class DifferSpec extends ScalaCheckSuite {
         MapKey(3, "se") -> CC(3, "s3", 2),
       ),
       s"""Map(
-         |  $R{"a":2,"bb":"sa"}$X -> ${R}CC(
+         |  ${R}MapKey(2,sa)$X -> ${R}CC(
          |      i: $justIgnoredStr,
          |      s: "s2",
          |      dd: 2.0,
          |    )$X,
-         |  {"a":1,"bb":"s"} -> CC(
+         |  MapKey(1,s) -> CC(
          |      i: $grayIgnoredStr,
          |      s: "s1",
          |      dd: 1.0,
          |    ),
-         |  {"a":4,"bb":"diff"} -> CC(
+         |  MapKey(4,diff) -> CC(
          |      i: $grayIgnoredStr,
          |      s: $R"s4"$X -> $G"sx"$X,
          |      dd: 1.0,
          |    ),
-         |  $G{"a":3,"bb":"se"}$X -> ${G}CC(
+         |  ${G}MapKey(3,se)$X -> ${G}CC(
          |      i: $justIgnoredStr,
          |      s: "s3",
          |      dd: 2.0,
@@ -184,7 +184,7 @@ class DifferSpec extends ScalaCheckSuite {
       List.empty,
       s"""List(
          |  ${R}Map(
-         |    {"a":1,"bb":"s"} -> CC(
+         |    MapKey(1,s) -> CC(
          |        i: 1,
          |        s: "s1",
          |        dd: 1.0,
@@ -205,7 +205,7 @@ class DifferSpec extends ScalaCheckSuite {
       ),
       s"""List(
          |  ${G}Map(
-         |    {"a":1,"bb":"s"} -> CC(
+         |    MapKey(1,s) -> CC(
          |        i: 1,
          |        s: "s1",
          |        dd: 1.0,

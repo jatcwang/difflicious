@@ -1,5 +1,4 @@
 package difflicious
-import io.circe.{Encoder, Json}
 import cats.data.Ior
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.DifferOp.MatchBy
@@ -55,20 +54,20 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def diff(inputs: Ior[T, T]): R
   }
 
-  final class EqualsDiffer[T](isIgnored: Boolean, encoder: Encoder[T]) extends ValueDiffer[T] {
+  final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) extends ValueDiffer[T] {
     override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
       case Ior.Both(obtained, expected) =>
         DiffResult.ValueResult
           .Both(
-            obtained = encoder.apply(obtained),
-            expected = encoder.apply(expected),
+            obtained = valueToString(obtained),
+            expected = valueToString(expected),
             isSame = obtained == expected,
             isIgnored = isIgnored,
           )
       case Ior.Left(obtained) =>
-        DiffResult.ValueResult.ObtainedOnly(encoder.apply(obtained), isIgnored = isIgnored)
+        DiffResult.ValueResult.ObtainedOnly(valueToString(obtained), isIgnored = isIgnored)
       case Ior.Right(expected) =>
-        DiffResult.ValueResult.ExpectedOnly(encoder.apply(expected), isIgnored = isIgnored)
+        DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
     }
 
     override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
@@ -76,19 +75,19 @@ object Differ extends DifferTupleInstances with DifferGen {
       (step, op) match {
         case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
         case (None, DifferOp.SetIgnored(newIgnored)) =>
-          Right(new EqualsDiffer[T](isIgnored = newIgnored, encoder = encoder))
+          Right(new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString))
         case (None, otherOp) => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
 
-  def useEquals[T](implicit encoder: Encoder[T]): EqualsDiffer[T] =
-    new EqualsDiffer[T](isIgnored = false, encoder = encoder)
+  def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
+    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
 
   // FIXME: better reporting for string error
-  implicit val stringDiff: ValueDiffer[String] = useEquals[String]
-  implicit val charDiff: ValueDiffer[Char] = useEquals[Char]
-  implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean]
+  implicit val stringDiff: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
+  implicit val charDiff: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
+  implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
 
   // FIXME: java bigint and decimal
   implicit val intDiff: NumericDiffer[Int] = NumericDiffer.make[Int]
@@ -137,12 +136,12 @@ object Differ extends DifferTupleInstances with DifferGen {
             expected.get(k) match {
               case Some(expectedV) =>
                 both += MapResult.Entry(
-                  jsonForKey(k, keyDiffer),
+                  mapKeyToString(k, keyDiffer),
                   valueDiffer.diff(actualV, expectedV),
                 )
               case None =>
                 obtainedOnly += MapResult.Entry(
-                  jsonForKey(k, keyDiffer),
+                  mapKeyToString(k, keyDiffer),
                   valueDiffer.diff(Ior.Left(actualV)),
                 )
             }
@@ -153,7 +152,7 @@ object Differ extends DifferTupleInstances with DifferGen {
               // Do nothing, already compared when iterating through obtained
             } else {
               expectedOnly += MapResult.Entry(
-                jsonForKey(k, keyDiffer),
+                mapKeyToString(k, keyDiffer),
                 valueDiffer.diff(Ior.Right(expectedV)),
               )
             }
@@ -171,7 +170,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           typeName = typeName,
           entries = obtained.map {
             case (k, v) =>
-              MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Left(v)))
+              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(Ior.Left(v)))
           }.toVector,
           matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
@@ -182,7 +181,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           typeName = typeName,
           entries = expected.map {
             case (k, v) =>
-              MapResult.Entry(jsonForKey(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
+              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
           }.toVector,
           matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
@@ -580,7 +579,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     (results.toVector, allIsOk)
   }
 
-  private def jsonForKey[T](k: T, keyDiffer: ValueDiffer[T]): Json = {
+  private def mapKeyToString[T](k: T, keyDiffer: ValueDiffer[T]): String = {
     keyDiffer.diff(Ior.Left(k)) match {
       case r: ValueResult.ObtainedOnly => r.obtained
       // $COVERAGE-OFF$
