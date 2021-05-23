@@ -175,10 +175,40 @@ val differByName2 = defaultDiffer.updateWith(UpdatePath.current, MatchBy.func((p
 
 # Map differ
 
-Map differ match entries with the same keys and compare the values.
+Map differ match entries with the same keys and compare the values. It will also indicate which 
+keys are missing from either side.
 
-It requires a `ValueDiffer` instance for the map key type, and a `Differ` instance for the value
+It requires 
+
+- a `ValueDiffer` instance for the map key type (for display purposes)
+- a `Differ` instance for the map value type
 
 ```scala mdoc:silent
-Differ.mapDiffer[Map, ]
+Differ.mapDiffer[Map, String, Person].diff(
+  Map(
+    "a" -> alice,
+    "b" -> bob
+  ),
+  Map(
+    "b" -> bob50,
+    "c" -> charles
+  ),
+)
 ```
+
+<pre class="diff-render">
+Map(
+  <span style="color: red;">"a"</span> -> <span style="color: red;">Person(
+      name: "Alice",
+      age: 30,
+    )</span>,
+  "b" -> Person(
+      name: "Bob",
+      age: <span style="color: red;">25</span> -> <span style="color: green;">50</span>,
+    ),
+  <span style="color: green;">"c"</span> -> <span style="color: green;">Person(
+      name: "Charles",
+      age: 80,
+    )</span>,
+)
+</pre>
