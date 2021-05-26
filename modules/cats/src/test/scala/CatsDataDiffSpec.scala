@@ -81,9 +81,9 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
-  test("NonEmptyList: matchBy") {
+  test("NonEmptyList: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyList, CC]].matchBy(_.s),
+      implicitly[SeqDiffer[NonEmptyList, CC]].pairBy(_.s),
       NonEmptyList.of(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -144,9 +144,9 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
-  test("NonEmptyVector: matchBy") {
+  test("NonEmptyVector: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyVector, CC]].matchBy(_.s),
+      implicitly[SeqDiffer[NonEmptyVector, CC]].pairBy(_.s),
       NonEmptyVector.of(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -207,9 +207,9 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
-  test("Chain: matchBy") {
+  test("Chain: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[Chain, CC]].matchBy(_.s),
+      implicitly[SeqDiffer[Chain, CC]].pairBy(_.s),
       Chain(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -270,9 +270,9 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
-  test("NonEmptyChain: matchBy") {
+  test("NonEmptyChain: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyChain, CC]].matchBy(_.s),
+      implicitly[SeqDiffer[NonEmptyChain, CC]].pairBy(_.s),
       NonEmptyChain(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -338,9 +338,9 @@ class CatsDataDiffSpec extends FunSuite {
     )
   }
 
-  test("NonEmptySet: with matchBy") {
+  test("NonEmptySet: with pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SetDiffer[NonEmptySet, CC]].matchBy(_.i),
+      implicitly[SetDiffer[NonEmptySet, CC]].pairBy(_.i),
       NonEmptySet.of(
         CC(1, "1", 1),
         CC(2, "2", 2),

@@ -8,11 +8,11 @@ sealed trait DifferUpdateError
 
 object DifferUpdateError {
   // FIXME: errors should always contain the current differ type?
-  final case class NonExistentField(path: UpdatePath, fieldName: String) extends DifferUpdateError
-  final case class PathTooLong(path: UpdatePath) extends DifferUpdateError
-  final case class InvalidSubType(path: UpdatePath, allowedTypes: Vector[String]) extends DifferUpdateError
+  final case class NonExistentField(path: ConfigurePath, fieldName: String) extends DifferUpdateError
+  final case class PathTooLong(path: ConfigurePath) extends DifferUpdateError
+  final case class InvalidSubType(path: ConfigurePath, allowedTypes: Vector[String]) extends DifferUpdateError
   // FIXME: align use of differType param
-  final case class InvalidDifferOp(path: UpdatePath, op: DifferOp, differType: String) extends DifferUpdateError
-  final case class MatchByTypeMismatch(path: UpdatePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
+  final case class InvalidDifferOp(path: ConfigurePath, op: ConfigureOp, differType: String) extends DifferUpdateError
+  final case class PairByTypeMismatch(path: ConfigurePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
       extends DifferUpdateError
 }

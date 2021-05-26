@@ -11,13 +11,13 @@ The central concept of Difflicious is `Differ[A]`.
 What can you do with a `Differ[A]`?
 
 - It can compare two values of type `A` with the `diff` method
-- Its diffing logic can be changed using `updateWith` method
+- Its diffing logic can be changed using `configure` method
 
 ```scala
 trait Differ[T] {
   def diff(inputs: Ior[T, T]): DiffResult
 
-  def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[T]]
+  def configure(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
 }
 ```
 

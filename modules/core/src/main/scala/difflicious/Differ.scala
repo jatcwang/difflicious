@@ -1,7 +1,7 @@
 package difflicious
 import cats.data.Ior
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
-import difflicious.DifferOp.MatchBy
+import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
@@ -9,7 +9,6 @@ import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 
-// FIXME: anyval?
 // FIXME: don't use cats Ior
 trait Differ[T] {
   type R <: DiffResult
@@ -19,22 +18,38 @@ trait Differ[T] {
   final def diff(obtained: T, expected: T): R = diff(Ior.Both(obtained, expected))
 
   /**
-    * Create an new Differ instance where the given path will produce an ignored DiffResult
+    * Attempt to change the configuration of this Differ.
+    * If successful, a new differ with the updated configuration will be returned.
+    *
+    * The configuration change can fail due to
+    * - bad "path" that does not match the internal structure of the Differ
+    * - The path resolved correctly, but the configuration update operation cannot be applied for that part of the Differ
+    *   (e.g. wrong type or wrong operation)
+    *
+    * @param path The path to traverse to the sub-Differ
+    * @param operation The configuration change operation you want to perform on the target sub-Differ
     */
-  def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Differ[T]]
+  def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
 }
 
-sealed trait DifferOp
+/**
+  * The configuration change operation we want to perform on a differ.
+  * For example we might want to:
+  *
+  * - Mark the current differ as ignored so its comparison never fails
+  * - Change a SeqDiffer to pair by a field instead of index
+  */
+sealed trait ConfigureOp
 
-object DifferOp {
+object ConfigureOp {
   val ignore: SetIgnored = SetIgnored(true)
   val unignored: SetIgnored = SetIgnored(false)
 
-  final case class SetIgnored(isIgnored: Boolean) extends DifferOp
-  sealed trait MatchBy[-A] extends DifferOp
-  object MatchBy {
-    case object Index extends MatchBy[Any]
-    final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends MatchBy[A]
+  final case class SetIgnored(isIgnored: Boolean) extends ConfigureOp
+  sealed trait PairBy[-A] extends ConfigureOp
+  object PairBy {
+    case object Index extends PairBy[Any]
+    final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends PairBy[A]
 
     def func[A, B](func: A => B)(implicit aTag: LTag[A]): ByFunc[A, B] = ByFunc(func, aTag)
   }
@@ -70,11 +85,11 @@ object Differ extends DifferTupleInstances with DifferGen {
         DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
       val (step, nextPath) = path.next
       (step, op) match {
         case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
-        case (None, DifferOp.SetIgnored(newIgnored)) =>
+        case (None, ConfigureOp.SetIgnored(newIgnored)) =>
           Right(new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString))
         case (None, otherOp) => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
@@ -190,12 +205,12 @@ object Differ extends DifferTupleInstances with DifferGen {
     }
 
     // FIXME:
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
           if (fieldName == "each") {
-            valueDiffer.updateWith(nextPath, op).map { newValueDiffer =>
+            valueDiffer.configureRaw(nextPath, op).map { newValueDiffer =>
               new MapDiffer[M, A, B](
                 isIgnored = isIgnored,
                 keyDiffer = keyDiffer,
@@ -208,7 +223,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             Left(DifferUpdateError.NonExistentField(path = nextPath, fieldName))
         case None =>
           op match {
-            case DifferOp.SetIgnored(newIsIgnored) =>
+            case ConfigureOp.SetIgnored(newIsIgnored) =>
               Right(
                 new MapDiffer[M, A, B](
                   isIgnored = newIsIgnored,
@@ -218,7 +233,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                   asMap = asMap,
                 ),
               )
-            case _: MatchBy[_] =>
+            case _: PairBy[_] =>
               Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "MapDiffer"))
           }
       }
@@ -242,7 +257,7 @@ object Differ extends DifferTupleInstances with DifferGen {
 
   final class SeqDiffer[F[_], A](
     isIgnored: Boolean,
-    matchBy: MatchBy[A],
+    pairBy: PairBy[A],
     itemDiffer: Differ[A],
     typeName: TypeName,
     itemTag: LTag[A],
@@ -252,8 +267,8 @@ object Differ extends DifferTupleInstances with DifferGen {
 
     override def diff(inputs: Ior[F[A], F[A]]): R = inputs.bimap(asSeq.asSeq, asSeq.asSeq) match {
       case Ior.Both(actual, expected) => {
-        matchBy match {
-          case MatchBy.Index => {
+        pairBy match {
+          case PairBy.Index => {
             val diffResults = actual
               .map(Some(_))
               .zipAll(expected.map(Some(_)), None, None)
@@ -272,8 +287,8 @@ object Differ extends DifferTupleInstances with DifferGen {
               isOk = isIgnored || diffResults.forall(_.isOk),
             )
           }
-          case MatchBy.ByFunc(func, _) => {
-            val (results, allIsOk) = diffMatchByFunc(actual, expected, func, itemDiffer)
+          case PairBy.ByFunc(func, _) => {
+            val (results, allIsOk) = diffPairByFunc(actual, expected, func, itemDiffer)
             ListResult(
               typeName = typeName,
               items = results,
@@ -306,15 +321,15 @@ object Differ extends DifferTupleInstances with DifferGen {
         )
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
           if (fieldName == "each") {
-            itemDiffer.updateWith(nextPath, op).map { newItemDiffer =>
+            itemDiffer.configureRaw(nextPath, op).map { newItemDiffer =>
               new SeqDiffer[F, A](
                 isIgnored = isIgnored,
-                matchBy = matchBy,
+                pairBy = pairBy,
                 itemDiffer = newItemDiffer,
                 typeName = typeName,
                 itemTag = itemTag,
@@ -324,36 +339,36 @@ object Differ extends DifferTupleInstances with DifferGen {
           } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
-            case DifferOp.SetIgnored(newIsIgnored) =>
+            case ConfigureOp.SetIgnored(newIsIgnored) =>
               Right(
                 new SeqDiffer[F, A](
                   isIgnored = newIsIgnored,
-                  matchBy = matchBy,
+                  pairBy = pairBy,
                   itemDiffer = itemDiffer,
                   typeName = typeName,
                   itemTag = itemTag,
                   asSeq = asSeq,
                 ),
               )
-            case matchBy: DifferOp.MatchBy[_] =>
+            case matchBy: ConfigureOp.PairBy[_] =>
               matchBy match {
-                case MatchBy.Index =>
+                case PairBy.Index =>
                   Right(
                     new SeqDiffer[F, A](
                       isIgnored = isIgnored,
-                      matchBy = MatchBy.Index,
+                      pairBy = PairBy.Index,
                       itemDiffer = itemDiffer,
                       typeName = typeName,
                       itemTag = itemTag,
                       asSeq = asSeq,
                     ),
                   )
-                case m: MatchBy.ByFunc[_, _] =>
+                case m: PairBy.ByFunc[_, _] =>
                   if (m.aTag.tag == itemTag.tag) {
                     Right(
                       new SeqDiffer[F, A](
                         isIgnored = isIgnored,
-                        matchBy = m.asInstanceOf[DifferOp.MatchBy[A]],
+                        pairBy = m.asInstanceOf[ConfigureOp.PairBy[A]],
                         itemDiffer = itemDiffer,
                         typeName = typeName,
                         itemTag = itemTag,
@@ -363,7 +378,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                   } else {
                     Left(
                       DifferUpdateError
-                        .MatchByTypeMismatch(nextPath, obtainedTag = m.aTag.tag, expectedTag = itemTag.tag),
+                        .PairByTypeMismatch(nextPath, obtainedTag = m.aTag.tag, expectedTag = itemTag.tag),
                     )
                   }
               }
@@ -371,14 +386,14 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
-    def matchBy[B](func: A => B): SeqDiffer[F, A] = {
+    def pairBy[B](func: A => B): SeqDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
-      updateWith(UpdatePath.current, MatchBy.ByFunc(func, itemTag)).unsafeGet
+      configureRaw(ConfigurePath.current, PairBy.ByFunc(func, itemTag)).unsafeGet
     }
 
-    def matchByIndex: SeqDiffer[F, A] = {
+    def pairByIndex: SeqDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
-      updateWith(UpdatePath.current, MatchBy.Index).unsafeGet
+      configureRaw(ConfigurePath.current, PairBy.Index).unsafeGet
     }
   }
 
@@ -390,7 +405,7 @@ object Differ extends DifferTupleInstances with DifferGen {
       asSeq: AsSeq[F],
     ): SeqDiffer[F, A] = new SeqDiffer[F, A](
       isIgnored = false,
-      matchBy = MatchBy.Index,
+      pairBy = PairBy.Index,
       itemDiffer = itemDiffer,
       typeName = typeName,
       itemTag = itemTag,
@@ -462,7 +477,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           isOk = isIgnored,
         )
       case Ior.Both(obtained, expected) => {
-        val (results, overallIsSame) = diffMatchByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
+        val (results, overallIsSame) = diffPairByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
         SetResult(
           typeName = typeName,
           items = results,
@@ -473,12 +488,12 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
           if (fieldName == "each") {
-            itemDiffer.updateWith(nextPath, op).map { updatedItemDiffer =>
+            itemDiffer.configureRaw(nextPath, op).map { updatedItemDiffer =>
               new SetDiffer[F, A](
                 isIgnored = isIgnored,
                 itemDiffer = updatedItemDiffer,
@@ -491,7 +506,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
-            case DifferOp.SetIgnored(newIsIgnored) =>
+            case ConfigureOp.SetIgnored(newIsIgnored) =>
               Right(
                 new SetDiffer[F, A](
                   isIgnored = newIsIgnored,
@@ -502,10 +517,10 @@ object Differ extends DifferTupleInstances with DifferGen {
                   asSet = asSet,
                 ),
               )
-            case m: MatchBy[_] =>
+            case m: PairBy[_] =>
               m match {
-                case MatchBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
-                case m: MatchBy.ByFunc[_, _] =>
+                case PairBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
+                case m: PairBy.ByFunc[_, _] =>
                   if (m.aTag.tag == itemTag.tag) {
                     Right(
                       new SetDiffer[F, A](
@@ -518,7 +533,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                       ),
                     )
                   } else {
-                    Left(DifferUpdateError.MatchByTypeMismatch(nextPath, m.aTag.tag, itemTag.tag))
+                    Left(DifferUpdateError.PairByTypeMismatch(nextPath, m.aTag.tag, itemTag.tag))
                   }
               }
           }
@@ -526,16 +541,16 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
-    def matchBy[B](func: A => B): SetDiffer[F, A] = {
+    def pairBy[B](func: A => B): SetDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
-      updateWith(UpdatePath.current, MatchBy.ByFunc(func, itemTag)).unsafeGet
+      configureRaw(ConfigurePath.current, PairBy.ByFunc(func, itemTag)).unsafeGet
     }
   }
 
   // Given two lists of item, find "matching" items using te provided function
   // (where "matching" means ==). For example we might want to items by
   // person name.
-  private def diffMatchByFunc[A](
+  private def diffPairByFunc[A](
     obtained: Seq[A],
     expected: Seq[A],
     func: A => Any,

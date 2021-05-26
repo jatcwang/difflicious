@@ -52,14 +52,14 @@ trait DifferGen {
     }
 
     // FIXME: test: two layers of sealed trait. Will probably need a "stack" of subtype name in the API response?
-    override def updateWith(path: UpdatePath, op: DifferOp): Either[DifferUpdateError, Typeclass[T]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, Typeclass[T]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(shortName) =>
           ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.short == shortName } match {
             case Some((sub, idx)) =>
               sub.typeclass
-                .updateWith(nextPath, op)
+                .configureRaw(nextPath, op)
                 .map { newDiffer =>
                   Subtype(
                     name = sub.typeName,
@@ -86,11 +86,11 @@ trait DifferGen {
           }
         case None =>
           op match {
-            case ignoreOp @ DifferOp.SetIgnored(newIgnored) => {
+            case ignoreOp @ ConfigureOp.SetIgnored(newIgnored) => {
               import cats.implicits._
               ctx.subtypes.toList
                 .traverse { sub =>
-                  sub.typeclass.updateWith(path, ignoreOp).map { newDiffer =>
+                  sub.typeclass.configureRaw(path, ignoreOp).map { newDiffer =>
                     Subtype(
                       name = sub.typeName,
                       idx = sub.index,
@@ -112,7 +112,7 @@ trait DifferGen {
                   new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
                 }
             }
-            case _: DifferOp.MatchBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "sealed trait"))
+            case _: ConfigureOp.PairBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "sealed trait"))
           }
 
       }

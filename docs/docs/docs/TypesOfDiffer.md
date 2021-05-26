@@ -1,7 +1,7 @@
 ---
 layout: docs
 title:  "Types of Differ"
-permalink: docs/typesofdiffer
+permalink: docs/types-of-differs
 ---
 
 # Types of Differs
@@ -11,11 +11,11 @@ There are many types of basic Differs, each producing different kind of results.
 // FIXME: Document how to ignore/update for all differs
 // FIXME: value differ
 
-# Differs for sealed traits and case classes (i.e. Algebraic Data Types)
+# Differs for Algebraic Data Types (enums, sealed traits and case classes)
 
 You can derive `Differ` for a case class provided that there is a `Differ` instance for all your fields.
 
-Similarly, you can derive a `Differ` for a sealed trait (Also called "Enum" in Scala 3) provided that we're able to 
+Similarly, you can derive a `Differ` for a sealed trait (Also called **Enums** in Scala 3) provided that we're able to 
 derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)
 
 // FIXME delme
@@ -123,17 +123,17 @@ List(
 )
 </pre>
 
-## Match by field
+## Pair by field
 
-In many test scenarios we actually don't care about order of things, as long as the two sequences 
+In many test scenarios we actually don't care about order of elements, as long as the two sequences 
 contains the same elements. One example of this is inserting multiple records into a database and then retrieving them
 , where you expect the same records to be returned by not necessarily in the original order.
 
-In this case, you can configure a `SeqDiffer` to match pairs by a field instead.
+In this case, you can configure a `SeqDiffer` to pair by a field instead.
 
 ```scala mdoc:silent
 import difflicious.UpdatePath
-import difflicious.DifferOp.MatchBy
+import difflicious.DifferOp.PairBy
 import difflicious.Differ.SeqDiffer
 ```
 
@@ -212,3 +212,45 @@ Map(
     )</span>,
 )
 </pre>
+
+# Set differ
+
+Set differ can diff two Sets by pairing the set elements and diffing them. 
+By default, the pairing is based on matching elements that are equal to each other (using `equals`). 
+
+However, you most likely want to match elements using a field on an element instead for better diffs reports 
+(See next section).
+
+## Match by field
+
+For the best error reporting, you want to configure `SetDiffer` to match pairs by a field.
+
+```scala mdoc:nest
+import difflicious.Differ.SetDiffer
+val differByName: SetDiffer[Set, Person] = Differ.setDiffer[Set, Person].matchBy(_.name)
+
+printHtml(differByName.diff(
+  Set(bob50, charles, alice),
+  Set(alice, bob, charles)
+))
+```
+
+<pre class="diff-render">
+Set(
+  Person(
+    name: "Bob",
+    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
+  ),
+  Person(
+    name: "Charles",
+    age: 80,
+  ),
+  Person(
+    name: "Alice",
+    age: 30,
+  ),
+)
+</pre>
+
+
+

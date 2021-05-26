@@ -2,7 +2,7 @@
 
 # TODO:
 Must have:
-- Ignore fields
+- Replace differ at path
 - Swap two fields of the same type! (or a subtype to a super type)
 - Dynamic ignore (add new field ignores at runtime)
   
