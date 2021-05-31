@@ -1,7 +1,5 @@
 package difflicious
 
-import scala.util.chaining.scalaUtilChainingOps
-
 object Example {
   case class Person(name: String, age: Int)
 
@@ -25,12 +23,5 @@ object Example {
       .replace(GREEN, """<span style="color: green;">""")
       .replace(GRAY, """<span style="color: gray;">""")
       .replace(RESET, "</span>")
-  }
-
-  def main(args: Array[String]): Unit = {
-    printHtml(
-      Differ[List[Person]]
-        .diff(List(Person("Alice", 30), Person("Bob", 25)), List(Person("Bob", 25), Person("Alice", 30))),
-    )
   }
 }

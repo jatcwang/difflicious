@@ -1,10 +1,10 @@
 package difflicious
 
 import difflicious.DiffResultPrinter.consoleOutput
-import difflicious.implicits._
 import munit.Assertions.assertEquals
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Prop, Arbitrary}
+import difflicious.internal.EitherGetSyntax._
 
 package object testutils {
 
@@ -33,8 +33,8 @@ package object testutils {
   }
 
   def assertIsOkIfIgnoredProp[A: Arbitrary](differ: Differ[A]): Prop = {
-    val differIgnored = differ.updateByStrPathOrFail(ConfigureOp.ignore)
-    val differUnignored = differIgnored.updateByStrPathOrFail(ConfigureOp.unignored)
+    val differIgnored = differ.configureRaw(ConfigurePath.current, ConfigureOp.ignore).unsafeGet
+    val differUnignored = differIgnored.configureRaw(ConfigurePath.current, ConfigureOp.unignored).unsafeGet
     forAll { (l: A, r: A) =>
       val ignoredResult = differIgnored.diff(l, r)
       assert(ignoredResult.isOk)

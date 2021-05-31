@@ -49,7 +49,7 @@ Differ[Map[String, List[Person]]]:
   │
   └ each: Differ[List[Person]]
      │
-     └ each: Differ[Person]
+     └ each: Differ[Person]subject
         │
         ├ name: Differ[String] 
         └ age:  Differ[Int]    

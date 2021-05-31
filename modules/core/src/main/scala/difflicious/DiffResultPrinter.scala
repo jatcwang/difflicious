@@ -5,6 +5,7 @@ import difflicious.DiffResult.ValueResult
 import difflicious.utils.TypeName
 import fansi.{Str, Color}
 
+// FIXME: move to different module
 object DiffResultPrinter {
   private val colorObtained = Color.Red
   private val colorExpected = Color.Green
@@ -13,6 +14,12 @@ object DiffResultPrinter {
   private val indentStep = 2
 
   private val ignoredStr: Str = Str("[IGNORED]").overlay(colorIgnored)
+
+  def printDiffResult(
+    res: DiffResult,
+  ): Unit = {
+    println(consoleOutput(res, 0).render)
+  }
 
   def consoleOutput(
     res: DiffResult,

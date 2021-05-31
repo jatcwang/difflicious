@@ -3,7 +3,6 @@ package difflicious
 import cats.data.Ior
 import difflicious.DifferUpdateError.InvalidDifferOp
 import munit.ScalaCheckSuite
-import difflicious.implicits._
 import difflicious.testutils._
 import difflicious.testtypes._
 import izumi.reflect.macrortti.LTag
@@ -139,7 +138,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map diff shows both matched entries (based on key equals) and also one-side-only entries") {
     assertConsoleDiffOutput(
-      Differ.mapDiffer[Map, MapKey, CC].updateByStrPathOrFail(ConfigureOp.ignore, "each", "i"),
+      Differ.mapDiffer[Map, MapKey, CC].configureRaw(ConfigurePath.of("each", "i"), ConfigureOp.ignore).unsafeGet,
       Map(
         MapKey(1, "s") -> CC(1, "s1", 1),
         MapKey(2, "sa") -> CC(2, "s2", 2),
@@ -238,14 +237,14 @@ class DifferSpec extends ScalaCheckSuite {
     assert(diffResult.isOk)
   }
 
-  test("Map: Update fails if field name isn't 'each'") {
+  test("Map: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
       Left(DifferUpdateError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
-  test("Map: Update fails if operation isn't ignore") {
+  test("Map: configureRaw fails if operation isn't ignore") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "MapDiffer")),
@@ -268,7 +267,8 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
-        .updateByStrPathOrFail(ConfigureOp.ignore, "each", "dd"),
+        .configureRaw(ConfigurePath.of("each", "dd"), ConfigureOp.ignore)
+        .unsafeGet,
       List(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -339,7 +339,7 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Seq: Can set matchBy to match by index again") {
+  test("Seq: Can set pairBy to match by index again") {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, Int]
@@ -417,7 +417,7 @@ class DifferSpec extends ScalaCheckSuite {
     assert(diffResult.isOk)
   }
 
-  test("Seq: Update fails if field name isn't 'each'") {
+  test("Seq: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Seq[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
       Left(DifferUpdateError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
@@ -450,7 +450,8 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .setDiffer[Set, CC]
-        .updateByStrPathOrFail(ConfigureOp.ignore, "each", "dd"),
+        .configureRaw(ConfigurePath.of("each", "dd"), ConfigureOp.ignore)
+        .unsafeGet,
       Set(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -804,7 +805,7 @@ class DifferSpec extends ScalaCheckSuite {
           ConfigureOp.PairBy.Index,
         ),
       Left(
-        DifferUpdateError.InvalidSubType(
+        DifferUpdateError.UnrecognizedSubType(
           ConfigurePath(Vector("nope"), List("list")),
           Vector(
             "difflicious.testtypes.Sub1",

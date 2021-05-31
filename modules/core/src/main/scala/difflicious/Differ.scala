@@ -3,6 +3,7 @@ import cats.data.Ior
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
+import difflicious.internal.ConfigureImpl
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
 import izumi.reflect.macrortti.LTag
@@ -10,7 +11,7 @@ import izumi.reflect.macrortti.LTag
 import scala.collection.mutable
 
 // FIXME: don't use cats Ior
-trait Differ[T] {
+trait Differ[T] extends ConfigureImpl[T] {
   type R <: DiffResult
 
   def diff(inputs: Ior[T, T]): R

@@ -8,7 +8,6 @@ permalink: docs/types-of-differs
 
 There are many types of basic Differs, each producing different kind of results.
 
-// FIXME: Document how to ignore/update for all differs
 // FIXME: value differ
 
 # Differs for Algebraic Data Types (enums, sealed traits and case classes)
@@ -132,14 +131,14 @@ contains the same elements. One example of this is inserting multiple records in
 In this case, you can configure a `SeqDiffer` to pair by a field instead.
 
 ```scala mdoc:silent
-import difflicious.UpdatePath
-import difflicious.DifferOp.PairBy
+import difflicious.ConfigurePath
+import difflicious.ConfigureOp.PairBy
 import difflicious.Differ.SeqDiffer
 ```
 
 ```scala mdoc:silent
 val defaultDiffer: SeqDiffer[List, Person] = Differ.seqDiffer[List, Person]
-val differByName = defaultDiffer.matchBy(_.name)
+val differByName = defaultDiffer.pairBy(_.name)
 
 differByName.diff(
   List(bob50, charles, alice),
@@ -166,16 +165,16 @@ List(
 )
 </pre>
 
-In some cases you only have a `Differ[List[A]]` which doesn't have the `matchBy` method.
-In that case, you can still use `updateWith` to modify the differ.
+In some cases you only have a `Differ[List[A]]` which doesn't have the `pairBy` method.
+In that case, you can still use `configureRaw` to modify the differ.
 
 ```scala mdoc:silent
-val differByName2 = defaultDiffer.updateWith(UpdatePath.current, MatchBy.func((p: Person) => p.name)).right.get
+val differByName2 = defaultDiffer.configureRaw(ConfigurePath.current, PairBy.func((p: Person) => p.name)).right.get
 ```
 
 # Map differ
 
-Map differ match entries with the same keys and compare the values. It will also indicate which 
+Map differ pair entries with the same keys and compare the values. It will also indicate which 
 keys are missing from either side.
 
 It requires 
@@ -218,16 +217,16 @@ Map(
 Set differ can diff two Sets by pairing the set elements and diffing them. 
 By default, the pairing is based on matching elements that are equal to each other (using `equals`). 
 
-However, you most likely want to match elements using a field on an element instead for better diffs reports 
+However, you most likely want to pair elements using a field on an element instead for better diffs reports 
 (See next section).
 
 ## Match by field
 
-For the best error reporting, you want to configure `SetDiffer` to match pairs by a field.
+For the best error reporting, you want to configure `SetDiffer` to pair by a field.
 
 ```scala mdoc:nest
 import difflicious.Differ.SetDiffer
-val differByName: SetDiffer[Set, Person] = Differ.setDiffer[Set, Person].matchBy(_.name)
+val differByName: SetDiffer[Set, Person] = Differ.setDiffer[Set, Person].pairBy(_.name)
 
 printHtml(differByName.diff(
   Set(bob50, charles, alice),

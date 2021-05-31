@@ -82,7 +82,7 @@ trait DifferGen {
                   new SealedTraitDiffer[T](newSealedTrait, isIgnored)
                 }
             case None =>
-              Left(DifferUpdateError.InvalidSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
+              Left(DifferUpdateError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
           }
         case None =>
           op match {
