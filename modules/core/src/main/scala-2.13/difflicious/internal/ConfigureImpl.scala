@@ -18,7 +18,7 @@ trait ConfigureImpl[T] { this: Differ[T] =>
 // See https://github.com/softwaremill/quicklens/blob/c2fd335b80f3d4d55a76d146d8308d95575dd749/quicklens/src/main/scala-2/com/softwaremill/quicklens/QuicklensMacros.scala
 object ConfigureMacro {
 
-  val requiredShapeMsg = "Configure path must have shape like: _.field1.each.field2.subClass[ASubClass]"
+  val requiredShapeMsg = "Configure path must have shape like: _.field1.each.field2.subType[ASubClass]"
 
   def configurePairBy_impl[F[_], T, A, B](
     c: blackbox.Context,
@@ -41,18 +41,37 @@ object ConfigureMacro {
     def collectPathElements(tree: c.Tree, acc: List[String]): List[String] = {
       tree match {
         case q"$parent.$child" => {
-          val Some(name) = TermName.unapply(child) // should be safe
-          collectPathElements(parent, name :: acc)
-        }
-        case q"$tpName[..$tArgs]($t)($ev)" => {
-          collectPathElements(t, acc)
+          collectPathElements(parent, child.decodedName.toString :: acc)
         }
         case _: Ident => acc
+        case q"$func[..$tArgs]($t)($ev)" => {
+          collectPathElements(t, acc)
+        }
+        case q"$func[$superType]($rest).subType[$subType]" => {
+          val superTypeSym = superType.symbol.asClass
+          val subTypeSym = subType.symbol.asClass
+
+          if (superTypeSym.knownDirectSubclasses.contains(subTypeSym)) {
+            collectPathElements(rest, subTypeSym.name.decodedName.toString :: acc)
+          } else {
+            // FIXME: check err msg
+            c.abort(
+              c.enclosingPosition,
+              s"""Specified subtype is not a known direct subtype of $superTypeSym.
+                 |The supertype needs to be sealed, and you might need to ensure that both the supertype 
+                 |and subtype gets compiled before this invocation.
+                 |See also: <https://issues.scala-lang.org/browse/SI-7046>.""".stripMargin,
+            )
+          }
+        }
         case _ =>
           c.abort(c.enclosingPosition, s"$requiredShapeMsg, got: ${tree}")
       }
     }
 
+    // FIXME:
+//    println(path.tree)
+//    println(showRaw(path.tree))
     path.tree match {
       case q"($_) => $pathBody" => {
         val pathStr = collectPathElements(pathBody, List.empty)

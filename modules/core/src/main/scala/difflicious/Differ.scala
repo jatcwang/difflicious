@@ -387,6 +387,7 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
+    // FIXME: Move this to be possible on any Differ[F[A]] where F is pairable
     def pairBy[B](func: A => B): SeqDiffer[F, A] = {
       // Should always succeed, because method signature guarantees func takes an A
       configureRaw(ConfigurePath.current, PairBy.ByFunc(func, itemTag)).unsafeGet

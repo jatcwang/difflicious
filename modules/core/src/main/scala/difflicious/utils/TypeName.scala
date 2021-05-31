@@ -8,12 +8,12 @@ final case class TypeName(long: String, short: String, typeArguments: List[TypeN
   }
 }
 
-object TypeName {
+object TypeName extends TypeNamePlatform {
   // FIXME: test
   def fromLightTypeTag(t: LightTypeTag): TypeName = {
     TypeName(
-      long = t.longName,
-      short = t.shortName,
+      long = unescapeIdentifierName(t.longName),
+      short = unescapeIdentifierName(t.shortName),
       typeArguments = t.typeArgs.map(fromLightTypeTag),
     )
   }

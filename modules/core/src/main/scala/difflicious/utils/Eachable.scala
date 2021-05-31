@@ -22,6 +22,14 @@ trait EachableInstances {
   implicit def seqEachable[F[X] <: Seq[X]]: Eachable[F] = new Eachable[F] {
     override def each[A](fa: F[A]): A = sys.error("each should only be called inside Differ.configure*")
   }
+
+  implicit def setEachable[F[X] <: Set[X]]: Eachable[F] = new Eachable[F] {
+    override def each[A](fa: F[A]): A = sys.error("each should only be called inside Differ.configure*")
+  }
+
+  implicit def mapEachable[F[KK, VV] <: Map[KK, VV], K, V]: Eachable[Map[K, *]] = new Eachable[Map[K, *]] {
+    override def each[A](fa: Map[K, A]): A = sys.error("each should only be called inside Differ.configure*")
+  }
 }
 
 trait ToEachableOps {

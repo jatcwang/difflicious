@@ -19,6 +19,7 @@ class DifferSpec extends ScalaCheckSuite {
   }
 
   // FIXME: need to check nested sealed traits, where the child sealed trait has a custom differ defined
+  // FIXME: test special class name and field e.g. `my$field`
 
   test("NumericDiffer: configure fails if differ op is SetIgnore") {
     assertEquals(
