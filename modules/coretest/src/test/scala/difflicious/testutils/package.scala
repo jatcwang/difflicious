@@ -34,7 +34,7 @@ package object testutils {
 
   def assertIsOkIfIgnoredProp[A: Arbitrary](differ: Differ[A]): Prop = {
     val differIgnored = differ.configureRaw(ConfigurePath.current, ConfigureOp.ignore).unsafeGet
-    val differUnignored = differIgnored.configureRaw(ConfigurePath.current, ConfigureOp.unignored).unsafeGet
+    val differUnignored = differIgnored.configureRaw(ConfigurePath.current, ConfigureOp.unignore).unsafeGet
     forAll { (l: A, r: A) =>
       val ignoredResult = differIgnored.diff(l, r)
       assert(ignoredResult.isOk)

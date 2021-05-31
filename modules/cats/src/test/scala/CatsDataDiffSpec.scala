@@ -1,10 +1,12 @@
 import munit.FunSuite
+
 import CatsInstances._
 import cats.data._
 import difflicious.Differ
-import difflicious.Differ.{SetDiffer, SeqDiffer}
+import difflicious.Differ.SetDiffer
 import difflicious.testtypes.CC
 import difflicious.testutils._
+import difflicious.implicits._
 
 class CatsDataDiffSpec extends FunSuite {
   test("NonEmptyMap: Has map-like diff result") {
@@ -83,7 +85,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptyList: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyList, CC]].pairBy(_.s),
+      Differ[NonEmptyList[CC]].pairBy(_.s),
       NonEmptyList.of(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -146,7 +148,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptyVector: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyVector, CC]].pairBy(_.s),
+      Differ[NonEmptyVector[CC]].pairByAtPath(a => a)(_.s),
       NonEmptyVector.of(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -209,7 +211,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("Chain: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[Chain, CC]].pairBy(_.s),
+      Differ[Chain[CC]].pairByAtPath(a => a)(_.s),
       Chain(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -272,7 +274,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptyChain: pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SeqDiffer[NonEmptyChain, CC]].pairBy(_.s),
+      Differ[NonEmptyChain[CC]].pairByAtPath(a => a)(_.s),
       NonEmptyChain(
         CC(1, "1", 1),
         CC(2, "2", 2),

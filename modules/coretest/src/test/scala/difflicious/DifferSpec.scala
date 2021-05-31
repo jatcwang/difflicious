@@ -4,6 +4,7 @@ import difflicious.ConfigureError.InvalidDifferOp
 import munit.ScalaCheckSuite
 import difflicious.testutils._
 import difflicious.testtypes._
+import difflicious.implicits._
 import izumi.reflect.macrortti.LTag
 import difflicious.internal.EitherGetSyntax._
 
@@ -300,7 +301,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
-        .pairBy(_.i),
+        .pairByAtPath(a => a)(_.i),
       List(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -340,8 +341,8 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, Int]
-        .pairBy(identity)
-        .pairByIndex,
+        .pairByAtPath(a => a)(identity)
+        .pairByIndexAtPath(a => a),
       List(
         1,
         2,

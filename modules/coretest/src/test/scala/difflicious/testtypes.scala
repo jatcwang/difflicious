@@ -57,7 +57,7 @@ object testtypes {
   object SealedWithCustom {
     case class Custom(i: Int) extends SealedWithCustom
     object Custom {
-      implicit val differ: Differ[Custom] = Differ.derive[Custom].configureIgnore(_.i)
+      implicit val differ: Differ[Custom] = Differ.derive[Custom].ignoreAtPath(_.i)
     }
     case class Normal(i: Int) extends SealedWithCustom
 

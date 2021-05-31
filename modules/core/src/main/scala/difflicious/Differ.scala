@@ -2,14 +2,13 @@ package difflicious
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
-import difflicious.internal.ConfigureImpl
-import difflicious.internal.EitherGetSyntax._
+import difflicious.internal.ConfigureOps
 import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
 import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 
-trait Differ[T] extends ConfigureImpl[T] {
+trait Differ[T] extends ConfigureOps[T] {
   type R <: DiffResult
 
   def diff(inputs: DiffInput[T]): R
@@ -42,7 +41,7 @@ sealed trait ConfigureOp
 
 object ConfigureOp {
   val ignore: SetIgnored = SetIgnored(true)
-  val unignored: SetIgnored = SetIgnored(false)
+  val unignore: SetIgnored = SetIgnored(false)
 
   final case class SetIgnored(isIgnored: Boolean) extends ConfigureOp
   sealed trait PairBy[-A] extends ConfigureOp
@@ -387,16 +386,6 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
-    // FIXME: Move this to be possible on any Differ[F[A]] where F is pairable
-    def pairBy[B](func: A => B): SeqDiffer[F, A] = {
-      // Should always succeed, because method signature guarantees func takes an A
-      configureRaw(ConfigurePath.current, PairBy.ByFunc(func, itemTag)).unsafeGet
-    }
-
-    def pairByIndex: SeqDiffer[F, A] = {
-      // Should always succeed, because method signature guarantees func takes an A
-      configureRaw(ConfigurePath.current, PairBy.Index).unsafeGet
-    }
   }
 
   object SeqDiffer {
@@ -541,11 +530,6 @@ object Differ extends DifferTupleInstances with DifferGen {
           }
 
       }
-    }
-
-    def pairBy[B](func: A => B): SetDiffer[F, A] = {
-      // Should always succeed, because method signature guarantees func takes an A
-      configureRaw(ConfigurePath.current, PairBy.ByFunc(func, itemTag)).unsafeGet
     }
   }
 

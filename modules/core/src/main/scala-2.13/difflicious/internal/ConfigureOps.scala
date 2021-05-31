@@ -1,17 +1,36 @@
 package difflicious.internal
 
-import difflicious.Differ
+import difflicious.ConfigureOp.PairBy
+import difflicious.internal.EitherGetSyntax.EitherExts
+import difflicious.{ConfigurePath, Differ, ConfigureOp}
 import difflicious.utils.Pairable
+import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 import scala.annotation.{tailrec, nowarn}
 import scala.reflect.macros.blackbox
 
-trait ConfigureImpl[T] { this: Differ[T] =>
-  def configureIgnore[U](path: T => U): Differ[T] = macro ConfigureMacro.configureIgnore_impl[T, U]
+trait ConfigureOps[T] { this: Differ[T] =>
+  def ignore: Differ[T] = configureRaw(ConfigurePath.current, ConfigureOp.ignore).unsafeGet
+  def unignore: Differ[T] = configureRaw(ConfigurePath.current, ConfigureOp.unignore).unsafeGet
 
-  def configurePairBy[F[_]: Pairable, A, B](path: T => F[A])(pairBy: A => B): Differ[T] =
+  def ignoreAtPath[U](path: T => U): Differ[T] = macro ConfigureMacro.configureIgnore_impl[T, U]
+
+  def pairByAtPath[F[_]: Pairable, A, B](path: T => F[A])(pairBy: A => B): Differ[T] =
     macro ConfigureMacro.configurePairBy_impl[F, T, A, B]
+
+  def pairByIndexAtPath[F[_]: Pairable, A](path: T => F[A]): Differ[T] =
+    macro ConfigureMacro.configurePairByIndex_impl[F, T, A]
+}
+
+class PairByOps[F[_], A](differ: Differ[F[A]]) {
+  def pairBy[B](f: A => B)(implicit aTag: LTag[A]): Differ[F[A]] =
+    differ.configureRaw(ConfigurePath.current, PairBy.func(f)).unsafeGet
+}
+
+trait ToPairByOps {
+  @nowarn("msg=.*never used.*")
+  implicit def toPairByOps[F[_]: Pairable, A](differ: Differ[F[A]]): PairByOps[F, A] = new PairByOps(differ)
 }
 
 // Implementation inspired by quicklen's path macro.
@@ -29,6 +48,28 @@ object ConfigureMacro {
 
     val opTree = q"_root_.difflicious.ConfigureOp.PairBy.func(${pairBy})"
     toConfigureRawCall(c)(path, opTree)
+  }
+
+  def configurePairByIndex_impl[F[_], T, A](
+    c: blackbox.Context,
+  )(path: c.Expr[T => F[A]])(ev: c.Expr[Pairable[F]]): c.Tree = {
+    import c.universe._
+
+    val _ = ev // unused
+
+    val opTree = q"_root_.difflicious.ConfigureOp.PairBy.Index"
+    toConfigureRawCall(c)(path, opTree)
+  }
+
+  // FIXME: allow focusing on 'subClass'
+  // FIXME: calling a method seems to fail
+  // FIXME: special char in field names
+  def configureIgnore_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
+    c: blackbox.Context,
+  )(path: c.Expr[T => U]): c.Tree = {
+    import c.universe._
+    val configureOpTree = q"_root_.difflicious.ConfigureOp.ignore"
+    toConfigureRawCall(c)(path, configureOpTree)
   }
 
   @nowarn("msg=.*never used.*")
@@ -110,17 +151,6 @@ object ConfigureMacro {
       case _ => c.abort(c.enclosingPosition, s"$requiredShapeMsg, got: ${path.tree}")
     }
 
-  }
-
-  // FIXME: allow focusing on 'subClass'
-  // FIXME: calling a method seems to fail
-  // FIXME: special char in field names
-  def configureIgnore_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
-    c: blackbox.Context,
-  )(path: c.Expr[T => U]): c.Tree = {
-    import c.universe._
-    val configureOpTree = q"_root_.difflicious.ConfigureOp.ignore"
-    toConfigureRawCall(c)(path, configureOpTree)
   }
 
 }
