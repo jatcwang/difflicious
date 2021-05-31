@@ -2,7 +2,7 @@ package difflicious.utils
 
 import difflicious.utils.Eachable.EachableOps
 
-import scala.annotation.compileTimeOnly
+import scala.annotation.{compileTimeOnly, nowarn}
 
 trait Eachable[F[_]] {
   @compileTimeOnly("each should only be called inside Differ.configure*")
@@ -33,5 +33,6 @@ trait EachableInstances {
 }
 
 trait ToEachableOps {
+  @nowarn("msg=.*never used.*")
   implicit def toEachableOps[F[_]: Eachable, A](fa: F[A]): EachableOps[F, A] = new EachableOps[F, A] {}
 }

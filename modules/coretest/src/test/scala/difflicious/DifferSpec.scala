@@ -672,7 +672,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Sealed.differ,
       Sub1(1),
-      SubSub1(1),
+      SubSealed.SubSub1(1),
       s"""${R}Sub1$X != ${G}SubSub1$X
         |${R}=== Obtained ===
         |Sub1(
@@ -689,7 +689,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Sealed.differ,
       Sub1(1),
-      SubSub1(1),
+      SubSealed.SubSub1(1),
       s"""${R}Sub1$X != ${G}SubSub1$X
          |${R}=== Obtained ===
          |Sub1(
@@ -740,7 +740,18 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Sealed trait: update subtype differs by specifying the subtype name in the path") {
+  test("Sealed trait: Use subtype's custom Differ if present in scope when deriving") {
+    assertConsoleDiffOutput(
+      SealedWithCustom.differ,
+      SealedWithCustom.Custom(1),
+      SealedWithCustom.Custom(2),
+      s"""Custom(
+        |  i: $grayIgnoredStr,
+        |)""".stripMargin,
+    )
+  }
+
+  test("Sealed trait: configure subtype differs by specifying the subtype name in the path") {
     val differ = Differ[Sealed]
       .configureRaw(
         ConfigurePath
@@ -750,13 +761,13 @@ class DifferSpec extends ScalaCheckSuite {
       .unsafeGet
 
     val diffResult = differ.diff(
-      SubSub2(
+      SubSealed.SubSub2(
         List(
           CC(1, "1", 1),
           CC(2, "2", 2),
         ),
       ),
-      SubSub2(
+      SubSealed.SubSub2(
         List(
           CC(2, "2", 2),
           CC(1, "1", 1),
@@ -768,13 +779,13 @@ class DifferSpec extends ScalaCheckSuite {
 
     assertConsoleDiffOutput(
       differ,
-      SubSub2(
+      SubSealed.SubSub2(
         List(
           CC(1, "1", 1),
           CC(2, "2", 2),
         ),
       ),
-      SubSub2(
+      SubSealed.SubSub2(
         List(
           CC(2, "2", 2),
           CC(1, "2", 1),
@@ -797,7 +808,7 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Sealed trait: error if trying to update with an invalid subtype name as path") {
+  test("Sealed trait: error if trying to configure with an invalid subtype name as path") {
     assertEquals(
       Differ[Sealed]
         .configureRaw(
@@ -812,6 +823,7 @@ class DifferSpec extends ScalaCheckSuite {
             "difflicious.testtypes.Sub1",
             "difflicious.testtypes.SubSub1",
             "difflicious.testtypes.SubSub2",
+            "difflicious.testtypes.Weird@Sub",
           ),
         ),
       ),

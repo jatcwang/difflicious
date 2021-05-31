@@ -104,6 +104,7 @@ lazy val docs = project
     scalacOptions ~= { opts =>
       val extraOpts =
         Seq(
+          "-Wmacros:after",
           "-Wconf:msg=\".*method any2stringadd.*\":i",
           "-Wconf:msg=\".*The outer reference in this type test.*\":s", // This warning shows up if we use *final* case class in code blocks
           "-Wconf:msg=\".*method right in class Either.*\":s",

@@ -1,6 +1,6 @@
 package difflicious.utils
 
-import scala.annotation.compileTimeOnly
+import scala.annotation.{compileTimeOnly, nowarn}
 
 trait SubTypeOp[A] {
   @compileTimeOnly("subClass should only be called in a Differ.configure* path")
@@ -8,5 +8,7 @@ trait SubTypeOp[A] {
 }
 
 trait ToSubTypeOp {
+
+  @nowarn("msg=.*never used.*")
   implicit def toSubTypeOp[A](a: A): SubTypeOp[A] = new SubTypeOp[A] {}
 }

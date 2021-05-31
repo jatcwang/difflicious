@@ -12,6 +12,23 @@ class DifferConfigureSpec extends munit.FunSuite {
     assertEquals(firstLine, "Specified subtype is not a known direct subtype of trait OpenSuperType.")
   }
 
+  test("configure path's subType handles multi-level hierarchies") {
+    assertConsoleDiffOutput(
+      Differ[List[Sealed]].configureIgnore(_.each.subType[SubSealed.SubSub1].d),
+      List(
+        SubSealed.SubSub1(1.0),
+      ),
+      List(
+        SubSealed.SubSub1(2.0),
+      ),
+      s"""List(
+        |  SubSub1(
+        |    d: $grayIgnoredStr,
+        |  ),
+        |)""".stripMargin,
+    )
+  }
+
   test("configure path allows 'each' to resolve underlying differ in a Map") {
     assertConsoleDiffOutput(
       Differ[Map[String, CC]].configureIgnore(_.each.dd),

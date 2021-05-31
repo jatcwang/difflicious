@@ -3,6 +3,7 @@ package difflicious.internal
 import difflicious.Differ
 import difflicious.utils.Pairable
 
+import scala.collection.mutable
 import scala.annotation.{tailrec, nowarn}
 import scala.reflect.macros.blackbox
 
@@ -37,6 +38,27 @@ object ConfigureMacro {
   )(path: c.Expr[T => U], op: c.Tree): c.Tree = {
     import c.universe._
 
+    // When deriving, Magnolia derives for all subtypes in the hierarchy (including nested) therefore when checking
+    // We need to do this too
+    @tailrec
+    def resolveAllSubtypesInHierarchy(toCheck: Vector[Symbol], accum: Vector[Symbol]): Vector[Symbol] = {
+      if (toCheck.isEmpty) accum
+      else {
+        val newLeafSubTypes = mutable.ArrayBuffer.from(toCheck)
+        val nextToCheck = mutable.ArrayBuffer.empty[Symbol]
+        toCheck.foreach { s =>
+          val subTypes = s.asClass.knownDirectSubclasses
+          if (subTypes.isEmpty) {
+            newLeafSubTypes += s
+          } else {
+            nextToCheck ++= subTypes
+          }
+        }
+
+        resolveAllSubtypesInHierarchy(nextToCheck.toVector, accum ++ newLeafSubTypes)
+      }
+    }
+
     @tailrec
     def collectPathElements(tree: c.Tree, acc: List[String]): List[String] = {
       tree match {
@@ -51,7 +73,9 @@ object ConfigureMacro {
           val superTypeSym = superType.symbol.asClass
           val subTypeSym = subType.symbol.asClass
 
-          if (superTypeSym.knownDirectSubclasses.contains(subTypeSym)) {
+          val allKnownSubTypesInHierarchy =
+            resolveAllSubtypesInHierarchy(toCheck = superTypeSym.knownDirectSubclasses.toVector, accum = Vector.empty)
+          if (allKnownSubTypesInHierarchy.contains(subTypeSym)) {
             collectPathElements(rest, subTypeSym.name.decodedName.toString :: acc)
           } else {
             // FIXME: check err msg

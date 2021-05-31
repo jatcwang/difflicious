@@ -25,6 +25,17 @@ trait DifferGen {
   }
 
   final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean) extends Differ[T] {
+    // $COVERAGE-OFF$
+    require(
+      {
+        val allShortNames = ctx.subtypes.map(_.typeName.short)
+        allShortNames.toSet.size == allShortNames.size
+      },
+      "Currently all subclass names across the whole sealed trait hierarchy must be distinct for simplicity of the configure API. " +
+        "Please raise an issue if you need duplicate subclass names",
+    )
+    // $COVERAGE-ON$
+
     override type R = DiffResult
 
     override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
@@ -82,7 +93,7 @@ trait DifferGen {
                   new SealedTraitDiffer[T](newSealedTrait, isIgnored)
                 }
             case None =>
-              Left(DifferUpdateError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.full).toVector))
+              Left(DifferUpdateError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
           }
         case None =>
           op match {

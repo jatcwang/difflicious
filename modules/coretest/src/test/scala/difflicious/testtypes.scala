@@ -4,6 +4,7 @@ import cats.data.Ior
 import cats.kernel.Order
 import org.scalacheck.{Gen, Arbitrary}
 import difflicious.Differ.{ValueDiffer, EqualsDiffer}
+import difflicious.testtypes.SubSealed.{SubSub1, SubSub2}
 import izumi.reflect.macrortti.LTag
 
 object testtypes {
@@ -52,6 +53,18 @@ object testtypes {
     implicit val differ: EqualsDiffer[EqClass] = Differ.useEquals[EqClass](_.toString)
   }
 
+  sealed trait SealedWithCustom
+
+  object SealedWithCustom {
+    case class Custom(i: Int) extends SealedWithCustom
+    object Custom {
+      implicit val differ: Differ[Custom] = Differ.derive[Custom].configureIgnore(_.i)
+    }
+    case class Normal(i: Int) extends SealedWithCustom
+
+    implicit val differ: Differ[SealedWithCustom] = Differ.derive[SealedWithCustom]
+  }
+
   sealed trait Sealed
 
   object Sealed {
@@ -75,8 +88,11 @@ object testtypes {
   final case class `Weird@Sub`(i: Int, `weird@Field`: String) extends Sealed
 
   sealed trait SubSealed extends Sealed
-  case class SubSub1(d: Double) extends SubSealed
-  case class SubSub2(list: List[CC]) extends SubSealed
+
+  object SubSealed {
+    case class SubSub1(d: Double) extends SubSealed
+    case class SubSub2(list: List[CC]) extends SubSealed
+  }
 
   final case class MapKey(a: Int, b: String)
 
