@@ -4,6 +4,7 @@ import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._
 
+// Tests for configuring a Differ
 class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path's subType call errors when super type isn't sealed") {

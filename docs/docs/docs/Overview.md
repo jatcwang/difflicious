@@ -15,7 +15,7 @@ What can you do with a `Differ[A]`?
 
 ```scala
 trait Differ[T] {
-  def diff(inputs: Ior[T, T]): DiffResult
+  def diff(inputs: DiffInput[T]): DiffResult
 
   def configure(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
 }

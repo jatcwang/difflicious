@@ -1,10 +1,10 @@
 package difflicious
-import cats.data.Ior
 import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import izumi.reflect.macrortti.LTag
 import magnolia._
 import difflicious.utils.{TypeName => DTypeName}
+import scala.collection.mutable
 
 import scala.collection.immutable.ListMap
 
@@ -32,16 +32,18 @@ trait DifferGen {
         allShortNames.toSet.size == allShortNames.size
       },
       "Currently all subclass names across the whole sealed trait hierarchy must be distinct for simplicity of the configure API. " +
-        "Please raise an issue if you need duplicate subclass names",
+        "Please raise an issue if you need subclasses with the same names",
     )
     // $COVERAGE-ON$
 
     override type R = DiffResult
 
-    override def diff(inputs: Ior[T, T]): DiffResult = inputs match {
-      case Ior.Left(obtained)  => ctx.dispatch(obtained)(sub => sub.typeclass.diff(Ior.Left(sub.cast(obtained))))
-      case Ior.Right(expected) => ctx.dispatch(expected)(sub => sub.typeclass.diff(Ior.Right(sub.cast(expected))))
-      case Ior.Both(obtained, expected) => {
+    override def diff(inputs: DiffInput[T]): DiffResult = inputs match {
+      case DiffInput.ObtainedOnly(obtained) =>
+        ctx.dispatch(obtained)(sub => sub.typeclass.diff(DiffInput.ObtainedOnly(sub.cast(obtained))))
+      case DiffInput.ExpectedOnly(expected) =>
+        ctx.dispatch(expected)(sub => sub.typeclass.diff(DiffInput.ExpectedOnly(sub.cast(expected))))
+      case DiffInput.Both(obtained, expected) => {
         ctx.dispatch(obtained) { actualSubtype =>
           ctx.dispatch(expected) { expectedSubtype =>
             if (actualSubtype.typeName.short == expectedSubtype.typeName.short) {
@@ -49,9 +51,9 @@ trait DifferGen {
                 .diff(actualSubtype.cast(obtained), expectedSubtype.cast(expected).asInstanceOf[actualSubtype.SType])
             } else {
               MismatchTypeResult(
-                obtained = actualSubtype.typeclass.diff(Ior.Left(actualSubtype.cast(obtained))),
+                obtained = actualSubtype.typeclass.diff(DiffInput.ObtainedOnly(actualSubtype.cast(obtained))),
                 obtainedTypeName = toDiffliciousTypeName(actualSubtype.typeName),
-                expected = expectedSubtype.typeclass.diff(Ior.Right(expectedSubtype.cast(expected))),
+                expected = expectedSubtype.typeclass.diff(DiffInput.ExpectedOnly(expectedSubtype.cast(expected))),
                 expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeName),
                 matchType = MatchType.Both,
                 isIgnored = isIgnored,
@@ -98,30 +100,35 @@ trait DifferGen {
         case None =>
           op match {
             case ignoreOp @ ConfigureOp.SetIgnored(newIgnored) => {
-              import cats.implicits._
-              ctx.subtypes.toList
-                .traverse { sub =>
-                  sub.typeclass.configureRaw(path, ignoreOp).map { newDiffer =>
-                    Subtype(
-                      name = sub.typeName,
-                      idx = sub.index,
-                      anns = sub.annotationsArray,
-                      tpeAnns = sub.typeAnnotationsArray,
-                      tc = CallByNeed(newDiffer),
-                      isType = sub.cast.isDefinedAt,
-                      asType = sub.cast.apply,
-                    )
+              val newSubTypes = mutable.ArrayBuffer.empty[Subtype[Differ, T]]
+              var configureError: Option[DifferUpdateError] = None
+              ctx.subtypes.foreach { sub =>
+                if (configureError.nonEmpty) () // Do nothing if we already failed
+                else
+                  sub.typeclass.configureRaw(path, ignoreOp) match {
+                    case Right(newDiffer) => {
+                      newSubTypes += Subtype(
+                        name = sub.typeName,
+                        idx = sub.index,
+                        anns = sub.annotationsArray,
+                        tpeAnns = sub.typeAnnotationsArray,
+                        tc = CallByNeed(newDiffer),
+                        isType = sub.cast.isDefinedAt,
+                        asType = sub.cast.apply,
+                      )
+                    }
+                    case Left(e) => configureError = Some(e)
                   }
-                }
-                .map { newSubTypes =>
-                  val newSealedTrait = new SealedTrait(
-                    typeName = ctx.typeName,
-                    subtypesArray = newSubTypes.toArray,
-                    annotationsArray = ctx.annotations.toArray,
-                    typeAnnotationsArray = ctx.typeAnnotations.toArray,
-                  )
-                  new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
-                }
+              }
+              configureError.toLeft {
+                val newSealedTrait = new SealedTrait(
+                  typeName = ctx.typeName,
+                  subtypesArray = newSubTypes.toArray,
+                  annotationsArray = ctx.annotations.toArray,
+                  typeAnnotationsArray = ctx.typeAnnotations.toArray,
+                )
+                new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
+              }
             }
             case _: ConfigureOp.PairBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "sealed trait"))
           }

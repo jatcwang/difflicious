@@ -7,7 +7,6 @@ import scala.collection.mutable
 import scala.annotation.{tailrec, nowarn}
 import scala.reflect.macros.blackbox
 
-// FIXME: rename
 trait ConfigureImpl[T] { this: Differ[T] =>
   def configureIgnore[U](path: T => U): Differ[T] = macro ConfigureMacro.configureIgnore_impl[T, U]
 

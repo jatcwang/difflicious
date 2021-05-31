@@ -4,6 +4,7 @@ import difflicious.utils.Eachable.EachableOps
 
 import scala.annotation.{compileTimeOnly, nowarn}
 
+// $COVERAGE-OFF$
 trait Eachable[F[_]] {
   @compileTimeOnly("each should only be called inside Differ.configure*")
   def each[A](fa: F[A]): A
@@ -36,3 +37,4 @@ trait ToEachableOps {
   @nowarn("msg=.*never used.*")
   implicit def toEachableOps[F[_]: Eachable, A](fa: F[A]): EachableOps[F, A] = new EachableOps[F, A] {}
 }
+// $COVERAGE-ON$

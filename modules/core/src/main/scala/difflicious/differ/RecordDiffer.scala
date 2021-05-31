@@ -1,7 +1,5 @@
 package difflicious.differ
 
-import cats.data.Ior
-
 import scala.collection.immutable.ListMap
 import difflicious.utils.TypeName
 import difflicious._
@@ -13,8 +11,8 @@ final class RecordDiffer[T](
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
 
-  override def diff(inputs: Ior[T, T]): R = inputs match {
-    case Ior.Both(obtained, expected) => {
+  override def diff(inputs: DiffInput[T]): R = inputs match {
+    case DiffInput.Both(obtained, expected) => {
       val diffResults = fieldDiffers
         .map {
           case (fieldName, (getter, differ)) =>
@@ -32,11 +30,11 @@ final class RecordDiffer[T](
           isOk = isIgnored || diffResults.values.forall(_.isOk),
         )
     }
-    case Ior.Left(value) => {
+    case DiffInput.ObtainedOnly(value) => {
       val diffResults = fieldDiffers
         .map {
           case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(Ior.left(getter(value)))
+            val diffResult = differ.diff(DiffInput.ObtainedOnly(getter(value)))
 
             fieldName -> diffResult
         }
@@ -50,11 +48,11 @@ final class RecordDiffer[T](
           isOk = isIgnored,
         )
     }
-    case Ior.Right(expected) => {
+    case DiffInput.ExpectedOnly(expected) => {
       val diffResults = fieldDiffers
         .map {
           case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(Ior.Right(getter(expected)))
+            val diffResult = differ.diff(DiffInput.ExpectedOnly(getter(expected)))
 
             fieldName -> diffResult
         }

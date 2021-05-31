@@ -1,5 +1,4 @@
 package difflicious
-import cats.data.Ior
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
@@ -14,9 +13,9 @@ import scala.collection.mutable
 trait Differ[T] extends ConfigureImpl[T] {
   type R <: DiffResult
 
-  def diff(inputs: Ior[T, T]): R
+  def diff(inputs: DiffInput[T]): R
 
-  final def diff(obtained: T, expected: T): R = diff(Ior.Both(obtained, expected))
+  final def diff(obtained: T, expected: T): R = diff(DiffInput.Both(obtained, expected))
 
   /**
     * Attempt to change the configuration of this Differ.
@@ -67,12 +66,12 @@ object Differ extends DifferTupleInstances with DifferGen {
   trait ValueDiffer[T] extends Differ[T] {
     final override type R = DiffResult.ValueResult
 
-    override def diff(inputs: Ior[T, T]): R
+    override def diff(inputs: DiffInput[T]): R
   }
 
   final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) extends ValueDiffer[T] {
-    override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
-      case Ior.Both(obtained, expected) =>
+    override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
+      case DiffInput.Both(obtained, expected) =>
         DiffResult.ValueResult
           .Both(
             obtained = valueToString(obtained),
@@ -80,9 +79,9 @@ object Differ extends DifferTupleInstances with DifferGen {
             isSame = obtained == expected,
             isIgnored = isIgnored,
           )
-      case Ior.Left(obtained) =>
+      case DiffInput.ObtainedOnly(obtained) =>
         DiffResult.ValueResult.ObtainedOnly(valueToString(obtained), isIgnored = isIgnored)
-      case Ior.Right(expected) =>
+      case DiffInput.ExpectedOnly(expected) =>
         DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
     }
 
@@ -141,9 +140,9 @@ object Differ extends DifferTupleInstances with DifferGen {
   ) extends Differ[M[A, B]] {
     override type R = MapResult
 
-    override def diff(inputs: Ior[M[A, B], M[A, B]]): R = inputs.bimap(asMap.asMap, asMap.asMap) match {
+    override def diff(inputs: DiffInput[M[A, B]]): R = inputs.map(asMap.asMap) match {
       // FIXME: consolidate all 3 cases
-      case Ior.Both(obtained, expected) =>
+      case DiffInput.Both(obtained, expected) =>
         val obtainedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
         val both = mutable.ArrayBuffer.empty[MapResult.Entry]
         val expectedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
@@ -158,7 +157,7 @@ object Differ extends DifferTupleInstances with DifferGen {
               case None =>
                 obtainedOnly += MapResult.Entry(
                   mapKeyToString(k, keyDiffer),
-                  valueDiffer.diff(Ior.Left(actualV)),
+                  valueDiffer.diff(DiffInput.ObtainedOnly(actualV)),
                 )
             }
         }
@@ -169,7 +168,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             } else {
               expectedOnly += MapResult.Entry(
                 mapKeyToString(k, keyDiffer),
-                valueDiffer.diff(Ior.Right(expectedV)),
+                valueDiffer.diff(DiffInput.ExpectedOnly(expectedV)),
               )
             }
         }
@@ -181,23 +180,23 @@ object Differ extends DifferTupleInstances with DifferGen {
           isIgnored = isIgnored,
           isOk = isIgnored || obtainedOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isOk),
         )
-      case Ior.Left(obtained) =>
+      case DiffInput.ObtainedOnly(obtained) =>
         DiffResult.MapResult(
           typeName = typeName,
           entries = obtained.map {
             case (k, v) =>
-              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(Ior.Left(v)))
+              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ObtainedOnly(v)))
           }.toVector,
           matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
-      case Ior.Right(expected) =>
+      case DiffInput.ExpectedOnly(expected) =>
         DiffResult.MapResult(
           typeName = typeName,
           entries = expected.map {
             case (k, v) =>
-              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(Ior.Right(v)))
+              MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ExpectedOnly(v)))
           }.toVector,
           matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
@@ -266,17 +265,22 @@ object Differ extends DifferTupleInstances with DifferGen {
   ) extends Differ[F[A]] {
     override type R = ListResult
 
-    override def diff(inputs: Ior[F[A], F[A]]): R = inputs.bimap(asSeq.asSeq, asSeq.asSeq) match {
-      case Ior.Both(actual, expected) => {
+    override def diff(inputs: DiffInput[F[A]]): R = inputs.map(asSeq.asSeq) match {
+      case DiffInput.Both(actual, expected) => {
         pairBy match {
           case PairBy.Index => {
             val diffResults = actual
               .map(Some(_))
               .zipAll(expected.map(Some(_)), None, None)
               .map {
-                case (aOpt, eOpt) =>
-                  val ior = Ior.fromOptions(aOpt, eOpt).get // guaranteed one of the Option is Some
-                  itemDiffer.diff(ior)
+                case (Some(ob), Some(exp)) => itemDiffer.diff(DiffInput.Both(ob, exp))
+                case (Some(ob), None)      => itemDiffer.diff(DiffInput.ObtainedOnly(ob))
+                case (None, Some(exp))     => itemDiffer.diff(DiffInput.ExpectedOnly(exp))
+                case (None, None) =>
+                  throw new RuntimeException(
+                    "Unexpected: Both obtained and expected side is None in SeqDiffer. " +
+                      "This is most likely a diffilicious bug",
+                  )
               }
               .toVector
 
@@ -300,21 +304,21 @@ object Differ extends DifferTupleInstances with DifferGen {
           }
         }
       }
-      case Ior.Left(actual) =>
+      case DiffInput.ObtainedOnly(actual) =>
         ListResult(
           typeName = typeName,
           items = actual.map { a =>
-            itemDiffer.diff(Ior.Left(a))
+            itemDiffer.diff(DiffInput.ObtainedOnly(a))
           }.toVector,
           matchType = MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
-      case Ior.Right(expected) =>
+      case DiffInput.ExpectedOnly(expected) =>
         ListResult(
           typeName = typeName,
           items = expected.map { a =>
-            itemDiffer.diff(Ior.Right(a))
+            itemDiffer.diff(DiffInput.ExpectedOnly(a))
           }.toVector,
           matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
@@ -457,28 +461,28 @@ object Differ extends DifferTupleInstances with DifferGen {
   ) extends Differ[F[A]] {
     override type R = SetResult
 
-    override def diff(inputs: Ior[F[A], F[A]]): R = inputs.bimap(asSet.asSet, asSet.asSet) match {
-      case Ior.Left(actual) =>
+    override def diff(inputs: DiffInput[F[A]]): R = inputs.map(asSet.asSet) match {
+      case DiffInput.ObtainedOnly(actual) =>
         SetResult(
           typeName = typeName,
           actual.toVector.map { a =>
-            itemDiffer.diff(Ior.Left(a))
+            itemDiffer.diff(DiffInput.ObtainedOnly(a))
           },
           MatchType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
-      case Ior.Right(expected) =>
+      case DiffInput.ExpectedOnly(expected) =>
         SetResult(
           typeName = typeName,
           items = expected.toVector.map { e =>
-            itemDiffer.diff(Ior.Right(e))
+            itemDiffer.diff(DiffInput.ExpectedOnly(e))
           },
           matchType = MatchType.ExpectedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
-      case Ior.Both(obtained, expected) => {
+      case DiffInput.Both(obtained, expected) => {
         val (results, overallIsSame) = diffPairByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
         SetResult(
           typeName = typeName,
@@ -580,7 +584,7 @@ object Differ extends DifferTupleInstances with DifferGen {
       // FIXME: perhaps we need to prepend this to the front
       //  of all results for nicer result view?
       if (found.isEmpty) {
-        results += itemDiffer.diff(Ior.Left(a))
+        results += itemDiffer.diff(DiffInput.ObtainedOnly(a))
         allIsOk = false
       }
     }
@@ -588,7 +592,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     expWithIdx.foreach {
       case (e, idx) =>
         if (!matchedIndexes.contains(idx)) {
-          results += itemDiffer.diff(Ior.Right(e))
+          results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
           allIsOk = false
         }
     }
@@ -597,7 +601,7 @@ object Differ extends DifferTupleInstances with DifferGen {
   }
 
   private def mapKeyToString[T](k: T, keyDiffer: ValueDiffer[T]): String = {
-    keyDiffer.diff(Ior.Left(k)) match {
+    keyDiffer.diff(DiffInput.ObtainedOnly(k)) match {
       case r: ValueResult.ObtainedOnly => r.obtained
       // $COVERAGE-OFF$
       case r: ValueResult.Both         => r.obtained

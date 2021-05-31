@@ -1,6 +1,5 @@
 package difflicious
 
-import cats.data.Ior
 import cats.kernel.Order
 import org.scalacheck.{Gen, Arbitrary}
 import difflicious.Differ.{ValueDiffer, EqualsDiffer}
@@ -11,7 +10,7 @@ object testtypes {
 
   // Dummy differ that fails when any of its method is called. For tests where we just need a Differ[T]
   def dummyDiffer[T]: Differ[T] = new Differ[T] {
-    override def diff(inputs: Ior[T, T]): R = sys.error("diff on dummyDiffer")
+    override def diff(inputs: DiffInput[T]): R = sys.error("diff on dummyDiffer")
 
     override def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]] =
       sys.error("configureRaw on dummyDiffer")

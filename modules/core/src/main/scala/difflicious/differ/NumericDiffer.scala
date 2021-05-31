@@ -1,7 +1,6 @@
 package difflicious.differ
 
-import cats.data.Ior
-import difflicious.{ConfigurePath, DifferUpdateError, ConfigureOp, DiffResult}
+import difflicious.{DiffResult, ConfigureOp, DiffInput, ConfigurePath, DifferUpdateError}
 import izumi.reflect.Tag
 import difflicious.Differ.ValueDiffer
 
@@ -9,8 +8,8 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
   @inline
   private def valueToString(t: T) = t.toString
 
-  override def diff(inputs: Ior[T, T]): DiffResult.ValueResult = inputs match {
-    case Ior.Both(obtained, expected) => {
+  override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
+    case DiffInput.Both(obtained, expected) => {
       DiffResult.ValueResult.Both(
         valueToString(obtained),
         valueToString(expected),
@@ -18,8 +17,10 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
         isIgnored = isIgnored,
       )
     }
-    case Ior.Left(obtained)  => DiffResult.ValueResult.ObtainedOnly(valueToString(obtained), isIgnored = isIgnored)
-    case Ior.Right(expected) => DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
+    case DiffInput.ObtainedOnly(obtained) =>
+      DiffResult.ValueResult.ObtainedOnly(valueToString(obtained), isIgnored = isIgnored)
+    case DiffInput.ExpectedOnly(expected) =>
+      DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
   }
 
   override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, NumericDiffer[T]] = {

@@ -1,6 +1,5 @@
 package difflicious
 
-import cats.data.Ior
 import difflicious.DifferUpdateError.InvalidDifferOp
 import munit.ScalaCheckSuite
 import difflicious.testutils._
@@ -51,11 +50,11 @@ class DifferSpec extends ScalaCheckSuite {
   }
 
   test("EqualsDiffer: ObtainedOnly#isOk should always be false") {
-    assertEquals(EqClass.differ.diff(Ior.Left(EqClass(1))).isOk, false)
+    assertEquals(EqClass.differ.diff(DiffInput.ObtainedOnly(EqClass(1))).isOk, false)
   }
 
   test("EqualsDiffer: ObtainedOnly#isOk should always be false") {
-    assertEquals(EqClass.differ.diff(Ior.Right(EqClass(1))).isOk, false)
+    assertEquals(EqClass.differ.diff(DiffInput.ExpectedOnly(EqClass(1))).isOk, false)
   }
 
   test("EqualsDiffer: configure fails if path is not terminal") {
@@ -819,12 +818,7 @@ class DifferSpec extends ScalaCheckSuite {
       Left(
         DifferUpdateError.UnrecognizedSubType(
           ConfigurePath(Vector("nope"), List("list")),
-          Vector(
-            "difflicious.testtypes.Sub1",
-            "difflicious.testtypes.SubSub1",
-            "difflicious.testtypes.SubSub2",
-            "difflicious.testtypes.Weird@Sub",
-          ),
+          Vector("Sub1", "SubSub1", "SubSub2", "Weird@Sub"),
         ),
       ),
     )
