@@ -1,6 +1,6 @@
 package difflicious.differ
 
-import difflicious.{DiffResult, ConfigureOp, DiffInput, ConfigurePath, DifferUpdateError}
+import difflicious.{DiffResult, ConfigureOp, DiffInput, ConfigurePath, ConfigureError}
 import izumi.reflect.Tag
 import difflicious.Differ.ValueDiffer
 
@@ -23,14 +23,14 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
       DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
   }
 
-  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, NumericDiffer[T]] = {
+  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, NumericDiffer[T]] = {
     val (step, nextPath) = path.next
     (step, op) match {
-      case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
+      case (Some(_), _) => Left(ConfigureError.PathTooLong(nextPath))
       case (None, ConfigureOp.SetIgnored(newIgnored)) =>
         Right(new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, tag = tag))
       case (None, otherOp) =>
-        Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "NumericDiffer"))
+        Left(ConfigureError.InvalidDifferOp(nextPath, otherOp, "NumericDiffer"))
     }
   }
 }

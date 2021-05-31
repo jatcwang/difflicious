@@ -65,7 +65,7 @@ trait DifferGen {
     }
 
     // FIXME: test: two layers of sealed trait. Will probably need a "stack" of subtype name in the API response?
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, Typeclass[T]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, Typeclass[T]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(shortName) =>
@@ -95,13 +95,13 @@ trait DifferGen {
                   new SealedTraitDiffer[T](newSealedTrait, isIgnored)
                 }
             case None =>
-              Left(DifferUpdateError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
+              Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
           }
         case None =>
           op match {
             case ignoreOp @ ConfigureOp.SetIgnored(newIgnored) => {
               val newSubTypes = mutable.ArrayBuffer.empty[Subtype[Differ, T]]
-              var configureError: Option[DifferUpdateError] = None
+              var configureError: Option[ConfigureError] = None
               ctx.subtypes.foreach { sub =>
                 if (configureError.nonEmpty) () // Do nothing if we already failed
                 else
@@ -130,7 +130,7 @@ trait DifferGen {
                 new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
               }
             }
-            case _: ConfigureOp.PairBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "sealed trait"))
+            case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidDifferOp(nextPath, op, "sealed trait"))
           }
 
       }

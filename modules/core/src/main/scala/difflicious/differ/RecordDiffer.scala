@@ -68,14 +68,14 @@ final class RecordDiffer[T](
     }
   }
 
-  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, RecordDiffer[T]] = {
+  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, RecordDiffer[T]] = {
     val (step, nextPath) = path.next
     step match {
       case Some(fieldName) =>
         for {
           (getter, fieldDiffer) <- fieldDiffers
             .get(fieldName)
-            .toRight(DifferUpdateError.NonExistentField(nextPath, fieldName))
+            .toRight(ConfigureError.NonExistentField(nextPath, fieldName))
           newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
         } yield new RecordDiffer[T](
           fieldDiffers = fieldDiffers.updated(fieldName, (getter, newFieldDiffer)),
@@ -86,7 +86,7 @@ final class RecordDiffer[T](
         op match {
           case ConfigureOp.SetIgnored(newIgnored) =>
             Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName))
-          case _: ConfigureOp.PairBy[_] => Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "record"))
+          case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidDifferOp(nextPath, op, "record"))
         }
 
     }

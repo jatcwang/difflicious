@@ -9,7 +9,6 @@ import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 
-// FIXME: don't use cats Ior
 trait Differ[T] extends ConfigureImpl[T] {
   type R <: DiffResult
 
@@ -29,7 +28,7 @@ trait Differ[T] extends ConfigureImpl[T] {
     * @param path The path to traverse to the sub-Differ
     * @param operation The configuration change operation you want to perform on the target sub-Differ
     */
-  def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
+  def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]]
 }
 
 /**
@@ -85,13 +84,13 @@ object Differ extends DifferTupleInstances with DifferGen {
         DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
     }
 
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, EqualsDiffer[T]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, EqualsDiffer[T]] = {
       val (step, nextPath) = path.next
       (step, op) match {
-        case (Some(_), _) => Left(DifferUpdateError.PathTooLong(nextPath))
+        case (Some(_), _) => Left(ConfigureError.PathTooLong(nextPath))
         case (None, ConfigureOp.SetIgnored(newIgnored)) =>
           Right(new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString))
-        case (None, otherOp) => Left(DifferUpdateError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
+        case (None, otherOp) => Left(ConfigureError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
@@ -99,7 +98,6 @@ object Differ extends DifferTupleInstances with DifferGen {
   def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
 
-  // FIXME: better reporting for string error
   implicit val stringDiff: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
@@ -113,7 +111,6 @@ object Differ extends DifferTupleInstances with DifferGen {
   implicit val bigDecimalDiff: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal]
   implicit val bigIntDiff: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
 
-  // FIXME: tuple instances
   implicit def mapDiffer[M[_, _], A, B](
     implicit keyDiffer: ValueDiffer[A],
     valueDiffer: Differ[B],
@@ -204,8 +201,7 @@ object Differ extends DifferTupleInstances with DifferGen {
         )
     }
 
-    // FIXME:
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, MapDiffer[M, A, B]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, MapDiffer[M, A, B]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
@@ -220,7 +216,7 @@ object Differ extends DifferTupleInstances with DifferGen {
               )
             }
           } else
-            Left(DifferUpdateError.NonExistentField(path = nextPath, fieldName))
+            Left(ConfigureError.NonExistentField(path = nextPath, fieldName))
         case None =>
           op match {
             case ConfigureOp.SetIgnored(newIsIgnored) =>
@@ -234,7 +230,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                 ),
               )
             case _: PairBy[_] =>
-              Left(DifferUpdateError.InvalidDifferOp(nextPath, op, "MapDiffer"))
+              Left(ConfigureError.InvalidDifferOp(nextPath, op, "MapDiffer"))
           }
       }
     }
@@ -326,7 +322,7 @@ object Differ extends DifferTupleInstances with DifferGen {
         )
     }
 
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, SeqDiffer[F, A]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, SeqDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
@@ -341,7 +337,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                 asSeq = asSeq,
               )
             }
-          } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
+          } else Left(ConfigureError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
             case ConfigureOp.SetIgnored(newIsIgnored) =>
@@ -382,7 +378,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                     )
                   } else {
                     Left(
-                      DifferUpdateError
+                      ConfigureError
                         .PairByTypeMismatch(nextPath, obtainedTag = m.aTag.tag, expectedTag = itemTag.tag),
                     )
                   }
@@ -494,7 +490,7 @@ object Differ extends DifferTupleInstances with DifferGen {
       }
     }
 
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[DifferUpdateError, SetDiffer[F, A]] = {
+    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, SetDiffer[F, A]] = {
       val (step, nextPath) = path.next
       step match {
         case Some(fieldName) =>
@@ -509,7 +505,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                 asSet = asSet,
               )
             }
-          } else Left(DifferUpdateError.NonExistentField(nextPath, fieldName))
+          } else Left(ConfigureError.NonExistentField(nextPath, fieldName))
         case None =>
           op match {
             case ConfigureOp.SetIgnored(newIsIgnored) =>
@@ -525,7 +521,7 @@ object Differ extends DifferTupleInstances with DifferGen {
               )
             case m: PairBy[_] =>
               m match {
-                case PairBy.Index => Left(DifferUpdateError.InvalidDifferOp(nextPath, m, "Set"))
+                case PairBy.Index => Left(ConfigureError.InvalidDifferOp(nextPath, m, "Set"))
                 case m: PairBy.ByFunc[_, _] =>
                   if (m.aTag.tag == itemTag.tag) {
                     Right(
@@ -539,7 +535,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                       ),
                     )
                   } else {
-                    Left(DifferUpdateError.PairByTypeMismatch(nextPath, m.aTag.tag, itemTag.tag))
+                    Left(ConfigureError.PairByTypeMismatch(nextPath, m.aTag.tag, itemTag.tag))
                   }
               }
           }

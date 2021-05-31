@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.DifferUpdateError.InvalidDifferOp
+import difflicious.ConfigureError.InvalidDifferOp
 import munit.ScalaCheckSuite
 import difflicious.testutils._
 import difflicious.testtypes._
@@ -13,18 +13,15 @@ class DifferSpec extends ScalaCheckSuite {
   test("NumericDiffer: configure fails if path is not terminal") {
     assertEquals(
       Differ[Int].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(DifferUpdateError.PathTooLong(ConfigurePath(Vector("nono"), List.empty))),
+      Left(ConfigureError.PathTooLong(ConfigurePath(Vector("nono"), List.empty))),
     )
   }
-
-  // FIXME: need to check nested sealed traits, where the child sealed trait has a custom differ defined
-  // FIXME: test special class name and field e.g. `my$field`
 
   test("NumericDiffer: configure fails if differ op is SetIgnore") {
     assertEquals(
       Differ[Int].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
-        DifferUpdateError
+        ConfigureError
           .InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "NumericDiffer"),
       ),
     )
@@ -60,7 +57,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("EqualsDiffer: configure fails if path is not terminal") {
     assertEquals(
       EqClass.differ.configureRaw(ConfigurePath.of("asdf"), ConfigureOp.ignore),
-      Left(DifferUpdateError.PathTooLong(ConfigurePath(Vector("asdf"), List.empty))),
+      Left(ConfigureError.PathTooLong(ConfigurePath(Vector("asdf"), List.empty))),
     )
   }
 
@@ -240,7 +237,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Map: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(DifferUpdateError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -420,7 +417,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Seq: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Seq[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(DifferUpdateError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -428,7 +425,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       Differ.seqDiffer[List, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
       Left(
-        DifferUpdateError
+        ConfigureError
           .PairByTypeMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
       ),
     )
@@ -553,7 +550,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Set: Update fails if field name isn't 'each'") {
     assertEquals(
       Differ[Set[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(DifferUpdateError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
     )
   }
 
@@ -561,7 +558,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
       Left(
-        DifferUpdateError
+        ConfigureError
           .PairByTypeMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
       ),
     )
@@ -571,7 +568,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
-        DifferUpdateError
+        ConfigureError
           .InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "Set"),
       ),
     )
@@ -633,7 +630,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.of("nonexistent"), ConfigureOp.ignore),
       Left(
-        DifferUpdateError
+        ConfigureError
           .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty), "nonexistent"),
       ),
     )
@@ -643,7 +640,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
-        DifferUpdateError
+        ConfigureError
           .InvalidDifferOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
@@ -657,7 +654,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
-        DifferUpdateError
+        ConfigureError
           .InvalidDifferOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
@@ -816,7 +813,7 @@ class DifferSpec extends ScalaCheckSuite {
           ConfigureOp.PairBy.Index,
         ),
       Left(
-        DifferUpdateError.UnrecognizedSubType(
+        ConfigureError.UnrecognizedSubType(
           ConfigurePath(Vector("nope"), List("list")),
           Vector("Sub1", "SubSub1", "SubSub2", "Weird@Sub"),
         ),
@@ -824,7 +821,6 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  // FIXME: reword desc
   test("Sealed trait: error if trying to update with an unsupported differ update op") {
     assertEquals(
       Differ[Sealed]
@@ -833,7 +829,7 @@ class DifferSpec extends ScalaCheckSuite {
           ConfigureOp.PairBy.Index,
         ),
       Left(
-        DifferUpdateError.InvalidDifferOp(
+        ConfigureError.InvalidDifferOp(
           ConfigurePath.current,
           ConfigureOp.PairBy.Index,
           "sealed trait",

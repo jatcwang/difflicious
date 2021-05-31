@@ -12,7 +12,7 @@ object testtypes {
   def dummyDiffer[T]: Differ[T] = new Differ[T] {
     override def diff(inputs: DiffInput[T]): R = sys.error("diff on dummyDiffer")
 
-    override def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]] =
+    override def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]] =
       sys.error("configureRaw on dummyDiffer")
   }
 
