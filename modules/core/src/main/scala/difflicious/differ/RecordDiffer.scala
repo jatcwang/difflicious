@@ -86,7 +86,7 @@ final class RecordDiffer[T](
         op match {
           case ConfigureOp.SetIgnored(newIgnored) =>
             Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName))
-          case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidDifferOp(nextPath, op, "record"))
+          case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidConfigureOp(nextPath, op, "record"))
         }
 
     }

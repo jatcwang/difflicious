@@ -130,7 +130,7 @@ trait DifferGen {
                 new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
               }
             }
-            case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidDifferOp(nextPath, op, "sealed trait"))
+            case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidConfigureOp(nextPath, op, "sealed trait"))
           }
 
       }

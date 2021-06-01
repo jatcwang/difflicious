@@ -30,30 +30,6 @@ trait Differ[T] extends ConfigureOps[T] {
   def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]]
 }
 
-/**
-  * The configuration change operation we want to perform on a differ.
-  * For example we might want to:
-  *
-  * - Mark the current differ as ignored so its comparison never fails
-  * - Change a SeqDiffer to pair by a field instead of index
-  */
-sealed trait ConfigureOp
-
-object ConfigureOp {
-  val ignore: SetIgnored = SetIgnored(true)
-  val unignore: SetIgnored = SetIgnored(false)
-
-  final case class SetIgnored(isIgnored: Boolean) extends ConfigureOp
-  sealed trait PairBy[-A] extends ConfigureOp
-  object PairBy {
-    case object Index extends PairBy[Any]
-    final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends PairBy[A]
-
-    def func[A, B](func: A => B)(implicit aTag: LTag[A]): ByFunc[A, B] = ByFunc(func, aTag)
-  }
-
-}
-
 object Differ extends DifferTupleInstances with DifferGen {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
@@ -89,7 +65,7 @@ object Differ extends DifferTupleInstances with DifferGen {
         case (Some(_), _) => Left(ConfigureError.PathTooLong(nextPath))
         case (None, ConfigureOp.SetIgnored(newIgnored)) =>
           Right(new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString))
-        case (None, otherOp) => Left(ConfigureError.InvalidDifferOp(nextPath, otherOp, "EqualsDiffer"))
+        case (None, otherOp) => Left(ConfigureError.InvalidConfigureOp(nextPath, otherOp, "EqualsDiffer"))
       }
     }
   }
@@ -229,7 +205,7 @@ object Differ extends DifferTupleInstances with DifferGen {
                 ),
               )
             case _: PairBy[_] =>
-              Left(ConfigureError.InvalidDifferOp(nextPath, op, "MapDiffer"))
+              Left(ConfigureError.InvalidConfigureOp(nextPath, op, "MapDiffer"))
           }
       }
     }
@@ -510,7 +486,7 @@ object Differ extends DifferTupleInstances with DifferGen {
               )
             case m: PairBy[_] =>
               m match {
-                case PairBy.Index => Left(ConfigureError.InvalidDifferOp(nextPath, m, "Set"))
+                case PairBy.Index => Left(ConfigureError.InvalidConfigureOp(nextPath, m, "Set"))
                 case m: PairBy.ByFunc[_, _] =>
                   if (m.aTag.tag == itemTag.tag) {
                     Right(

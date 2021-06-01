@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.ConfigureError.InvalidDifferOp
+import difflicious.ConfigureError.InvalidConfigureOp
 import munit.ScalaCheckSuite
 import difflicious.testutils._
 import difflicious.testtypes._
@@ -23,7 +23,7 @@ class DifferSpec extends ScalaCheckSuite {
       Differ[Int].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
         ConfigureError
-          .InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "NumericDiffer"),
+          .InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "NumericDiffer"),
       ),
     )
   }
@@ -65,7 +65,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("EqualsDiffer: configure fails if op is not setting ignore") {
     assertEquals(
       EqClass.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
-      Left(InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "EqualsDiffer")),
+      Left(InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "EqualsDiffer")),
     )
   }
 
@@ -245,7 +245,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Map: configureRaw fails if operation isn't ignore") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
-      Left(InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "MapDiffer")),
+      Left(InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "MapDiffer")),
     )
   }
 
@@ -570,7 +570,7 @@ class DifferSpec extends ScalaCheckSuite {
       Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
         ConfigureError
-          .InvalidDifferOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "Set"),
+          .InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "Set"),
       ),
     )
   }
@@ -642,7 +642,7 @@ class DifferSpec extends ScalaCheckSuite {
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
         ConfigureError
-          .InvalidDifferOp(
+          .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
             "record",
@@ -656,7 +656,7 @@ class DifferSpec extends ScalaCheckSuite {
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
         ConfigureError
-          .InvalidDifferOp(
+          .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
             "record",
@@ -830,7 +830,7 @@ class DifferSpec extends ScalaCheckSuite {
           ConfigureOp.PairBy.Index,
         ),
       Left(
-        ConfigureError.InvalidDifferOp(
+        ConfigureError.InvalidConfigureOp(
           ConfigurePath.current,
           ConfigureOp.PairBy.Index,
           "sealed trait",

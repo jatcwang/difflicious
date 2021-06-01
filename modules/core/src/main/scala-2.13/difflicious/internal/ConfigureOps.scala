@@ -23,6 +23,7 @@ trait ConfigureOps[T] { this: Differ[T] =>
     macro ConfigureMacro.configurePairByIndex_impl[F, T, A]
 }
 
+// pairBy has to be defined differently for better type inference.
 class PairByOps[F[_], A](differ: Differ[F[A]]) {
   def pairBy[B](f: A => B)(implicit aTag: LTag[A]): Differ[F[A]] =
     differ.configureRaw(ConfigurePath.current, PairBy.func(f)).unsafeGet

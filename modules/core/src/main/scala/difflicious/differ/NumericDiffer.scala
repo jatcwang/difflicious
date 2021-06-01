@@ -30,7 +30,7 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
       case (None, ConfigureOp.SetIgnored(newIgnored)) =>
         Right(new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, tag = tag))
       case (None, otherOp) =>
-        Left(ConfigureError.InvalidDifferOp(nextPath, otherOp, "NumericDiffer"))
+        Left(ConfigureError.InvalidConfigureOp(nextPath, otherOp, "NumericDiffer"))
     }
   }
 }

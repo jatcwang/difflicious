@@ -69,7 +69,6 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path allows 'each' to resolve underlying differ in a Set") {
     assertConsoleDiffOutput(
-      // FIXME: here
       Differ[Set[CC]].pairBy(_.i).ignoreAtPath(_.each.dd),
       Set(
         CC(1, "s", 1.0),
