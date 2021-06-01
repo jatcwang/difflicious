@@ -68,27 +68,25 @@ final class RecordDiffer[T](
     }
   }
 
-  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, RecordDiffer[T]] = {
-    val (step, nextPath) = path.next
-    step match {
-      case Some(fieldName) =>
-        for {
-          (getter, fieldDiffer) <- fieldDiffers
-            .get(fieldName)
-            .toRight(ConfigureError.NonExistentField(nextPath, fieldName))
-          newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
-        } yield new RecordDiffer[T](
-          fieldDiffers = fieldDiffers.updated(fieldName, (getter, newFieldDiffer)),
-          isIgnored = this.isIgnored,
-          typeName = typeName,
-        )
-      case None =>
-        op match {
-          case ConfigureOp.SetIgnored(newIgnored) =>
-            Right(new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName))
-          case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidConfigureOp(nextPath, op, "record"))
-        }
+  override def configureIgnored(newIgnored: Boolean): Differ[T] =
+    new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName)
 
-    }
-  }
+  override def configurePath(
+    step: String,
+    nextPath: ConfigurePath,
+    op: ConfigureOp,
+  ): Either[ConfigureError, Differ[T]] =
+    for {
+      (getter, fieldDiffer) <- fieldDiffers
+        .get(step)
+        .toRight(ConfigureError.NonExistentField(nextPath, step))
+      newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
+    } yield new RecordDiffer[T](
+      fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
+      isIgnored = this.isIgnored,
+      typeName = typeName,
+    )
+
+  override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+    Left(ConfigureError.InvalidConfigureOp(path, op, "record"))
 }

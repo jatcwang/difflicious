@@ -1,11 +1,12 @@
 package difflicious
 import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
+import difflicious.internal.EitherGetSyntax._
 import izumi.reflect.macrortti.LTag
 import magnolia._
 import difflicious.utils.{TypeName => DTypeName}
-import scala.collection.mutable
 
+import scala.collection.mutable
 import scala.collection.immutable.ListMap
 
 trait DifferGen {
@@ -64,78 +65,65 @@ trait DifferGen {
       }
     }
 
-    // FIXME: test: two layers of sealed trait. Will probably need a "stack" of subtype name in the API response?
-    override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, Typeclass[T]] = {
-      val (step, nextPath) = path.next
-      step match {
-        case Some(shortName) =>
-          ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.short == shortName } match {
-            case Some((sub, idx)) =>
-              sub.typeclass
-                .configureRaw(nextPath, op)
-                .map { newDiffer =>
-                  Subtype(
-                    name = sub.typeName,
-                    idx = sub.index,
-                    anns = sub.annotationsArray,
-                    tpeAnns = sub.typeAnnotationsArray,
-                    tc = CallByNeed(newDiffer),
-                    isType = sub.cast.isDefinedAt,
-                    asType = sub.cast.apply,
-                  )
-                }
-                .map { newSubType =>
-                  val newSubTypes = ctx.subtypes.updated(idx, newSubType)
-                  val newSealedTrait = new SealedTrait(
-                    typeName = ctx.typeName,
-                    subtypesArray = newSubTypes.toArray,
-                    annotationsArray = ctx.annotations.toArray,
-                    typeAnnotationsArray = ctx.typeAnnotations.toArray,
-                  )
-                  new SealedTraitDiffer[T](newSealedTrait, isIgnored)
-                }
-            case None =>
-              Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
-          }
-        case None =>
-          op match {
-            case ignoreOp @ ConfigureOp.SetIgnored(newIgnored) => {
-              val newSubTypes = mutable.ArrayBuffer.empty[Subtype[Differ, T]]
-              var configureError: Option[ConfigureError] = None
-              ctx.subtypes.foreach { sub =>
-                if (configureError.nonEmpty) () // Do nothing if we already failed
-                else
-                  sub.typeclass.configureRaw(path, ignoreOp) match {
-                    case Right(newDiffer) => {
-                      newSubTypes += Subtype(
-                        name = sub.typeName,
-                        idx = sub.index,
-                        anns = sub.annotationsArray,
-                        tpeAnns = sub.typeAnnotationsArray,
-                        tc = CallByNeed(newDiffer),
-                        isType = sub.cast.isDefinedAt,
-                        asType = sub.cast.apply,
-                      )
-                    }
-                    case Left(e) => configureError = Some(e)
-                  }
-              }
-              configureError.toLeft {
-                val newSealedTrait = new SealedTrait(
-                  typeName = ctx.typeName,
-                  subtypesArray = newSubTypes.toArray,
-                  annotationsArray = ctx.annotations.toArray,
-                  typeAnnotationsArray = ctx.typeAnnotations.toArray,
-                )
-                new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
-              }
-            }
-            case _: ConfigureOp.PairBy[_] => Left(ConfigureError.InvalidConfigureOp(nextPath, op, "sealed trait"))
-          }
-
+    override def configureIgnored(newIgnored: Boolean): Typeclass[T] = {
+      val newSubTypes = mutable.ArrayBuffer.empty[Subtype[Differ, T]]
+      ctx.subtypes.map { sub =>
+        newSubTypes += Subtype(
+          name = sub.typeName,
+          idx = sub.index,
+          anns = sub.annotationsArray,
+          tpeAnns = sub.typeAnnotationsArray,
+          tc =
+            CallByNeed(sub.typeclass.configureRaw(ConfigurePath.current, ConfigureOp.SetIgnored(newIgnored)).unsafeGet),
+          isType = sub.cast.isDefinedAt,
+          asType = sub.cast.apply,
+        )
       }
+      val newSealedTrait = new SealedTrait(
+        typeName = ctx.typeName,
+        subtypesArray = newSubTypes.toArray,
+        annotationsArray = ctx.annotations.toArray,
+        typeAnnotationsArray = ctx.typeAnnotations.toArray,
+      )
+      new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
     }
 
+    override def configurePath(
+      step: String,
+      nextPath: ConfigurePath,
+      op: ConfigureOp,
+    ): Either[ConfigureError, Typeclass[T]] =
+      ctx.subtypes.zipWithIndex.find { case (sub, _) => sub.typeName.short == step } match {
+        case Some((sub, idx)) =>
+          sub.typeclass
+            .configureRaw(nextPath, op)
+            .map { newDiffer =>
+              Subtype(
+                name = sub.typeName,
+                idx = sub.index,
+                anns = sub.annotationsArray,
+                tpeAnns = sub.typeAnnotationsArray,
+                tc = CallByNeed(newDiffer),
+                isType = sub.cast.isDefinedAt,
+                asType = sub.cast.apply,
+              )
+            }
+            .map { newSubType =>
+              val newSubTypes = ctx.subtypes.updated(idx, newSubType)
+              val newSealedTrait = new SealedTrait(
+                typeName = ctx.typeName,
+                subtypesArray = newSubTypes.toArray,
+                annotationsArray = ctx.annotations.toArray,
+                typeAnnotationsArray = ctx.typeAnnotations.toArray,
+              )
+              new SealedTraitDiffer[T](newSealedTrait, isIgnored)
+            }
+        case None =>
+          Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
+      }
+
+    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Typeclass[T]] =
+      Left(ConfigureError.InvalidConfigureOp(path, op, "sealed trait"))
   }
 
   def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =

@@ -12,8 +12,17 @@ object testtypes {
   def dummyDiffer[T]: Differ[T] = new Differ[T] {
     override def diff(inputs: DiffInput[T]): R = sys.error("diff on dummyDiffer")
 
-    override def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]] =
-      sys.error("configureRaw on dummyDiffer")
+    override def configureIgnored(newIgnored: Boolean): Differ[T] =
+      sys.error("dummyDiffer methods should not be called")
+
+    override def configurePath(
+      step: String,
+      nextPath: ConfigurePath,
+      op: ConfigureOp,
+    ): Either[ConfigureError, Differ[T]] = sys.error("dummyDiffer methods should not be called")
+
+    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+      sys.error("dummyDiffer methods should not be called")
   }
 
   case class HasASeq[A](seq: Seq[A])

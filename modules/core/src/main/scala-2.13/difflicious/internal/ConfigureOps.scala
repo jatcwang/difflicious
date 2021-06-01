@@ -1,7 +1,7 @@
 package difflicious.internal
 
 import difflicious.ConfigureOp.PairBy
-import difflicious.internal.EitherGetSyntax.EitherExts
+import difflicious.internal.EitherGetSyntax.EitherExtensionOps
 import difflicious.{ConfigurePath, Differ, ConfigureOp}
 import difflicious.utils.Pairable
 import izumi.reflect.macrortti.LTag
@@ -11,8 +11,6 @@ import scala.annotation.{tailrec, nowarn}
 import scala.reflect.macros.blackbox
 
 trait ConfigureOps[T] { this: Differ[T] =>
-  def ignore: Differ[T] = configureRaw(ConfigurePath.current, ConfigureOp.ignore).unsafeGet
-  def unignore: Differ[T] = configureRaw(ConfigurePath.current, ConfigureOp.unignore).unsafeGet
 
   def ignoreAtPath[U](path: T => U): Differ[T] = macro ConfigureMacro.configureIgnore_impl[T, U]
 

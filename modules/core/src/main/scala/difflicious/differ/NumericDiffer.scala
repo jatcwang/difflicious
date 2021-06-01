@@ -1,6 +1,6 @@
 package difflicious.differ
 
-import difflicious.{DiffResult, ConfigureOp, DiffInput, ConfigurePath, ConfigureError}
+import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
 import izumi.reflect.Tag
 import difflicious.Differ.ValueDiffer
 
@@ -23,16 +23,18 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
       DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
   }
 
-  override def configureRaw(path: ConfigurePath, op: ConfigureOp): Either[ConfigureError, NumericDiffer[T]] = {
-    val (step, nextPath) = path.next
-    (step, op) match {
-      case (Some(_), _) => Left(ConfigureError.PathTooLong(nextPath))
-      case (None, ConfigureOp.SetIgnored(newIgnored)) =>
-        Right(new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, tag = tag))
-      case (None, otherOp) =>
-        Left(ConfigureError.InvalidConfigureOp(nextPath, otherOp, "NumericDiffer"))
-    }
-  }
+  override def configureIgnored(newIgnored: Boolean): Differ[T] =
+    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, tag = tag)
+
+  override def configurePath(
+    step: String,
+    nextPath: ConfigurePath,
+    op: ConfigureOp,
+  ): Either[ConfigureError, Differ[T]] = Left(ConfigureError.PathTooLong(nextPath))
+
+  override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+    Left(ConfigureError.InvalidConfigureOp(path, op, "NumericDiffer"))
+
 }
 
 object NumericDiffer {
