@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.ConfigureError.{TypeTagMismatch, NonExistentField, PathTooShortForReplace}
+import difflicious.ConfigureError.{TypeTagMismatch, NonExistentField}
 import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._

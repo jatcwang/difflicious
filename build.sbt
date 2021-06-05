@@ -1,7 +1,7 @@
-val munitVersion = "0.7.25"
-val catsVersion = "2.6.0"
+val munitVersion = "0.7.26"
+val catsVersion = "2.6.1"
 
-val scala213 = "2.13.5"
+val scala213 = "2.13.6"
 val scala3 = "3.0.0-RC2"
 
 inThisBuild(
@@ -133,7 +133,7 @@ lazy val commonSettings = Seq(
   },
   scalacOptions ++= Seq("-Wmacros:after"),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => scalaVersion.value.startsWith("3")),
 )
