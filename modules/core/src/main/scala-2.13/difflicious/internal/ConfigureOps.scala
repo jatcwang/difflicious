@@ -51,14 +51,14 @@ object ConfigureMacro {
     toConfigureRawCall(c)(path, opTree)
   }
 
-  // FIXME: test
   def replace_impl[T, U](c: blackbox.Context)(
     path: c.Expr[T => U],
   )(
     newDiffer: c.Expr[Differ[U]],
-  )(tag: c.Expr[LTag[U]]): c.Tree = {
+  )(tag: c.Expr[LTag[U]])(implicit uTypeTag: c.WeakTypeTag[U]): c.Tree = {
     import c.universe._
-    val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer(_ => $newDiffer, $tag)"
+    val opTree =
+      q"_root_.difflicious.ConfigureOp.TransformDiffer[${uTypeTag.tpe}](unused => { val _ = unused; $newDiffer }, $tag)"
     toConfigureRawCall(c)(path, opTree)
   }
 

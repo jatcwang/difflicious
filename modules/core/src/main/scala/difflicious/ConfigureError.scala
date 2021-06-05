@@ -15,7 +15,7 @@ object ConfigureError {
   private def unresolvedPath(path: ConfigurePath): String = path.unresolvedSteps.mkString(".")
 
   // FIXME: errors should always contain the current differ type?
-  final case class NonExistentField(path: ConfigurePath, fieldName: String) extends ConfigureError {
+  final case class NonExistentField(path: ConfigurePath) extends ConfigureError {
     override def errorMessage: String = s"Field does not exist at path ${resolvedPath(path)}"
   }
   final case class PathTooLong(path: ConfigurePath) extends ConfigureError {

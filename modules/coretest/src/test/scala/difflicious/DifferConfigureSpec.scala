@@ -1,12 +1,35 @@
 package difflicious
 
+import difflicious.ConfigureError.{TypeTagMismatch, NonExistentField, PathTooShortForReplace}
 import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._
-import difflicious.utils.Eachable2
+import izumi.reflect.macrortti.LTag
 
 // Tests for configuring a Differ
 class DifferConfigureSpec extends munit.FunSuite {
+
+  test("Differ#ignore works") {
+    assertConsoleDiffOutput(
+      CC.differ.ignore,
+      CC(1, "s", 1.0),
+      CC(1, "s", 2.0),
+      grayIgnoredStr,
+    )
+  }
+
+  test("Differ#unignore works") {
+    assertConsoleDiffOutput(
+      CC.differ.ignore.unignore,
+      CC(1, "s", 1.0),
+      CC(1, "s", 2.0),
+      s"""CC(
+         |  i: 1,
+         |  s: "s",
+         |  dd: ${R}1.0$X -> ${G}2.0$X,
+         |)""".stripMargin,
+    )
+  }
 
   test("configure path's subType call errors when super type isn't sealed") {
     val compileError = compileErrors("Differ[List[OpenSuperType]].ignoreAt(_.each.subType[OpenSub])")
@@ -170,11 +193,8 @@ class DifferConfigureSpec extends munit.FunSuite {
   }
 
   test("'replace' for MapDiffer replaces value differ when step is 'each'") {
-    implicit val ignoredDiffer: Differ[CC] = CC.differ.ignore
-    val differ: Differ[Map[String, CC]] = Differ[Map[String, CC]]
-    implicitly[Eachable2[Map]](mapEachable2)
-    toEachable2Ops(Map(1 -> 1)).each
-    val newDiffer = differ.replace[CC](_.each)(CC.differ)
+    val differ: Differ[Map[String, CC]] = Differ[Map[String, CC]].configure(_.each)(_.ignore)
+    val differWithReplace = differ.replace[CC](_.each)(CC.differ)
 
     assertConsoleDiffOutput(
       differ,
@@ -182,58 +202,178 @@ class DifferConfigureSpec extends munit.FunSuite {
         "a" -> CC(1, "s", 1.0),
       ),
       Map(
-        "b" -> CC(2, "s", 4.0),
+        "a" -> CC(1, "s", 4.0),
       ),
       s"""Map(
-         |  "a" -> Set(
-         |      CC(
-         |        i: 1,
-         |        s: "s",
-         |        dd: ${R}1.0$X -> ${G}2.0$X,
-         |      ),
-         |      CC(
-         |        i: 2,
-         |        s: "s",
-         |        dd: ${R}2.0$X -> ${G}4.0$X,
-         |      ),
+         |  "a" -> $grayIgnoredStr,
+         |)""".stripMargin,
+    )
+
+    assertConsoleDiffOutput(
+      differWithReplace,
+      Map(
+        "a" -> CC(1, "s", 1.0),
+      ),
+      Map(
+        "a" -> CC(1, "s", 4.0),
+      ),
+      s"""Map(
+         |  "a" -> CC(
+         |      i: 1,
+         |      s: "s",
+         |      dd: ${R}1.0$X -> ${G}4.0$X,
          |    ),
          |)""".stripMargin,
     )
   }
 
-  test("'configure' for MapDiffer transforms value differ when step is 'each'") {
-    ???
-  }
-
   test("'replace' for MapDiffer fails if step isn't 'each'") {
-    ???
+    assertEquals(
+      Differ[Map[String, CC]]
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+      Left(NonExistentField(configurePathResolved("nope"))),
+    )
   }
 
   test("'replace' for MapDiffer fails if type tag mismatches") {
-    ???
+    assertEquals(
+      Differ[Map[String, CC]]
+        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
+      Left(
+        TypeTagMismatch(
+          path = configurePathResolved("each"),
+          obtainedTag = LTag[Sealed].tag,
+          expectedTag = LTag[CC].tag,
+        ),
+      ),
+    )
   }
 
   test("'replace' for SeqDiffer replaces ite differ when step is 'each'") {
-    ???
+    val differ: Differ[Seq[CC]] = Differ[Seq[CC]].configure(_.each)(_.ignore)
+    val differWithReplace = differ.replace[CC](_.each)(CC.differ)
+
+    assertConsoleDiffOutput(
+      differ,
+      Seq(
+        CC(1, "s", 1.0),
+      ),
+      Seq(
+        CC(1, "s", 4.0),
+      ),
+      s"""Seq(
+         |  $grayIgnoredStr,
+         |)""".stripMargin,
+    )
+
+    assertConsoleDiffOutput(
+      differWithReplace,
+      Seq(
+        CC(1, "s", 1.0),
+      ),
+      Seq(
+        CC(1, "s", 4.0),
+      ),
+      s"""Seq(
+         |  CC(
+         |    i: 1,
+         |    s: "s",
+         |    dd: ${R}1.0$X -> ${G}4.0$X,
+         |  ),
+         |)""".stripMargin,
+    )
+  }
+
+  test("'replace' for SeqDiffer fails if step isn't 'each'") {
+    assertEquals(
+      Differ[Seq[CC]]
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+      Left(NonExistentField(configurePathResolved("nope"))),
+    )
   }
 
   test("'replace' for SeqDiffer fails if type tag mismatches") {
-    ???
-  }
-
-  test("'replace' for SeqDiffer fails if step isn't 'each'") {
-    ???
+    assertEquals(
+      Differ[Seq[CC]]
+        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
+      Left(
+        TypeTagMismatch(
+          path = configurePathResolved("each"),
+          obtainedTag = LTag[Sealed].tag,
+          expectedTag = LTag[CC].tag,
+        ),
+      ),
+    )
   }
 
   test("'replace' for SetDiffer replaces ite differ when step is 'each'") {
-    ???
+    val differ: Differ[Set[CC]] = Differ[Set[CC]].configure(_.each)(_.ignore)
+    val differWithReplace = differ.replace[CC](_.each)(CC.differ)
+
+    assertConsoleDiffOutput(
+      differ,
+      Set(
+        CC(1, "s", 1.0),
+      ),
+      Set(
+        CC(1, "s", 1.0),
+      ),
+      s"""Set(
+         |  $grayIgnoredStr,
+         |)""".stripMargin,
+    )
+
+    assertConsoleDiffOutput(
+      differWithReplace,
+      Set(
+        CC(1, "s", 1.0),
+      ),
+      Set(
+        CC(1, "s", 1.0),
+      ),
+      s"""Set(
+         |  CC(
+         |    i: 1,
+         |    s: "s",
+         |    dd: 1.0,
+         |  ),
+         |)""".stripMargin,
+    )
   }
 
   test("'replace' for SetDiffer fails if type tag mismatches") {
-    ???
+    assertEquals(
+      Differ[Set[CC]]
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+      Left(NonExistentField(configurePathResolved("nope"))),
+    )
   }
 
   test("'replace' for SeqDiffer fails if step isn't 'each'") {
-    ???
+    assertEquals(
+      Differ[Set[CC]]
+        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
+      Left(
+        TypeTagMismatch(
+          path = configurePathResolved("each"),
+          obtainedTag = LTag[Sealed].tag,
+          expectedTag = LTag[CC].tag,
+        ),
+      ),
+    )
+  }
+
+  test("configure fails if trying to replace with an empty path") {
+    assertEquals(
+      Differ[Set[CC]]
+        .configureRaw(ConfigurePath.of(), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+      Left(
+        PathTooShortForReplace(),
+      ),
+    )
+  }
+
+  private def configurePathResolved(path: String*): ConfigurePath = {
+    ConfigurePath(path.toVector, List.empty)
   }
 }

@@ -11,7 +11,9 @@ import scala.collection.mutable
 
 trait Differ[T] extends ConfigureOps[T] {
   type R <: DiffResult
-  def tag: LTag[T]
+
+  // Type tag of T. Required for runtime typechecking
+  protected def tag: LTag[T]
 
   def diff(inputs: DiffInput[T]): R
 
@@ -247,7 +249,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           )
         }
       } else
-        Left(ConfigureError.NonExistentField(path = nextPath, step))
+        Left(ConfigureError.NonExistentField(path = nextPath))
     }
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[M[K, V]]] =
@@ -273,7 +275,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           )
         else Left(TypeTagMismatch(path, op.tag.tag, valueTag.tag))
       } else
-        Left(ConfigureError.NonExistentField(path = path, step))
+        Left(ConfigureError.NonExistentField(path = path))
   }
 
   implicit def seqDiffer[F[_], A](
@@ -390,7 +392,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             asSeq = asSeq,
           )
         }
-      } else Left(ConfigureError.NonExistentField(nextPath, step))
+      } else Left(ConfigureError.NonExistentField(nextPath))
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
       op match {
@@ -446,7 +448,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             ),
           )
         } else Left(ConfigureError.TypeTagMismatch(path, op.tag.tag, itemTag.tag))
-      } else Left(ConfigureError.NonExistentField(path, step))
+      } else Left(ConfigureError.NonExistentField(path))
     }
   }
 
@@ -573,7 +575,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             asSet = asSet,
           )
         }
-      } else Left(ConfigureError.NonExistentField(nextPath, step))
+      } else Left(ConfigureError.NonExistentField(nextPath))
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
       op match {
@@ -615,7 +617,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             ),
           )
         } else Left(TypeTagMismatch(path, op.tag.tag, itemTag.tag))
-      } else Left(ConfigureError.NonExistentField(path, step))
+      } else Left(ConfigureError.NonExistentField(path))
     }
   }
 

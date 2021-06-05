@@ -1,7 +1,7 @@
 import cats.data.{NonEmptyMap, NonEmptyVector, NonEmptySet, NonEmptyChain, Chain, NonEmptyList}
 import difflicious.Differ
 import difflicious.Differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
-import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
+import difflicious.utils.{TypeName, AsSet, AsSeq, AsMap, Eachable}
 import izumi.reflect.macrortti.LTag
 
 trait CatsInstances {
@@ -11,6 +11,8 @@ trait CatsInstances {
   implicit val nonEmptyMapAsMap: AsMap[NonEmptyMap] = new AsMap[NonEmptyMap] {
     override def asMap[A, B](m: NonEmptyMap[A, B]): Map[A, B] = m.toSortedMap
   }
+
+  implicit def nonEmptyMapEachable[K]: Eachable[NonEmptyMap[K, *]] = new Eachable[NonEmptyMap[K, *]] {}
 
   implicit val nonEmptyListAsSeq: AsSeq[NonEmptyList] = new AsSeq[NonEmptyList] {
     override def asSeq[A](f: NonEmptyList[A]): Seq[A] = f.toList

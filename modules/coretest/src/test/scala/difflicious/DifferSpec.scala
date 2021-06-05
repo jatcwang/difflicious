@@ -69,6 +69,14 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("EqualsDiffer: configure fails if TransformDiffer operation is received") {
+    val transformOp = ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])
+    assertEquals(
+      EqClass.differ.configureRaw(ConfigurePath.of("asdf"), transformOp),
+      Left(ConfigureError.InvalidConfigureOp(ConfigurePath(Vector("asdf"), List.empty), transformOp, "EqualsDiffer")),
+    )
+  }
+
   test("EqualsDiffer: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(EqClass.differ)
   }
@@ -238,7 +246,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Map: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
     )
   }
 
@@ -418,7 +426,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Seq: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Seq[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
     )
   }
 
@@ -551,7 +559,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Set: Update fails if field name isn't 'each'") {
     assertEquals(
       Differ[Set[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "nono")),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
     )
   }
 
@@ -632,7 +640,7 @@ class DifferSpec extends ScalaCheckSuite {
       CC.differ.configureRaw(ConfigurePath.of("nonexistent"), ConfigureOp.ignore),
       Left(
         ConfigureError
-          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty), "nonexistent"),
+          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty)),
       ),
     )
   }

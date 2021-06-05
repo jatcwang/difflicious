@@ -83,7 +83,7 @@ final class RecordDiffer[T](
     for {
       (getter, fieldDiffer) <- fieldDiffers
         .get(step)
-        .toRight(ConfigureError.NonExistentField(nextPath, step))
+        .toRight(ConfigureError.NonExistentField(nextPath))
       newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
     } yield new RecordDiffer[T](
       fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
@@ -101,7 +101,7 @@ final class RecordDiffer[T](
     path: ConfigurePath,
   ): Either[ConfigureError, Differ[T]] = {
     for {
-      (getter, fieldDiffer) <- fieldDiffers.get(step).toRight(ConfigureError.NonExistentField(path, step))
+      (getter, fieldDiffer) <- fieldDiffers.get(step).toRight(ConfigureError.NonExistentField(path))
       _ <- Either.cond(op.tag.tag == fieldDiffer.tag.tag, (), TypeTagMismatch(path, op.tag.tag, tag.tag))
     } yield new RecordDiffer[T](
       fieldDiffers = fieldDiffers.updated(step, (getter, op.unsafeCastFunc[Any].apply(fieldDiffer))),
