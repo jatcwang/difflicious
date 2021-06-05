@@ -8,14 +8,14 @@ import difflicious.implicits._
 class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path's subType call errors when super type isn't sealed") {
-    val compileError = compileErrors("Differ[List[OpenSuperType]].ignoreAtPath(_.each.subType[OpenSub])")
+    val compileError = compileErrors("Differ[List[OpenSuperType]].ignoreAt(_.each.subType[OpenSub])")
     val firstLine = compileError.linesIterator.toList.drop(1).head
     assertEquals(firstLine, "Specified subtype is not a known direct subtype of trait OpenSuperType.")
   }
 
   test("configure path's subType handles multi-level hierarchies") {
     assertConsoleDiffOutput(
-      Differ[List[Sealed]].ignoreAtPath(_.each.subType[SubSealed.SubSub1].d),
+      Differ[List[Sealed]].ignoreAt(_.each.subType[SubSealed.SubSub1].d),
       List(
         SubSealed.SubSub1(1.0),
       ),
@@ -32,7 +32,7 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path allows 'each' to resolve underlying differ in a Map") {
     assertConsoleDiffOutput(
-      Differ[Map[String, CC]].ignoreAtPath(_.each.dd),
+      Differ[Map[String, CC]].ignoreAt(_.each.dd),
       Map(
         "a" -> CC(1, "s", 1.0),
       ),
@@ -50,7 +50,7 @@ class DifferConfigureSpec extends munit.FunSuite {
   }
   test("configure path allows 'each' to resolve underlying differ in a Seq") {
     assertConsoleDiffOutput(
-      Differ[List[CC]].ignoreAtPath(_.each.dd),
+      Differ[List[CC]].ignoreAt(_.each.dd),
       List(
         CC(1, "s", 1.0),
       ),
@@ -69,7 +69,7 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path allows 'each' to resolve underlying differ in a Set") {
     assertConsoleDiffOutput(
-      Differ[Set[CC]].pairBy(_.i).ignoreAtPath(_.each.dd),
+      Differ[Set[CC]].pairBy(_.i).ignoreAt(_.each.dd),
       Set(
         CC(1, "s", 1.0),
       ),
@@ -88,7 +88,7 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configurePairBy works with Seq") {
     assertConsoleDiffOutput(
-      Differ[HasASeq[CC]].pairByAtPath(_.seq)(_.i),
+      Differ[HasASeq[CC]].configure(_.seq)(_.pairBy(_.i)),
       HasASeq(
         Seq(
           CC(1, "s", 1.0),
@@ -120,7 +120,7 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configurePairBy works with Set") {
     assertConsoleDiffOutput(
-      Differ[Map[String, Set[CC]]].pairByAtPath(_.each)(_.i),
+      Differ[Map[String, Set[CC]]].configure(x => x.each)(_.pairBy(_.i)),
       Map(
         "a" -> Set(
           CC(1, "s", 1.0),
@@ -152,7 +152,7 @@ class DifferConfigureSpec extends munit.FunSuite {
 
   test("configure path can handle escaped sub-type and field names") {
     assertConsoleDiffOutput(
-      Differ[List[Sealed]].ignoreAtPath(_.each.subType[`Weird@Sub`].`weird@Field`),
+      Differ[List[Sealed]].ignoreAt(_.each.subType[`Weird@Sub`].`weird@Field`),
       List(
         `Weird@Sub`(1, "a"),
       ),

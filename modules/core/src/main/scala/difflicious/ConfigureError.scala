@@ -23,6 +23,9 @@ object ConfigureError {
       s"Configure path is too long. Reached a 'leaf' Differ while there are still unresolved steps. " +
         s"Current path: ${resolvedPath(path)}, Leftover steps: ${unresolvedPath(path)}"
   }
+  final case class PathTooShortForReplace() extends ConfigureError {
+    override def errorMessage: String = "Path cannot be empty for Replace command"
+  }
   final case class UnrecognizedSubType(path: ConfigurePath, allowedTypes: Vector[String]) extends ConfigureError {
     override def errorMessage: String =
       s"Unrecognized subtype at path ${resolvedPath(path)}. Known types are ${allowedTypes.mkString(",")}"
@@ -33,10 +36,10 @@ object ConfigureError {
       s"The differ you're trying to configure (${differType}) does now allow the provided ConfigureOp ${op}" +
         s"Current path: ${resolvedPath(path)}"
   }
-  final case class PairByTypeMismatch(path: ConfigurePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
+  final case class TypeTagMismatch(path: ConfigurePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
       extends ConfigureError {
     override def errorMessage: String =
-      s"Type mismatch when trying to configure pair by at path: ${resolvedPath(path)}. " +
+      s"The new differ's type tag is different from the to-be-replaced differ's type tag. At path: ${resolvedPath(path)}. " +
         s"Expected ${expectedTag} but got ${obtainedTag}"
   }
 }

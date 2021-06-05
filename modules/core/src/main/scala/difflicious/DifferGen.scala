@@ -21,11 +21,13 @@ trait DifferGen {
         }
         .to(ListMap),
       isIgnored = false,
+      tag = tag,
       typeName = DTypeName.fromLightTypeTag(tag.tag),
     )
   }
 
-  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean) extends Differ[T] {
+  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean, override val tag: LTag[T])
+      extends Differ[T] {
     // $COVERAGE-OFF$
     require(
       {
@@ -85,7 +87,7 @@ trait DifferGen {
         annotationsArray = ctx.annotations.toArray,
         typeAnnotationsArray = ctx.typeAnnotations.toArray,
       )
-      new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
+      new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored, tag = tag)
     }
 
     override def configurePath(
@@ -116,7 +118,7 @@ trait DifferGen {
                 annotationsArray = ctx.annotations.toArray,
                 typeAnnotationsArray = ctx.typeAnnotations.toArray,
               )
-              new SealedTraitDiffer[T](newSealedTrait, isIgnored)
+              new SealedTraitDiffer[T](newSealedTrait, isIgnored, tag = tag)
             }
         case None =>
           Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
@@ -124,10 +126,16 @@ trait DifferGen {
 
     override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Typeclass[T]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "sealed trait"))
+
+    override protected def configureTransform(
+      step: String,
+      op: ConfigureOp.TransformDiffer[_],
+      path: ConfigurePath,
+    ): Either[ConfigureError, Typeclass[T]] = ??? // FIXME: impl
   }
 
-  def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
-    new SealedTraitDiffer[T](ctx, isIgnored = false)
+  def dispatch[T](ctx: SealedTrait[Differ, T])(implicit tag: LTag[T]): Differ[T] =
+    new SealedTraitDiffer[T](ctx, isIgnored = false, tag = tag)
 
   def derive[T]: Differ[T] = macro Magnolia.gen[T]
 

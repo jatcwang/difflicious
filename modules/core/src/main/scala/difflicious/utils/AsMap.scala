@@ -1,5 +1,6 @@
 package difflicious.utils
 
+// FIXME: rename to MapLike?
 trait AsMap[M[_, _]] {
   def asMap[A, B](m: M[A, B]): Map[A, B]
 }

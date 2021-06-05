@@ -16,12 +16,15 @@ object ConfigureOp {
   val unignore: SetIgnored = SetIgnored(false)
 
   final case class SetIgnored(isIgnored: Boolean) extends ConfigureOp
-//  final case class Replace[A](newDiffer: Differ[A], aTag: LTag[A]) extends ConfigureOp
+  final case class TransformDiffer[T](func: Differ[T] => Differ[T], tag: LTag[T]) extends ConfigureOp {
+    def unsafeCastFunc[X]: Differ[X] => Differ[X] = func.asInstanceOf[Differ[X] => Differ[X]]
+  }
   sealed trait PairBy[-A] extends ConfigureOp
   object PairBy {
     case object Index extends PairBy[Any]
     final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends PairBy[A]
 
+    // FIXME: remove?
     def func[A, B](func: A => B)(implicit aTag: LTag[A]): ByFunc[A, B] = ByFunc(func, aTag)
   }
 

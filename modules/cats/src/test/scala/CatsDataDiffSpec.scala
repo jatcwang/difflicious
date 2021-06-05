@@ -148,7 +148,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptyVector: pairBy") {
     assertConsoleDiffOutput(
-      Differ[NonEmptyVector[CC]].pairByAtPath(a => a)(_.s),
+      Differ[NonEmptyVector[CC]].pairBy(_.s),
       NonEmptyVector.of(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -211,7 +211,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("Chain: pairBy") {
     assertConsoleDiffOutput(
-      Differ[Chain[CC]].pairByAtPath(a => a)(_.s),
+      Differ[Chain[CC]].pairBy(_.s),
       Chain(
         CC(1, "1", 1),
         CC(2, "2", 2),
@@ -274,7 +274,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptyChain: pairBy") {
     assertConsoleDiffOutput(
-      Differ[NonEmptyChain[CC]].pairByAtPath(a => a)(_.s),
+      Differ[NonEmptyChain[CC]].pairBy(_.s),
       NonEmptyChain(
         CC(1, "1", 1),
         CC(2, "2", 2),

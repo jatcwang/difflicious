@@ -1,10 +1,11 @@
 package difflicious.differ
 
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
-import izumi.reflect.Tag
 import difflicious.Differ.ValueDiffer
+import izumi.reflect.macrortti.LTag
 
-final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T]) extends ValueDiffer[T] {
+final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override val tag: LTag[T])
+    extends ValueDiffer[T] {
   @inline
   private def valueToString(t: T) = t.toString
 
@@ -35,9 +36,15 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], tag: Tag[T
   override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "NumericDiffer"))
 
+  override protected def configureTransform(
+    step: String,
+    op: ConfigureOp.TransformDiffer[_],
+    path: ConfigurePath,
+  ): Either[ConfigureError, Differ[T]] = Left(ConfigureError.InvalidConfigureOp(path, op, "NumericDiffer"))
+
 }
 
 object NumericDiffer {
-  def make[T](implicit numeric: Numeric[T], tag: Tag[T]): NumericDiffer[T] =
+  def make[T](implicit numeric: Numeric[T], tag: LTag[T]): NumericDiffer[T] =
     new NumericDiffer[T](isIgnored = false, numeric = numeric, tag = tag)
 }

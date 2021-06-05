@@ -2,7 +2,7 @@ package difflicious.internal
 
 import difflicious.ConfigureOp.PairBy
 import difflicious.internal.EitherGetSyntax.EitherExtensionOps
-import difflicious.{ConfigurePath, Differ, ConfigureOp}
+import difflicious.{ConfigurePath, Differ}
 import difflicious.utils.Pairable
 import izumi.reflect.macrortti.LTag
 
@@ -12,19 +12,22 @@ import scala.reflect.macros.blackbox
 
 trait ConfigureOps[T] { this: Differ[T] =>
 
-  def ignoreAtPath[U](path: T => U): Differ[T] = macro ConfigureMacro.configureIgnore_impl[T, U]
+  def ignoreAt[U](path: T => U): Differ[T] = macro ConfigureMacro.ignoreAt_impl[T, U]
 
-  def pairByAtPath[F[_]: Pairable, A, B](path: T => F[A])(pairBy: A => B): Differ[T] =
-    macro ConfigureMacro.configurePairBy_impl[F, T, A, B]
+  def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U])(implicit tag: LTag[U]): Differ[T] =
+    macro ConfigureMacro.configure_impl[T, U]
 
-  def pairByIndexAtPath[F[_]: Pairable, A](path: T => F[A]): Differ[T] =
-    macro ConfigureMacro.configurePairByIndex_impl[F, T, A]
+  def replace[U](path: T => U, newDiffer: Differ[U])(implicit tag: LTag[U]): Differ[T] =
+    macro ConfigureMacro.replace_impl[T, U]
 }
 
 // pairBy has to be defined differently for better type inference.
 class PairByOps[F[_], A](differ: Differ[F[A]]) {
   def pairBy[B](f: A => B)(implicit aTag: LTag[A]): Differ[F[A]] =
     differ.configureRaw(ConfigurePath.current, PairBy.func(f)).unsafeGet
+
+  def pairByIndex: Differ[F[A]] =
+    differ.configureRaw(ConfigurePath.current, PairBy.Index).unsafeGet
 }
 
 trait ToPairByOps {
@@ -38,32 +41,28 @@ object ConfigureMacro {
 
   val requiredShapeMsg = "Configure path must have shape like: _.field1.each.field2.subType[ASubClass]"
 
-  def configurePairBy_impl[F[_], T, A, B](
-    c: blackbox.Context,
-  )(path: c.Expr[T => F[A]])(pairBy: c.Expr[A => B])(ev: c.Expr[Pairable[F]]): c.Tree = {
+  def configure_impl[T, U](c: blackbox.Context)(
+    path: c.Expr[T => U],
+  )(
+    configFunc: c.Expr[Differ[U] => Differ[U]],
+  )(tag: c.Expr[LTag[U]]): c.Tree = {
     import c.universe._
-
-    val _ = ev // unused
-
-    val opTree = q"_root_.difflicious.ConfigureOp.PairBy.func(${pairBy})"
+    val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer($configFunc, $tag)"
     toConfigureRawCall(c)(path, opTree)
   }
 
-  def configurePairByIndex_impl[F[_], T, A](
-    c: blackbox.Context,
-  )(path: c.Expr[T => F[A]])(ev: c.Expr[Pairable[F]]): c.Tree = {
+  // FIXME: test
+  def replace_impl[T, U](c: blackbox.Context)(
+    path: c.Expr[T => U],
+    newDiffer: c.Expr[Differ[U]],
+  )(tag: c.Expr[LTag[U]]): c.Tree = {
     import c.universe._
-
-    val _ = ev // unused
-
-    val opTree = q"_root_.difflicious.ConfigureOp.PairBy.Index"
+    val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer(_ => $newDiffer, $tag)"
     toConfigureRawCall(c)(path, opTree)
   }
 
-  // FIXME: allow focusing on 'subClass'
   // FIXME: calling a method seems to fail
-  // FIXME: special char in field names
-  def configureIgnore_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
+  def ignoreAt_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
     c: blackbox.Context,
   )(path: c.Expr[T => U]): c.Tree = {
     import c.universe._
@@ -77,8 +76,9 @@ object ConfigureMacro {
   )(path: c.Expr[T => U], op: c.Tree): c.Tree = {
     import c.universe._
 
-    // When deriving, Magnolia derives for all subtypes in the hierarchy (including nested) therefore when checking
-    // We need to do this too
+    // When deriving, Magnolia derives for all subtypes in the hierarchy
+    // (including subclasses of sub-sealed traits) therefore when checking
+    // We need to resolve all subclasses in the hierarchy
     @tailrec
     def resolveAllSubtypesInHierarchy(toCheck: Vector[Symbol], accum: Vector[Symbol]): Vector[Symbol] = {
       if (toCheck.isEmpty) accum

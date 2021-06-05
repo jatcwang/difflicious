@@ -9,7 +9,7 @@ import izumi.reflect.macrortti.LTag
 object testtypes {
 
   // Dummy differ that fails when any of its method is called. For tests where we just need a Differ[T]
-  def dummyDiffer[T]: Differ[T] = new Differ[T] {
+  def dummyDiffer[T](implicit tTag: LTag[T]): Differ[T] = new Differ[T] {
     override def diff(inputs: DiffInput[T]): R = sys.error("diff on dummyDiffer")
 
     override def configureIgnored(newIgnored: Boolean): Differ[T] =
@@ -23,6 +23,16 @@ object testtypes {
 
     override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
       sys.error("dummyDiffer methods should not be called")
+
+    override def tag: LTag[T] = tTag
+
+    override protected def configureTransform(
+      step: String,
+      op: ConfigureOp.TransformDiffer[_],
+      path: ConfigurePath,
+    ): Either[ConfigureError, Differ[T]] =
+      sys.error("dummyDiffer methods should not be called")
+
   }
 
   case class HasASeq[A](seq: Seq[A])
@@ -66,7 +76,7 @@ object testtypes {
   object SealedWithCustom {
     case class Custom(i: Int) extends SealedWithCustom
     object Custom {
-      implicit val differ: Differ[Custom] = Differ.derive[Custom].ignoreAtPath(_.i)
+      implicit val differ: Differ[Custom] = Differ.derive[Custom].ignoreAt(_.i)
     }
     case class Normal(i: Int) extends SealedWithCustom
 

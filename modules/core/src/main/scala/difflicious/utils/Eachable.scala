@@ -5,10 +5,7 @@ import difflicious.utils.Eachable.EachableOps
 import scala.annotation.{compileTimeOnly, nowarn}
 
 // $COVERAGE-OFF$
-trait Eachable[F[_]] {
-  @compileTimeOnly("each should only be called inside Differ.configure*")
-  def each[A](fa: F[A]): A
-}
+trait Eachable[F[_]]
 
 object Eachable extends EachableInstances {
 
@@ -21,17 +18,11 @@ object Eachable extends EachableInstances {
 
 @nowarn("msg=.*never used.*")
 trait EachableInstances {
-  implicit def seqEachable[F[_]: AsSeq]: Eachable[F] = new Eachable[F] {
-    override def each[A](fa: F[A]): A = sys.error("each should only be called inside Differ.configure*")
-  }
+  implicit def seqEachable[F[_]: AsSeq]: Eachable[F] = new Eachable[F] {}
 
-  implicit def setEachable[F[_]: AsSet]: Eachable[F] = new Eachable[F] {
-    override def each[A](fa: F[A]): A = sys.error("each should only be called inside Differ.configure*")
-  }
+  implicit def setEachable[F[_]: AsSet]: Eachable[F] = new Eachable[F] {}
 
-  implicit def mapEachable[M[_, _]: AsMap, K]: Eachable[Map[K, *]] = new Eachable[Map[K, *]] {
-    override def each[A](fa: Map[K, A]): A = sys.error("each should only be called inside Differ.configure*")
-  }
+  implicit def mapEachable[M[_, _]: AsMap, K]: Eachable[Map[K, *]] = new Eachable[Map[K, *]] {}
 }
 
 trait ToEachableOps {

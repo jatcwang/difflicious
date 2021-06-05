@@ -23,6 +23,7 @@ object TupleDifferInstancesGen {
              .mkString(",\n    ")}
          |  ),
          |  isIgnored = false,
+         |  tag = tag,
          |  typeName = TypeName.fromLightTypeTag(tag.tag)
          |)
          |""".stripMargin

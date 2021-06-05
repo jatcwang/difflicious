@@ -301,7 +301,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, CC]
-        .pairByAtPath(a => a)(_.i),
+        .pairBy(_.i),
       List(
         CC(1, "s1", 1),
         CC(2, "s2", 2),
@@ -341,8 +341,8 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ
         .seqDiffer[List, Int]
-        .pairByAtPath(a => a)(identity)
-        .pairByIndexAtPath(a => a),
+        .pairBy(identity)
+        .pairByIndex,
       List(
         1,
         2,
@@ -427,7 +427,7 @@ class DifferSpec extends ScalaCheckSuite {
       Differ.seqDiffer[List, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
       Left(
         ConfigureError
-          .PairByTypeMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
+          .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
       ),
     )
   }
@@ -560,7 +560,7 @@ class DifferSpec extends ScalaCheckSuite {
       Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
       Left(
         ConfigureError
-          .PairByTypeMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
+          .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
       ),
     )
   }
