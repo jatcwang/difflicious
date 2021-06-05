@@ -4,7 +4,7 @@ import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePa
 import difflicious.Differ.ValueDiffer
 import izumi.reflect.macrortti.LTag
 
-final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override val tag: LTag[T])
+final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override protected val tag: LTag[T])
     extends ValueDiffer[T] {
   @inline
   private def valueToString(t: T) = t.toString

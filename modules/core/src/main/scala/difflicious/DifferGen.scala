@@ -26,7 +26,7 @@ trait DifferGen {
     )
   }
 
-  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean, override val tag: LTag[T])
+  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean, override protected val tag: LTag[T])
       extends Differ[T] {
     // $COVERAGE-OFF$
     require(
@@ -125,7 +125,7 @@ trait DifferGen {
       }
 
     override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Typeclass[T]] =
-      Left(ConfigureError.InvalidConfigureOp(path, op, "sealed trait"))
+      Left(ConfigureError.InvalidConfigureOp(path, op, "SealedTraitDiffer"))
   }
 
   def dispatch[T](ctx: SealedTrait[Differ, T])(implicit tag: LTag[T]): Differ[T] =

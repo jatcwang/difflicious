@@ -570,7 +570,7 @@ class DifferSpec extends ScalaCheckSuite {
       Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
         ConfigureError
-          .InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "Set"),
+          .InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "SetDiffer"),
       ),
     )
   }
@@ -645,7 +645,7 @@ class DifferSpec extends ScalaCheckSuite {
           .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
-            "record",
+            "RecordDiffer",
           ),
       ),
     )
@@ -659,7 +659,7 @@ class DifferSpec extends ScalaCheckSuite {
           .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
-            "record",
+            "RecordDiffer",
           ),
       ),
     )
@@ -833,7 +833,7 @@ class DifferSpec extends ScalaCheckSuite {
         ConfigureError.InvalidConfigureOp(
           ConfigurePath.current,
           ConfigureOp.PairBy.Index,
-          "sealed trait",
+          "SealedTraitDiffer",
         ),
       ),
     )

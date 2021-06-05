@@ -5,10 +5,13 @@ import difflicious.utils.TypeName
 import difflicious._
 import izumi.reflect.macrortti.LTag
 
+/**
+  * A differ for a record-like data structure such as tuple or case classes.
+  */
 final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
   isIgnored: Boolean,
-  override val tag: LTag[T],
+  override protected val tag: LTag[T],
   typeName: TypeName,
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
@@ -91,5 +94,5 @@ final class RecordDiffer[T](
     )
 
   override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
-    Left(ConfigureError.InvalidConfigureOp(path, op, "record"))
+    Left(ConfigureError.InvalidConfigureOp(path, op, "RecordDiffer"))
 }

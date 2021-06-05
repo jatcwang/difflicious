@@ -54,7 +54,7 @@ trait Differ[T] extends ConfigureOps[T] {
     op: ConfigureOp.TransformDiffer[_],
   ): Either[ConfigureError, Differ[T]] = {
     Either.cond(
-      op.tag.tag == tag.tag,
+      op.tag == tag,
       op.unsafeCastFunc[T].apply(this),
       TypeTagMismatch(path = path, obtainedTag = op.tag.tag, expectedTag = tag.tag),
     )
@@ -65,16 +65,13 @@ object Differ extends DifferTupleInstances with DifferGen {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
-  // FIXME: better string diff (edit distance and a description of how to get there? this can help especially in cases like extra space or special char)
-
-  // FIXME: need tag
   trait ValueDiffer[T] extends Differ[T] {
     final override type R = DiffResult.ValueResult
 
     override def diff(inputs: DiffInput[T]): R
   }
 
-  final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, override val tag: LTag[T])
+  final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, override protected val tag: LTag[T])
       extends ValueDiffer[T] {
     override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
       case DiffInput.Both(obtained, expected) =>
@@ -108,6 +105,8 @@ object Differ extends DifferTupleInstances with DifferGen {
   def useEquals[T](valueToString: T => String)(implicit tag: LTag[T]): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, valueToString = valueToString, tag = tag)
 
+  // TODO: better string diff (edit distance and a description of how to get there?
+  //  this can help especially in cases like extra space or special char)
   implicit val stringDiff: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
@@ -273,7 +272,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     pairBy: PairBy[A],
     itemDiffer: Differ[A],
     typeName: TypeName,
-    override val tag: LTag[F[A]],
+    override protected val tag: LTag[F[A]],
     itemTag: LTag[A],
     asSeq: AsSeq[F],
   ) extends Differ[F[A]] {
@@ -290,11 +289,13 @@ object Differ extends DifferTupleInstances with DifferGen {
                 case (Some(ob), Some(exp)) => itemDiffer.diff(DiffInput.Both(ob, exp))
                 case (Some(ob), None)      => itemDiffer.diff(DiffInput.ObtainedOnly(ob))
                 case (None, Some(exp))     => itemDiffer.diff(DiffInput.ExpectedOnly(exp))
-                case (None, None) =>
+                case (None, None)          =>
+                  // $COVERAGE-OFF$
                   throw new RuntimeException(
                     "Unexpected: Both obtained and expected side is None in SeqDiffer. " +
-                      "This is most likely a diffilicious bug",
+                      "This shouldn't happen and is most likely a difflicious bug",
                   )
+                // $COVERAGE-ON$
               }
               .toVector
 
@@ -385,7 +386,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             ),
           )
         case m: PairBy.ByFunc[_, _] =>
-          if (m.aTag.tag == itemTag.tag) {
+          if (m.aTag == itemTag) {
             Right(
               new SeqDiffer[F, A](
                 isIgnored = isIgnored,
@@ -462,7 +463,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     itemDiffer: Differ[A],
     matchFunc: A => Any,
     typeName: TypeName,
-    override val tag: LTag[F[A]],
+    override protected val tag: LTag[F[A]],
     itemTag: LTag[A],
     asSet: AsSet[F],
   ) extends Differ[F[A]] {
@@ -533,9 +534,9 @@ object Differ extends DifferTupleInstances with DifferGen {
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
       op match {
-        case PairBy.Index => Left(ConfigureError.InvalidConfigureOp(path, op, "Set"))
+        case PairBy.Index => Left(ConfigureError.InvalidConfigureOp(path, op, "SetDiffer"))
         case m: PairBy.ByFunc[_, _] =>
-          if (m.aTag.tag == itemTag.tag) {
+          if (m.aTag == itemTag) {
             Right(
               new SetDiffer[F, A](
                 isIgnored = isIgnored,

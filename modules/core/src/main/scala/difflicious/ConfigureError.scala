@@ -30,7 +30,6 @@ object ConfigureError {
     override def errorMessage: String =
       s"Unrecognized subtype at path ${resolvedPath(path)}. Known types are ${allowedTypes.mkString(",")}"
   }
-  // FIXME: align use of differType param
   final case class InvalidConfigureOp(path: ConfigurePath, op: ConfigureOp, differType: String) extends ConfigureError {
     override def errorMessage: String =
       s"The differ you're trying to configure (${differType}) does now allow the provided ConfigureOp ${op}" +

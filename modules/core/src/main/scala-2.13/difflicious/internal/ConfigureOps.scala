@@ -62,7 +62,6 @@ object ConfigureMacro {
     toConfigureRawCall(c)(path, opTree)
   }
 
-  // FIXME: calling a method seems to fail
   def ignoreAt_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
     c: blackbox.Context,
   )(path: c.Expr[T => U]): c.Tree = {
@@ -118,7 +117,6 @@ object ConfigureMacro {
           if (allKnownSubTypesInHierarchy.contains(subTypeSym)) {
             collectPathElements(rest, subTypeSym.name.decodedName.toString :: acc)
           } else {
-            // FIXME: check err msg
             c.abort(
               c.enclosingPosition,
               s"""Specified subtype is not a known direct subtype of $superTypeSym.
@@ -133,9 +131,6 @@ object ConfigureMacro {
       }
     }
 
-    // FIXME:
-//    println(path.tree)
-//    println(showRaw(path.tree))
     path.tree match {
       case q"($_) => $pathBody" => {
         val pathStr = collectPathElements(pathBody, List.empty)

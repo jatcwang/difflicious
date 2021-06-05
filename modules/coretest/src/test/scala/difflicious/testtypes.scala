@@ -31,11 +31,9 @@ object testtypes {
   case class HasASeq[A](seq: Seq[A])
 
   object HasASeq {
-    // FIXME: feels like this needs too many implicits
+    // FIXME: FAQ doc: when missing LTag, and how to do case class containing generic type
     implicit def differ[A](
-      implicit seqTag: LTag[Seq[A]],
-      differ: Differ[A],
-      aTag: LTag[A],
+      implicit differ: Differ[Seq[A]],
       hasASeqTag: LTag[HasASeq[A]],
     ): Differ[HasASeq[A]] = {
       Differ.derive[HasASeq[A]]
