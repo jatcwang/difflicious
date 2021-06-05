@@ -126,12 +126,6 @@ trait DifferGen {
 
     override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Typeclass[T]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "sealed trait"))
-
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Typeclass[T]] = ??? // FIXME: impl
   }
 
   def dispatch[T](ctx: SealedTrait[Differ, T])(implicit tag: LTag[T]): Differ[T] =

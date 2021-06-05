@@ -69,14 +69,6 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("EqualsDiffer: configure fails if TransformDiffer operation is received") {
-    val transformOp = ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])
-    assertEquals(
-      EqClass.differ.configureRaw(ConfigurePath.of("asdf"), transformOp),
-      Left(ConfigureError.InvalidConfigureOp(ConfigurePath(Vector("asdf"), List.empty), transformOp, "EqualsDiffer")),
-    )
-  }
-
   test("EqualsDiffer: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(EqClass.differ)
   }

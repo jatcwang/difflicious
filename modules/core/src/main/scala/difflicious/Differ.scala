@@ -1,5 +1,5 @@
 package difflicious
-import difflicious.ConfigureError.{TypeTagMismatch, PathTooShortForReplace}
+import difflicious.ConfigureError.TypeTagMismatch
 import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
@@ -33,12 +33,10 @@ trait Differ[T] extends ConfigureOps[T] {
     */
   final def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]] = {
     (path.unresolvedSteps, operation) match {
-      case (step :: Nil, replaceOp: ConfigureOp.TransformDiffer[_]) =>
-        configureTransform(step, replaceOp, ConfigurePath(path.resolvedSteps :+ step, Nil))
       case (step :: tail, op)                        => configurePath(step, ConfigurePath(path.resolvedSteps :+ step, tail), op)
       case (Nil, ConfigureOp.SetIgnored(newIgnored)) => Right(configureIgnored(newIgnored))
       case (Nil, pairByOp: ConfigureOp.PairBy[_])    => configurePairBy(path, pairByOp)
-      case (Nil, _: ConfigureOp.TransformDiffer[_])  => Left(PathTooShortForReplace())
+      case (Nil, op: ConfigureOp.TransformDiffer[_]) => configureTransform(path, op)
     }
   }
 
@@ -51,11 +49,16 @@ trait Differ[T] extends ConfigureOps[T] {
 
   protected def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[T]]
 
-  protected def configureTransform(
-    step: String,
-    op: ConfigureOp.TransformDiffer[_],
+  final private def configureTransform(
     path: ConfigurePath,
-  ): Either[ConfigureError, Differ[T]]
+    op: ConfigureOp.TransformDiffer[_],
+  ): Either[ConfigureError, Differ[T]] = {
+    Either.cond(
+      op.tag.tag == tag.tag,
+      op.unsafeCastFunc[T].apply(this),
+      TypeTagMismatch(path = path, obtainedTag = op.tag.tag, expectedTag = tag.tag),
+    )
+  }
 }
 
 object Differ extends DifferTupleInstances with DifferGen {
@@ -100,12 +103,6 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Typeclass[T]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "EqualsDiffer"))
 
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Differ[T]] =
-      Left(ConfigureError.InvalidConfigureOp(path, op, "EqualsDiffer"))
   }
 
   def useEquals[T](valueToString: T => String)(implicit tag: LTag[T]): EqualsDiffer[T] =
@@ -255,27 +252,6 @@ object Differ extends DifferTupleInstances with DifferGen {
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[M[K, V]]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "MapDiffer"))
 
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Typeclass[M[K, V]]] =
-      if (step == "each") {
-        if (op.tag.tag == valueTag.tag)
-          Right(
-            new MapDiffer[M, K, V](
-              isIgnored = isIgnored,
-              keyDiffer = keyDiffer,
-              valueDiffer = op.unsafeCastFunc[V].apply(valueDiffer),
-              tag = tag,
-              valueTag = valueTag,
-              typeName = typeName,
-              asMap = asMap,
-            ),
-          )
-        else Left(TypeTagMismatch(path, op.tag.tag, valueTag.tag))
-      } else
-        Left(ConfigureError.NonExistentField(path = path))
   }
 
   implicit def seqDiffer[F[_], A](
@@ -428,28 +404,6 @@ object Differ extends DifferTupleInstances with DifferGen {
             )
           }
       }
-
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Typeclass[F[A]]] = {
-      if (step == "each") {
-        if (op.tag.tag == itemTag.tag) {
-          Right(
-            new SeqDiffer[F, A](
-              isIgnored = false,
-              pairBy = PairBy.Index,
-              itemDiffer = op.unsafeCastFunc[A].apply(itemDiffer),
-              typeName = typeName,
-              tag = tag,
-              itemTag = itemTag,
-              asSeq = asSeq,
-            ),
-          )
-        } else Left(ConfigureError.TypeTagMismatch(path, op.tag.tag, itemTag.tag))
-      } else Left(ConfigureError.NonExistentField(path))
-    }
   }
 
   object SeqDiffer {
@@ -597,28 +551,6 @@ object Differ extends DifferTupleInstances with DifferGen {
             Left(ConfigureError.TypeTagMismatch(path, m.aTag.tag, itemTag.tag))
           }
       }
-
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Typeclass[F[A]]] = {
-      if (step == "each") {
-        if (op.tag.tag == itemTag.tag) {
-          Right(
-            new SetDiffer[F, A](
-              isIgnored = isIgnored,
-              itemDiffer = op.unsafeCastFunc[A].apply(itemDiffer),
-              matchFunc = matchFunc,
-              typeName = typeName,
-              tag = tag,
-              itemTag = itemTag,
-              asSet = asSet,
-            ),
-          )
-        } else Left(TypeTagMismatch(path, op.tag.tag, itemTag.tag))
-      } else Left(ConfigureError.NonExistentField(path))
-    }
   }
 
   // Given two lists of item, find "matching" items using te provided function

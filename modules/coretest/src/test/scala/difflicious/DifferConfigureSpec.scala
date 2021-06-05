@@ -363,16 +363,6 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configure fails if trying to replace with an empty path") {
-    assertEquals(
-      Differ[Set[CC]]
-        .configureRaw(ConfigurePath.of(), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
-      Left(
-        PathTooShortForReplace(),
-      ),
-    )
-  }
-
   private def configurePathResolved(path: String*): ConfigurePath = {
     ConfigurePath(path.toVector, List.empty)
   }

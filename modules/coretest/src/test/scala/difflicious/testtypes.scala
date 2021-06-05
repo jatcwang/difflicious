@@ -26,13 +26,6 @@ object testtypes {
 
     override def tag: LTag[T] = tTag
 
-    override protected def configureTransform(
-      step: String,
-      op: ConfigureOp.TransformDiffer[_],
-      path: ConfigurePath,
-    ): Either[ConfigureError, Differ[T]] =
-      sys.error("dummyDiffer methods should not be called")
-
   }
 
   case class HasASeq[A](seq: Seq[A])
