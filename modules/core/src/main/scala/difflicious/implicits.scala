@@ -1,6 +1,12 @@
 package difflicious
 
 import difflicious.internal.ToPairByOps
-import difflicious.utils.{ToSubTypeOp, EachableInstances, ToEachableOps, PairableInstances}
+import difflicious.utils.{Eachable2Instances, EachableInstances, ToEachableOps, PairableInstances, ToSubTypeOp}
 
-object implicits extends ToEachableOps with EachableInstances with PairableInstances with ToSubTypeOp with ToPairByOps
+object implicits
+    extends ToEachableOps
+    with EachableInstances
+    with Eachable2Instances
+    with PairableInstances
+    with ToSubTypeOp
+    with ToPairByOps

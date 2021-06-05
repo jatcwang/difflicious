@@ -3,6 +3,7 @@ package difflicious
 import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._
+import difflicious.utils.Eachable2
 
 // Tests for configuring a Differ
 class DifferConfigureSpec extends munit.FunSuite {
@@ -86,7 +87,25 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configurePairBy works with Seq") {
+  test("configure path can handle escaped sub-type and field names") {
+    assertConsoleDiffOutput(
+      Differ[List[Sealed]].ignoreAt(_.each.subType[`Weird@Sub`].`weird@Field`),
+      List(
+        `Weird@Sub`(1, "a"),
+      ),
+      List(
+        `Weird@Sub`(1, "x"),
+      ),
+      s"""List(
+         |  Weird@Sub(
+         |    i: 1,
+         |    weird@Field: $I[IGNORED]$X,
+         |  ),
+         |)""".stripMargin,
+    )
+  }
+
+  test("pairBy works with Seq") {
     assertConsoleDiffOutput(
       Differ[HasASeq[CC]].configure(_.seq)(_.pairBy(_.i)),
       HasASeq(
@@ -118,7 +137,7 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configurePairBy works with Set") {
+  test("pairBy works with Set") {
     assertConsoleDiffOutput(
       Differ[Map[String, Set[CC]]].configure(x => x.each)(_.pairBy(_.i)),
       Map(
@@ -150,22 +169,71 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configure path can handle escaped sub-type and field names") {
+  test("'replace' for MapDiffer replaces value differ when step is 'each'") {
+    implicit val ignoredDiffer: Differ[CC] = CC.differ.ignore
+    val differ: Differ[Map[String, CC]] = Differ[Map[String, CC]]
+    implicitly[Eachable2[Map]](mapEachable2)
+    toEachable2Ops(Map(1 -> 1)).each
+    val newDiffer = differ.replace[CC](_.each)(CC.differ)
+
     assertConsoleDiffOutput(
-      Differ[List[Sealed]].ignoreAt(_.each.subType[`Weird@Sub`].`weird@Field`),
-      List(
-        `Weird@Sub`(1, "a"),
+      differ,
+      Map(
+        "a" -> CC(1, "s", 1.0),
       ),
-      List(
-        `Weird@Sub`(1, "x"),
+      Map(
+        "b" -> CC(2, "s", 4.0),
       ),
-      s"""List(
-         |  Weird@Sub(
-         |    i: 1,
-         |    weird@Field: $I[IGNORED]$X,
-         |  ),
+      s"""Map(
+         |  "a" -> Set(
+         |      CC(
+         |        i: 1,
+         |        s: "s",
+         |        dd: ${R}1.0$X -> ${G}2.0$X,
+         |      ),
+         |      CC(
+         |        i: 2,
+         |        s: "s",
+         |        dd: ${R}2.0$X -> ${G}4.0$X,
+         |      ),
+         |    ),
          |)""".stripMargin,
     )
   }
 
+  test("'configure' for MapDiffer transforms value differ when step is 'each'") {
+    ???
+  }
+
+  test("'replace' for MapDiffer fails if step isn't 'each'") {
+    ???
+  }
+
+  test("'replace' for MapDiffer fails if type tag mismatches") {
+    ???
+  }
+
+  test("'replace' for SeqDiffer replaces ite differ when step is 'each'") {
+    ???
+  }
+
+  test("'replace' for SeqDiffer fails if type tag mismatches") {
+    ???
+  }
+
+  test("'replace' for SeqDiffer fails if step isn't 'each'") {
+    ???
+  }
+
+  test("'replace' for SetDiffer replaces ite differ when step is 'each'") {
+    ???
+  }
+
+  test("'replace' for SetDiffer fails if type tag mismatches") {
+    ???
+  }
+
+  test("'replace' for SeqDiffer fails if step isn't 'each'") {
+    ???
+  }
 }

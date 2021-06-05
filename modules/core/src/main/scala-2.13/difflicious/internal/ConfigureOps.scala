@@ -17,7 +17,7 @@ trait ConfigureOps[T] { this: Differ[T] =>
   def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U])(implicit tag: LTag[U]): Differ[T] =
     macro ConfigureMacro.configure_impl[T, U]
 
-  def replace[U](path: T => U, newDiffer: Differ[U])(implicit tag: LTag[U]): Differ[T] =
+  def replace[U](path: T => U)(newDiffer: Differ[U])(implicit tag: LTag[U]): Differ[T] =
     macro ConfigureMacro.replace_impl[T, U]
 }
 
@@ -54,6 +54,7 @@ object ConfigureMacro {
   // FIXME: test
   def replace_impl[T, U](c: blackbox.Context)(
     path: c.Expr[T => U],
+  )(
     newDiffer: c.Expr[Differ[U]],
   )(tag: c.Expr[LTag[U]]): c.Tree = {
     import c.universe._
