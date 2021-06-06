@@ -151,17 +151,10 @@ In many test scenarios we actually don't care about order of elements, as long a
 contains the same elements. One example of this is inserting multiple records into a database and then retrieving them
 , where you expect the same records to be returned by not necessarily in the original order.
 
-In this case, you can configure a `SeqDiffer` to pair by a field instead.
+In this case, you can configure a `Differ` to pair by a field instead.
 
 ```scala mdoc:silent
-import difflicious.ConfigurePath
-import difflicious.ConfigureOp.PairBy
-import difflicious.Differ.SeqDiffer
-```
-
-```scala mdoc:silent
-val defaultDiffer: SeqDiffer[List, Person] = Differ.seqDiffer[List, Person]
-val differByName = defaultDiffer.pairBy(_.name)
+val differByName = Differ[List[Person]].pairBy(_.name)
 
 differByName.diff(
   List(bob50, charles, alice),
@@ -188,13 +181,6 @@ List(
 )
 </pre>
 
-In some cases you only have a `Differ[List[A]]` which doesn't have the `pairBy` method.
-In that case, you can still use `configureRaw` to modify the differ.
-
-```scala mdoc:silent
-val differByName2 = defaultDiffer.configureRaw(ConfigurePath.current, PairBy.func((p: Person) => p.name)).right.get
-```
-
 # Map differ
 
 Map differ pair entries with the same keys and compare the values. It will also indicate which 
@@ -206,7 +192,7 @@ It requires
 - a `Differ` instance for the map value type
 
 ```scala mdoc:silent
-Differ.mapDiffer[Map, String, Person].diff(
+Differ[Map[String, Person]].diff(
   Map(
     "a" -> alice,
     "b" -> bob
@@ -248,7 +234,7 @@ However, you most likely want to pair elements using a field on an element inste
 For the best error reporting, you want to configure `SetDiffer` to pair by a field.
 
 ```scala mdoc:nest:silent
-val differByName: Differ[Set[Person]] = Differ.setDiffer[Set, Person].pairBy(_.name)
+val differByName: Differ[Set[Person]] = Differ[Set[Person]].pairBy(_.name)
 
 differByName.diff(
   Set(bob50, charles, alice),
