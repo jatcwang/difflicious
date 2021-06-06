@@ -1,5 +1,7 @@
 # Difflicious
 
+[![Join the chat at https://gitter.im/jatcwang/difflicious](https://badges.gitter.im/jatcwang/difflicious.svg)](https://gitter.im/jatcwang/difflicious?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # TODO:
 Must have:
 - Replace differ at path
