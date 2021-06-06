@@ -18,9 +18,9 @@ object Eachable extends EachableInstances {
 
 @nowarn("msg=.*never used.*")
 trait EachableInstances {
-  implicit def seqEachable[F[_]: AsSeq]: Eachable[F] = new Eachable[F] {}
+  implicit def seqEachable[F[_]: SeqLike]: Eachable[F] = new Eachable[F] {}
 
-  implicit def setEachable[F[_]: AsSet]: Eachable[F] = new Eachable[F] {}
+  implicit def setEachable[F[_]: SetLike]: Eachable[F] = new Eachable[F] {}
 
   // Instance for Map directly for better inference
   implicit def mapEachable[K]: Eachable[Map[K, *]] = new Eachable[Map[K, *]] {}

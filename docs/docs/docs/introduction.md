@@ -4,18 +4,79 @@ title:  "Introduction"
 permalink: docs/introduction
 ---
 
-# Motivation
+# Introduction
 
-The most used assertion in software testing is asserting that two objects in memory are equal to each other - that
-the **obtained** value from the code you're testing is equal to some **expected** value.
+**Difflicious** is a library to help you diff objects in tests. It aims to:
 
-In most testing libraries they use `equals` method (`==`). 
-
-While this works well initially, for more complex problem domains we discovered that:
-
-- Failure diffs for large models (e.g. case classes, large lists) are completely unreadable - it's impossible to tell what is different at a glance .
-- We sometimes want to ignore some fields in the comparison because
-  - They are values generated external to your system e.g. database-generated IDs in an integration test
-  - They are not relevant to the current test
+* **Readable** and **Actionable** diffs
+* **Customizability**: supporting all kinds of tweaks you'd want to do such as ignoring fields or compare lists independent of
+  element order.
   
-We want to spend our time actually fixing code, not deciphering big diffs. So we wrote **Difflicious**!
+Here's a motivational example!
+
+```scala mdoc:silent
+import difflicious._
+import difflicious.implicits._
+
+sealed trait HousePet {
+  def name: String
+}
+object HousePet {
+  final case class Dog(name: String, age: Int) extends HousePet
+  final case class Cat(name: String, livesLeft: Int) extends HousePet
+  
+  implicit val differ: Differ[HousePet] = Differ.derive
+}
+
+import HousePet.{Cat, Dog}
+
+val petsDiffer = Differ[List[HousePet]]
+  .pairBy(_.name)                          // Match pets in the list by name for comparison
+  .ignoreAt(_.each.subType[Cat].livesLeft) // Don't worry about livesLeft for cats when comparing
+  
+petsDiffer.diff(
+  obtained = List(
+    Dog("Andy", 12),
+    Cat("Dr.Evil", 8),
+    Dog("Lucky", 5),
+  ),
+  expected = List(
+    Dog("Lucky", 6),
+    Cat("Dr.Evil", 9),
+    Cat("Andy", 12),
+  )
+)
+```
+
+And this is the diffs you will see:
+
+<pre class="diff-render">
+List(
+  <span style="color: red;">Dog</span> != <span style="color: green;">Cat</span>
+  <span style="color: red;">=== Obtained ===
+  Dog(
+    name: "Andy",
+    age: 12,
+  )</span>
+  <span style="color: green;">=== Expected ===
+  Cat(
+    name: "Andy",
+    livesLeft: [IGNORED],
+  )</span>,
+  Cat(
+    name: "Dr.Evil",
+    livesLeft: <span style="color: gray;">[IGNORED]</span>,
+  ),
+  Dog(
+    name: "Lucky",
+    age: <span style="color: red;">5</span> -> <span style="color: green;">6</span>,
+  ),
+)
+</pre>
+
+In the example above, difflicious helped us spot:
+
+* That `Andy` is not the cat we expected. (Got a dog instead!)
+* The cat `Dr.Evil` is the "same" on both sides, because we decided to not check how many lives 
+  the cats have left (Cats love their privacy).
+* `Lucky`'s age is wrong.

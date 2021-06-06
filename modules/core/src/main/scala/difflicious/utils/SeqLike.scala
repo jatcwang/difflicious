@@ -1,11 +1,11 @@
 package difflicious.utils
 
-trait AsSeq[F[_]] {
+trait SeqLike[F[_]] {
   def asSeq[A](f: F[A]): Seq[A]
 }
 
-object AsSeq {
-  implicit def stdSeqAsSeq[F[AA] <: Seq[AA]]: AsSeq[F] = new AsSeq[F] {
+object SeqLike {
+  implicit def stdSeqAsSeq[F[AA] <: Seq[AA]]: SeqLike[F] = new SeqLike[F] {
     override def asSeq[A](f: F[A]): Seq[A] = f
   }
 }

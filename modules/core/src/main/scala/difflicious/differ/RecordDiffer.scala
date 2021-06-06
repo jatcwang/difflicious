@@ -84,7 +84,7 @@ final class RecordDiffer[T](
     for {
       (getter, fieldDiffer) <- fieldDiffers
         .get(step)
-        .toRight(ConfigureError.NonExistentField(nextPath))
+        .toRight(ConfigureError.NonExistentField(nextPath, "RecordDiffer"))
       newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
     } yield new RecordDiffer[T](
       fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),

@@ -231,7 +231,7 @@ class DifferConfigureSpec extends munit.FunSuite {
     assertEquals(
       Differ[Map[String, CC]]
         .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
-      Left(NonExistentField(configurePathResolved("nope"))),
+      Left(NonExistentField(configurePathResolved("nope"), "MapDiffer")),
     )
   }
 
@@ -288,7 +288,7 @@ class DifferConfigureSpec extends munit.FunSuite {
     assertEquals(
       Differ[Seq[CC]]
         .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
-      Left(NonExistentField(configurePathResolved("nope"))),
+      Left(NonExistentField(configurePathResolved("nope"), "SeqDiffer")),
     )
   }
 
@@ -345,7 +345,7 @@ class DifferConfigureSpec extends munit.FunSuite {
     assertEquals(
       Differ[Set[CC]]
         .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
-      Left(NonExistentField(configurePathResolved("nope"))),
+      Left(NonExistentField(configurePathResolved("nope"), "SetDiffer")),
     )
   }
 

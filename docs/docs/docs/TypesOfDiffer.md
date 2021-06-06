@@ -10,6 +10,41 @@ There are many types of basic Differs, each producing different kind of results.
 
 // FIXME: value differ
 
+Before we start, make sure you have imported the extension methods and givens.
+
+```scala mdoc:silent
+import difflicious._
+import difflicious.implicits._
+```
+
+// FIXME delme
+```scala mdoc:invisible
+import difflicious.Example.printHtml
+```
+
+# Value Differs
+
+For basic types like `Int`, `Double` and `String` we typically can just compare them directly e.g. using `equals` method.
+
+If you have a simple type where you don't need any advanced diffing, then you can use `Differ.useEquals` to make a 
+Differ instance for it.
+
+```scala mdoc:silent
+case class MyInt(i: Int)
+
+object MyInt {
+  implicit val differ: Differ[MyInt] = Differ.useEquals[MyInt](valueToString = _.toString)
+}
+```
+
+```scala mdoc:silent
+MyInt.differ.diff(MyInt(1), MyInt(2))
+```
+
+<pre class="diff-render">
+<span style="color: red;">MyInt(1)</span> -> <span style="color: green;">MyInt(2)</span>
+</pre>
+
 # Differs for Algebraic Data Types (enums, sealed traits and case classes)
 
 You can derive `Differ` for a case class provided that there is a `Differ` instance for all your fields.
@@ -17,11 +52,6 @@ You can derive `Differ` for a case class provided that there is a `Differ` insta
 Similarly, you can derive a `Differ` for a sealed trait (Also called **Enums** in Scala 3) provided that we're able to 
 derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)
 
-// FIXME delme
-```scala mdoc:invisible
-import difflicious.Example.printHtml
-import difflicious.Differ
-```
 
 **Case class:**
 
@@ -220,18 +250,17 @@ By default, the pairing is based on matching elements that are equal to each oth
 However, you most likely want to pair elements using a field on an element instead for better diffs reports 
 (See next section).
 
-## Match by field
+## Pair by field
 
 For the best error reporting, you want to configure `SetDiffer` to pair by a field.
 
-```scala mdoc:nest
-import difflicious.Differ.SetDiffer
-val differByName: SetDiffer[Set, Person] = Differ.setDiffer[Set, Person].pairBy(_.name)
+```scala mdoc:nest:silent
+val differByName: Differ[Set[Person]] = Differ.setDiffer[Set, Person].pairBy(_.name)
 
-printHtml(differByName.diff(
+differByName.diff(
   Set(bob50, charles, alice),
   Set(alice, bob, charles)
-))
+)
 ```
 
 <pre class="diff-render">

@@ -6,14 +6,82 @@ permalink: docs/configuring-differs
 
 # Configuring Differs
 
-In Difflicious, Differs are built to be reconfigurable, allowing you to adapt an existing Differ for each test as needed.
+In Difflicious, Differs are built to be reconfigurable. This allow you to adapt an existing Differ for each test 
+as needed.
 
 Here are some examples of what difflicious allows you to do:
 
 - Compare two `Person` normally, except to compare the `wallet: List[Coin]` field disregarding the order of coins
-- Ignore the person's age when comparing `Map[String, Person]`
-  
-Differ configuration is done using the `configureRaw` method:
+- Ignore `age` field when comparing two `Person` values
+
+Difflicious also supports deep configuration where you can tweak how a particular sub-structure of a type is compared,
+with an intuitive API similar to the ones found in libraries like [Quicklens](https://github.com/softwaremill/quicklens) 
+and [Monocle](https://www.optics.dev/Monocle/).
+
+Configuring a Differ creates a new Differ instead of mutating the existing instance.
+
+```scala mdoc:invisible
+import difflicious._
+import difflicious.implicits._
+import difflicious.Example._
+```
+
+## Basic Configuration
+
+### Ignore and Unignore
+
+You can call `.ignore` or `.unignore` on all Differs. This will ignore their diff results and stop it from failing tests.
+
+### Pair By
+
+For Differs of Seq/Set-like data structures, you can call `.pairBy` or `.pairByIndex` to change how elements of these 
+data structures are paired up for comparison.
+
+## Deep configuration using path expressions
+
+Difflicious supports configuring a subpart of a Differ with a complex type by using `.configure` which takes a "path expression"
+which you can use to express the path to the Differ you want to configure.
+
+| Differ Type  | Allowed Paths           | Explanation                                                       | 
+| --           | --                      | --                                                                | 
+| Seq          | `.each`                 | Traverse down to the Differ used to compare the elements      | 
+| Set          | `.each`                 | Traverse down to the Differ used to compare the elements      | 
+| Map          | `.each`                 | Traverse down to the Differ used to compare the values of the Map | 
+| Case Class   | (any case class field)  | Traverse down to the Differ for the specified sub type            | 
+| Sealed Trait | `.subType[SomeSubType]` | Traverse down to the Differ for the specified sub type            | 
+
+Some examples:
+
+```scala mdoc:invisible
+sealed trait MySealedTrait
+case class SomeSubType(fieldInSubType: String) extends MySealedTrait
+
+object MySealedTrait {
+  implicit val differ: Differ[MySealedTrait] = Differ.derive[MySealedTrait]
+}
+```
+
+```scala mdoc:nest:silent
+val differ: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]
+
+// Don't fail if peron's name is different.
+val differIgnoringPersonName = differ.ignoreAt(_.each.each.name)
+// .ignoreAt is just a shorthand for configure(...)(_.ignore) so this is equivalent
+val differIgnoringPersonName2 = differ.configure(_.each.each.name)(_.ignore)
+
+// When comparing List[Person], pair the elements by the Person's name
+val differPairingByPersonName = differ.configure(_.each)(_.pairBy(_.name))
+
+// "Focusing" into the Differ for a subtype and ignoring a field
+val sealedTraitDiffer: Differ[List[MySealedTrait]] = Differ[List[MySealedTrait]]
+val differWithSubTypesFieldIgnored = sealedTraitDiffer.ignoreAt(_.each.subType[SomeSubType].fieldInSubType)
+```
+
+## Unsafe API with `configureRaw`
+
+It is possible to use `configureRaw` to pass a "stringly-typed" path to configure the Differ and a raw `ConfigureOp`.
+This is a low-level API that you shouldn't really need in 99% of the cases.
+You won't get much help from the compiler here, but don't worry! types are still checked at runtime thanks to [izumi-reflect](https://github.com/zio/izumi-reflect) 
 
 ```scala
 def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
@@ -24,49 +92,6 @@ We need to provide:
 - A `path` to "travsere" to the Differ you want to cnofigure. Can be the current Differ (`ConfigurePath.current`), or a Differ embedded inside it.
 - The type of configuration change you want to make e.g. Mark the Differ as `ignored`
 
-## Anatomy of a Differ
-
-Most Differs you use will be for comparing complex types. These complex Differs are made up of smaller Differs.
-
-Let's say we have a complex differ `Differ[Map[String, List[Person]]]`, here's a visualization of what it's made up of:
-
-```
-Differ[Map[String, List[Person]]]:
-  │
-  └ Differ[List[Person]]
-     │
-     └ Differ[Person]
-        │
-        ├ Differ[String] (for the "name" field)
-        └ Differ[Int]    (for the "age" field)
-```
-
-With `configure` method, you can "traverse" to a Differ within another Differ in order to "tweak" it. 
-To locate the Differ, You need to provide the `path`.
-
-```
-Differ[Map[String, List[Person]]]:
-  │
-  └ each: Differ[List[Person]]
-     │
-     └ each: Differ[Person]subject
-        │
-        ├ name: Differ[String] 
-        └ age:  Differ[Int]    
-```
-
-For example, if I want to ignore a person's name when comparing, the path will be `ConfigurePath.of("each", "each", "name")`
-
-**"each"** is a special path to refer to the underlying Differ for a `Map`, `Set` or `Seq` Differ.
-
-## Using `configureRaw`
-
-With `configureRaw` you pass a "stringly-typed" path to configure the Differ, so unfortunately you won't get much help from the compiler.
-But don't worry! types are still checked at runtime thanks to [izumi-reflect](https://github.com/zio/izumi-reflect) 
-
-In the future, we will provide a nicer API on top of `configureRaw`, similar to the API of 
-[quicklens](https://github.com/softwaremill/quicklens)
-
 Let's look at some examples:
 
 ```scala mdoc:invisible
@@ -76,14 +101,6 @@ import difflicious.Example.printHtml
 
 ```scala mdoc:silent
 import difflicious.{Differ, ConfigureOp, ConfigurePath}
-
-final case class Person(name: String, age: Int)
-
-object Person {
-  implicit val differ: Differ[Person] = Differ.derive[Person]
-}
-
-val defaultDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]
 ```
 
 **Example: Changing diff of `List[Person]` to pair elements by `name` field**
@@ -91,6 +108,7 @@ val defaultDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[P
 Let's say we want to compare the `List[Person]` independent of element order but instead match by `name` field...
 
 ```scala mdoc:silent
+val defaultDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]
 val differPairByName: Differ[Map[String, List[Person]]] = defaultDiffer
   .configureRaw(
     ConfigurePath.of("each"), 

@@ -1,36 +1,36 @@
 import cats.data.{NonEmptyMap, NonEmptyVector, NonEmptySet, NonEmptyChain, Chain, NonEmptyList}
 import difflicious.Differ
 import difflicious.Differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
-import difflicious.utils.{TypeName, AsSet, AsSeq, AsMap, Eachable}
+import difflicious.utils.{TypeName, SetLike, SeqLike, MapLike, Eachable}
 import izumi.reflect.macrortti.LTag
 
 trait CatsInstances {
   protected def nonEmptyMapTypeName(args: List[TypeName]): TypeName =
     TypeName("cats.data.NonEmptyMap", "NonEmptyMap", args)
 
-  implicit val nonEmptyMapAsMap: AsMap[NonEmptyMap] = new AsMap[NonEmptyMap] {
+  implicit val nonEmptyMapAsMap: MapLike[NonEmptyMap] = new MapLike[NonEmptyMap] {
     override def asMap[A, B](m: NonEmptyMap[A, B]): Map[A, B] = m.toSortedMap
   }
 
   implicit def nonEmptyMapEachable[K]: Eachable[NonEmptyMap[K, *]] = new Eachable[NonEmptyMap[K, *]] {}
 
-  implicit val nonEmptyListAsSeq: AsSeq[NonEmptyList] = new AsSeq[NonEmptyList] {
+  implicit val nonEmptyListAsSeq: SeqLike[NonEmptyList] = new SeqLike[NonEmptyList] {
     override def asSeq[A](f: NonEmptyList[A]): Seq[A] = f.toList
   }
 
-  implicit val nonEmptyVectorAsSeq: AsSeq[NonEmptyVector] = new AsSeq[NonEmptyVector] {
+  implicit val nonEmptyVectorAsSeq: SeqLike[NonEmptyVector] = new SeqLike[NonEmptyVector] {
     override def asSeq[A](f: NonEmptyVector[A]): Seq[A] = f.toVector
   }
 
-  implicit val chainAsSeq: AsSeq[Chain] = new AsSeq[Chain] {
+  implicit val chainAsSeq: SeqLike[Chain] = new SeqLike[Chain] {
     override def asSeq[A](f: Chain[A]): Seq[A] = f.toVector
   }
 
-  implicit val nonEmptyChainAsSeq: AsSeq[NonEmptyChain] = new AsSeq[NonEmptyChain] {
+  implicit val nonEmptyChainAsSeq: SeqLike[NonEmptyChain] = new SeqLike[NonEmptyChain] {
     override def asSeq[A](f: NonEmptyChain[A]): Seq[A] = f.toChain.toVector
   }
 
-  implicit val nonEmptySetAsSet: AsSet[NonEmptySet] = new AsSet[NonEmptySet] {
+  implicit val nonEmptySetAsSet: SetLike[NonEmptySet] = new SetLike[NonEmptySet] {
     override def asSet[A](f: NonEmptySet[A]): Set[A] = f.toSortedSet
   }
 

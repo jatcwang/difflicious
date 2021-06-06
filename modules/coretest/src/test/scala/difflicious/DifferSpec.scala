@@ -238,7 +238,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Map: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Map[String, String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "MapDiffer")),
     )
   }
 
@@ -418,7 +418,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Seq: configureRaw fails if field name isn't 'each'") {
     assertEquals(
       Differ[Seq[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "SeqDiffer")),
     )
   }
 
@@ -551,7 +551,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Set: Update fails if field name isn't 'each'") {
     assertEquals(
       Differ[Set[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
-      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty))),
+      Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "SetDiffer")),
     )
   }
 
@@ -632,7 +632,7 @@ class DifferSpec extends ScalaCheckSuite {
       CC.differ.configureRaw(ConfigurePath.of("nonexistent"), ConfigureOp.ignore),
       Left(
         ConfigureError
-          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty)),
+          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty), "RecordDiffer"),
       ),
     )
   }

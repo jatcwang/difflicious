@@ -4,7 +4,7 @@ import difflicious.DiffResult.{ListResult, SetResult, ValueResult, MapResult}
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.NumericDiffer
 import difflicious.internal.ConfigureOps
-import difflicious.utils.{TypeName, AsMap, AsSeq, AsSet}
+import difflicious.utils.{TypeName, MapLike, SeqLike, SetLike}
 import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
@@ -111,7 +111,6 @@ object Differ extends DifferTupleInstances with DifferGen {
   implicit val charDiff: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
   implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
 
-  // FIXME: java bigint and decimal
   implicit val intDiff: NumericDiffer[Int] = NumericDiffer.make[Int]
   implicit val doubleDiff: NumericDiffer[Double] = NumericDiffer.make[Double]
   implicit val shortDiff: NumericDiffer[Short] = NumericDiffer.make[Short]
@@ -125,7 +124,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     valueDiffer: Differ[V],
     tag: LTag[M[K, V]],
     valueTag: LTag[V],
-    asMap: AsMap[M],
+    asMap: MapLike[M],
   ): MapDiffer[M, K, V] = {
     val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
     new MapDiffer(
@@ -139,7 +138,6 @@ object Differ extends DifferTupleInstances with DifferGen {
     )
   }
 
-  // FIXME: probably want some sort of ordering to maintain consistent order
   class MapDiffer[M[_, _], K, V](
     isIgnored: Boolean,
     keyDiffer: ValueDiffer[K],
@@ -147,12 +145,11 @@ object Differ extends DifferTupleInstances with DifferGen {
     val tag: LTag[M[K, V]],
     valueTag: LTag[V],
     typeName: TypeName,
-    asMap: AsMap[M],
+    asMap: MapLike[M],
   ) extends Differ[M[K, V]] {
     override type R = MapResult
 
     override def diff(inputs: DiffInput[M[K, V]]): R = inputs.map(asMap.asMap) match {
-      // FIXME: consolidate all 3 cases
       case DiffInput.Both(obtained, expected) =>
         val obtainedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
         val both = mutable.ArrayBuffer.empty[MapResult.Entry]
@@ -245,7 +242,7 @@ object Differ extends DifferTupleInstances with DifferGen {
           )
         }
       } else
-        Left(ConfigureError.NonExistentField(path = nextPath))
+        Left(ConfigureError.NonExistentField(path = nextPath, "MapDiffer"))
     }
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[M[K, V]]] =
@@ -257,7 +254,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     implicit itemDiffer: Differ[A],
     fullTag: LTag[F[A]],
     itemTag: LTag[A],
-    asSeq: AsSeq[F],
+    asSeq: SeqLike[F],
   ): SeqDiffer[F, A] = {
     val typeName = TypeName.fromLightTypeTag(fullTag.tag)
     SeqDiffer.create(
@@ -274,7 +271,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     typeName: TypeName,
     override protected val tag: LTag[F[A]],
     itemTag: LTag[A],
-    asSeq: AsSeq[F],
+    asSeq: SeqLike[F],
   ) extends Differ[F[A]] {
     override type R = ListResult
 
@@ -369,7 +366,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             asSeq = asSeq,
           )
         }
-      } else Left(ConfigureError.NonExistentField(nextPath))
+      } else Left(ConfigureError.NonExistentField(nextPath, "SeqDiffer"))
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
       op match {
@@ -411,7 +408,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     def create[F[_], A](
       itemDiffer: Differ[A],
       typeName: TypeName,
-      asSeq: AsSeq[F],
+      asSeq: SeqLike[F],
     )(implicit tag: LTag[F[A]], itemTag: LTag[A]): SeqDiffer[F, A] = new SeqDiffer[F, A](
       isIgnored = false,
       pairBy = PairBy.Index,
@@ -427,7 +424,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     implicit itemDiffer: Differ[A],
     tag: LTag[F[A]],
     itemTag: LTag[A],
-    asSet: AsSet[F],
+    asSet: SetLike[F],
   ): SetDiffer[F, A] = {
     val typeName = TypeName.fromLightTypeTag(tag.tag)
     SetDiffer.create[F, A](
@@ -441,7 +438,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     def create[F[_], A](
       itemDiffer: Differ[A],
       typeName: TypeName,
-      asSet: AsSet[F],
+      asSet: SetLike[F],
     )(
       implicit
       tag: LTag[F[A]],
@@ -465,7 +462,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     typeName: TypeName,
     override protected val tag: LTag[F[A]],
     itemTag: LTag[A],
-    asSet: AsSet[F],
+    asSet: SetLike[F],
   ) extends Differ[F[A]] {
     override type R = SetResult
 
@@ -530,7 +527,7 @@ object Differ extends DifferTupleInstances with DifferGen {
             asSet = asSet,
           )
         }
-      } else Left(ConfigureError.NonExistentField(nextPath))
+      } else Left(ConfigureError.NonExistentField(nextPath, "SetDiffer"))
 
     override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
       op match {
@@ -582,8 +579,6 @@ object Differ extends DifferTupleInstances with DifferGen {
           }
       }
 
-      // FIXME: perhaps we need to prepend this to the front
-      //  of all results for nicer result view?
       if (found.isEmpty) {
         results += itemDiffer.diff(DiffInput.ObtainedOnly(a))
         allIsOk = false

@@ -1,6 +1,5 @@
 package difflicious
 
-// FIXME: doc
 sealed trait MatchType
 
 object MatchType {

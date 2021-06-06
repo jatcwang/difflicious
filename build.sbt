@@ -110,6 +110,7 @@ lazy val docs = project
           "-Wconf:msg=\".*The outer reference in this type test.*\":s", // This warning shows up if we use *final* case class in code blocks
           "-Wconf:msg=\".*method right in class Either.*\":s",
           "-Wconf:msg=\".*method get in class RightProjection.*\":s",
+          "-Wconf:msg=\".*local object compile0.*\":s",
         )
       val removes = Set("-Wdead-code", "-Ywarn-dead-code") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)
