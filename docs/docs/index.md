@@ -20,14 +20,18 @@ Difflicious is a library that compare and calculates differences between two obj
 
 # Installation
 
-FIXME: add scalatest install instructions
-
+If you're using the [MUnit](https://scalameta.org/munit/) test framework:
 ```
 // == SBT ==
-// If you use MUnit
 "com.github.jatcwang" %% "difflicious-munit" % "{{ site.version }}" 
-
 // == Mill == 
-// If you use MUnit
 ivy"com.github.jatcwang::difflicious-munit:{{ site.version }}"
+```
+
+If you're using [ScalaTest](https://www.scalatest.org/) test framework:
+```
+// == SBT ==
+"com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" 
+// == Mill == 
+ivy"com.github.jatcwang::difflicious-scalatest:{{ site.version }}"
 ```
