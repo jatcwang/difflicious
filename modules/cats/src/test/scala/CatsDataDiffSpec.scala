@@ -3,7 +3,6 @@ import difflicious.cats.CatsInstances._
 import cats.data._
 import cats.laws.discipline.arbitrary._
 import difflicious.Differ
-import difflicious.Differ.SetDiffer
 import difflicious.testtypes.{CC, MapKey}
 import difflicious.testutils._
 import difflicious.implicits._
@@ -340,7 +339,7 @@ class CatsDataDiffSpec extends FunSuite {
 
   test("NonEmptySet: with pairBy") {
     assertConsoleDiffOutput(
-      implicitly[SetDiffer[NonEmptySet, CC]].pairBy(_.i),
+      Differ[NonEmptySet[CC]].pairBy(_.i),
       NonEmptySet.of(
         CC(1, "1", 1),
         CC(2, "2", 2),

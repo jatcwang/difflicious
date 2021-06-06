@@ -2,8 +2,6 @@ package difflicious
 
 import izumi.reflect.macrortti.LightTypeTag
 
-/** Error type when attempting to ignore a Differ failed, path is invalid
-  * (does not match the target differ type) */
 sealed trait ConfigureError extends Throwable {
   def errorMessage: String
   override def getMessage: String = errorMessage

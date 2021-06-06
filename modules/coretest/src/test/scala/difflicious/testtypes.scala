@@ -2,7 +2,7 @@ package difflicious
 
 import cats.kernel.Order
 import org.scalacheck.{Gen, Arbitrary}
-import difflicious.Differ.{ValueDiffer, EqualsDiffer}
+import difflicious.differ.{ValueDiffer, EqualsDiffer}
 import difflicious.testtypes.SubSealed.{SubSub1, SubSub2}
 import izumi.reflect.macrortti.LTag
 

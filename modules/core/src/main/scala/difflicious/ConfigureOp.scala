@@ -7,7 +7,7 @@ import izumi.reflect.macrortti.LTag
   * For example we might want to:
   *
   * - Mark the current differ as ignored so its comparison never fails
-  * - Change a SeqDiffer to pair by a field instead of index
+  * - Change a Differ for Seq to pair by a field instead of index
   */
 sealed trait ConfigureOp
 

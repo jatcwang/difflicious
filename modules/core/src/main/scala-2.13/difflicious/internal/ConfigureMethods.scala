@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.annotation.{tailrec, nowarn}
 import scala.reflect.macros.blackbox
 
-trait ConfigureOps[T] { this: Differ[T] =>
+trait ConfigureMethods[T] { this: Differ[T] =>
 
   def ignoreAt[U](path: T => U): Differ[T] = macro ConfigureMacro.ignoreAt_impl[T, U]
 
@@ -22,7 +22,7 @@ trait ConfigureOps[T] { this: Differ[T] =>
 }
 
 // pairBy has to be defined differently for better type inference.
-class PairByOps[F[_], A](differ: Differ[F[A]]) {
+final class PairByOps[F[_], A](differ: Differ[F[A]]) {
   def pairBy[B](f: A => B)(implicit aTag: LTag[A]): Differ[F[A]] =
     differ.configureRaw(ConfigurePath.current, PairBy.ByFunc(f, aTag)).unsafeGet
 

@@ -2,7 +2,7 @@ package difflicious.cats
 
 import _root_.cats.data._
 import difflicious.Differ
-import difflicious.Differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
+import difflicious.differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
 import difflicious.utils._
 import izumi.reflect.macrortti.LTag
 

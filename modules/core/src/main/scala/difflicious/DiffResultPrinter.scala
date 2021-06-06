@@ -32,14 +32,14 @@ object DiffResultPrinter {
             typeName = r.typeName,
             diffResults = r.items,
             indentLevel = indentLevel,
-            matchType = r.matchType,
+            matchType = r.pairType,
           )
         case r: DiffResult.SetResult =>
           listResultToStr(
             typeName = r.typeName,
             diffResults = r.items,
             indentLevel = indentLevel,
-            matchType = r.matchType,
+            matchType = r.pairType,
           )
         case r: DiffResult.RecordResult => {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
@@ -53,7 +53,7 @@ object DiffResultPrinter {
             }
             .foldLeft(Str("")) { case (accum, nextStr) => accum ++ indentForFields ++ nextStr }
           val allStr = Str(s"${r.typeName.short}(") ++ fieldsStr ++ s"\n${indentLevel.asSpaces})"
-          colorOnMatchType(str = allStr, matchType = r.matchType)
+          colorOnMatchType(str = allStr, matchType = r.pairType)
         }
         case r: DiffResult.MapResult => {
           val indentPlusStr = s"\n${indentLevel.asSpacesPlus1}"
@@ -61,7 +61,7 @@ object DiffResultPrinter {
             .map {
               case Entry(keyJson, valueDiff) => {
                 val keyStr =
-                  colorOnMatchType(str = Str(keyJson), matchType = valueDiff.matchType)
+                  colorOnMatchType(str = Str(keyJson), matchType = valueDiff.pairType)
                 val valueStr = consoleOutput(valueDiff, indentLevel + 2)
                 keyStr ++ " -> " ++ valueStr ++ ","
               }
@@ -71,7 +71,7 @@ object DiffResultPrinter {
                 accum ++ indentPlusStr ++ nextStr
             }
           val allStr = Str(r.typeName.short ++ "(") ++ keyValStr ++ s"\n${indentLevel.asSpaces})"
-          colorOnMatchType(allStr, r.matchType)
+          colorOnMatchType(allStr, r.pairType)
         }
         case r: DiffResult.MismatchTypeResult => {
           val titleStr = Str(r.obtainedTypeName.short).overlay(colorObtained) ++ " != " ++ Str(r.expectedTypeName.short)
@@ -84,7 +84,7 @@ object DiffResultPrinter {
               indentSplitStr ++ (Str("=== Obtained ===") ++ indentSplitStr ++ obtainedStr).overlay(colorObtained) ++
               indentSplitStr ++ (Str("=== Expected ===") ++ indentSplitStr ++ expectedStr).overlay(colorExpected)
           }
-          colorOnMatchType(str = allStr, matchType = r.matchType)
+          colorOnMatchType(str = allStr, matchType = r.pairType)
         }
         case result: DiffResult.ValueResult =>
           result match {
@@ -107,7 +107,7 @@ object DiffResultPrinter {
     typeName: TypeName,
     diffResults: Seq[DiffResult],
     indentLevel: Int,
-    matchType: MatchType,
+    matchType: PairType,
   ) = {
     val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
     val listStrs = diffResults
@@ -121,12 +121,12 @@ object DiffResultPrinter {
 
   private def colorOnMatchType(
     str: Str,
-    matchType: MatchType,
+    matchType: PairType,
   ): Str = {
     matchType match {
-      case MatchType.Both         => str
-      case MatchType.ObtainedOnly => str.overlay(colorObtained)
-      case MatchType.ExpectedOnly => str.overlay(colorExpected)
+      case PairType.Both         => str
+      case PairType.ObtainedOnly => str.overlay(colorObtained)
+      case PairType.ExpectedOnly => str.overlay(colorExpected)
     }
   }
 

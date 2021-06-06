@@ -79,8 +79,10 @@ val differWithSubTypesFieldIgnored = sealedTraitDiffer.ignoreAt(_.each.subType[S
 
 ## Unsafe API with `configureRaw`
 
-It is possible to use `configureRaw` to pass a "stringly-typed" path to configure the Differ and a raw `ConfigureOp`.
-This is a low-level API that you shouldn't really need in 99% of the cases.
+This is a low-level API that you shouldn't really need in 99% of the cases. 
+(Pleaes raise an issue if you feel like you shouldn't need to but was forced :))
+
+`configureRaw` takes a stringly-typed path to configure the Differ and a raw `ConfigureOp`.
 You won't get much help from the compiler here, but don't worry! types are still checked at runtime thanks to [izumi-reflect](https://github.com/zio/izumi-reflect) 
 
 ```scala
@@ -107,7 +109,7 @@ val defaultDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[P
 val differPairByName: Differ[Map[String, List[Person]]] = defaultDiffer
   .configureRaw(
     ConfigurePath.of("each"), 
-    ConfigureOp.PairBy.func((p: Person) => p.name)
+    ConfigureOp.PairBy.ByFunc[Person, String](_.name, implicitly)
   ).right.get
   
 // Try it!  

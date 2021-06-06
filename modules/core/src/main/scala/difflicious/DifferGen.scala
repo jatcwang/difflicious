@@ -58,7 +58,7 @@ trait DifferGen {
                 obtainedTypeName = toDiffliciousTypeName(actualSubtype.typeName),
                 expected = expectedSubtype.typeclass.diff(DiffInput.ExpectedOnly(expectedSubtype.cast(expected))),
                 expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeName),
-                matchType = MatchType.Both,
+                pairType = PairType.Both,
                 isIgnored = isIgnored,
               )
             }

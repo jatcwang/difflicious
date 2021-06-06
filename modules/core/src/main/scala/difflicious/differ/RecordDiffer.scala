@@ -30,7 +30,7 @@ final class RecordDiffer[T](
         .RecordResult(
           typeName = typeName,
           fields = diffResults,
-          matchType = MatchType.Both,
+          pairType = PairType.Both,
           isIgnored = isIgnored,
           isOk = isIgnored || diffResults.values.forall(_.isOk),
         )
@@ -48,7 +48,7 @@ final class RecordDiffer[T](
         .RecordResult(
           typeName = typeName,
           fields = diffResults,
-          matchType = MatchType.ObtainedOnly,
+          pairType = PairType.ObtainedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )
@@ -66,7 +66,7 @@ final class RecordDiffer[T](
         .RecordResult(
           typeName = typeName,
           fields = diffResults,
-          matchType = MatchType.ExpectedOnly,
+          pairType = PairType.ExpectedOnly,
           isIgnored = isIgnored,
           isOk = isIgnored,
         )

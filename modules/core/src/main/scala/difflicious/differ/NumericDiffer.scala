@@ -1,7 +1,6 @@
 package difflicious.differ
 
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
-import difflicious.Differ.ValueDiffer
 import izumi.reflect.macrortti.LTag
 
 final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override protected val tag: LTag[T])
