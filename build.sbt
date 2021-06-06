@@ -1,5 +1,6 @@
 val munitVersion = "0.7.26"
 val catsVersion = "2.6.1"
+val scalatestVersion = "3.2.9"
 
 val scala213 = "2.13.6"
 val scala3 = "3.0.0-RC2"
@@ -22,8 +23,8 @@ inThisBuild(
   ),
 )
 
-lazy val root = Project("root", file("."))
-  .aggregate(core, coretest, benchmarks, cats, docs)
+lazy val difflicious = Project("difflicious", file("."))
+  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest)
   .settings(commonSettings, noPublishSettings)
 
 lazy val core = Project("difflicious-core", file("modules/core"))
@@ -55,6 +56,15 @@ lazy val munit = Project("difflicious-munit", file("modules/munit"))
     ),
   )
 
+lazy val scalatest = Project("difflicious-scalatest", file("modules/scalatest"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest-core" % scalatestVersion,
+    ),
+  )
+
 lazy val cats = Project("difflicious-cats", file("modules/cats"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
@@ -79,11 +89,16 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
   )
 
 lazy val docs = project
-  .dependsOn(core, coretest, cats, munit)
+  .dependsOn(core, coretest, cats, munit, scalatest)
   .enablePlugins(MicrositesPlugin)
   .settings(
     commonSettings,
     publish / skip := true,
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % scalatestVersion,
+    ),
   )
   .settings(
     mdocIn := file("docs/docs"),
@@ -110,7 +125,7 @@ lazy val docs = project
           "-Wconf:msg=\".*The outer reference in this type test.*\":s", // This warning shows up if we use *final* case class in code blocks
           "-Wconf:msg=\".*method right in class Either.*\":s",
           "-Wconf:msg=\".*method get in class RightProjection.*\":s",
-          "-Wconf:msg=\".*local object compile0.*\":s",
+          "-Wconf:msg=\".*local (object|class).+?is never used\":s",
         )
       val removes = Set("-Wdead-code", "-Ywarn-dead-code") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)

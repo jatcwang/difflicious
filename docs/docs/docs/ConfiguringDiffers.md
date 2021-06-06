@@ -94,11 +94,6 @@ We need to provide:
 
 Let's look at some examples:
 
-```scala mdoc:invisible
-// FIXME:
-import difflicious.Example.printHtml
-```
-
 ```scala mdoc:silent
 import difflicious.{Differ, ConfigureOp, ConfigurePath}
 ```

@@ -1,0 +1,13 @@
+options:
+  - title: Introduction
+    url: docs/introduction
+  - title: Types of Differs
+    url: docs/types-of-differs
+  - title: Configuring Differs
+    url: docs/configuring-differs
+  - title: Test Framework Integrations
+    url: docs/test-framework-integrations
+  - title: Best Practices / FAQ
+    url: docs/best-practices-and-faq
+  - title: Cheatsheet
+    url: docs/cheatsheet

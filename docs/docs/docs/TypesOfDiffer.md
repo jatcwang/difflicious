@@ -8,18 +8,11 @@ permalink: docs/types-of-differs
 
 There are many types of basic Differs, each producing different kind of results.
 
-// FIXME: value differ
-
 Before we start, make sure you have imported the extension methods and givens.
 
 ```scala mdoc:silent
 import difflicious._
 import difflicious.implicits._
-```
-
-// FIXME delme
-```scala mdoc:invisible
-import difflicious.Example.printHtml
 ```
 
 # Value Differs

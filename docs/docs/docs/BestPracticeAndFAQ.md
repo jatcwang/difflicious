@@ -1,7 +1,7 @@
 ---
 layout: docs
 title:  "Best Practices and Frequently Asked Questions"
-permalink: docs/faq
+permalink: docs/best-practices-and-faq
 ---
 
 # Best Practices
