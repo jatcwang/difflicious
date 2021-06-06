@@ -23,9 +23,6 @@ object ConfigureOp {
   object PairBy {
     case object Index extends PairBy[Any]
     final case class ByFunc[A, B] private[difflicious] (func: A => B, aTag: LTag[A]) extends PairBy[A]
-
-    // FIXME: remove?
-    def func[A, B](func: A => B)(implicit aTag: LTag[A]): ByFunc[A, B] = ByFunc(func, aTag)
   }
 
 }

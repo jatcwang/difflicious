@@ -5,7 +5,6 @@ import difflicious.DiffResult.ValueResult
 import difflicious.utils.TypeName
 import fansi.{Str, Color}
 
-// FIXME: move to different module
 object DiffResultPrinter {
   private val colorObtained = Color.Red
   private val colorExpected = Color.Green

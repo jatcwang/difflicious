@@ -72,6 +72,9 @@ lazy val cats = Project("difflicious-cats", file("modules/cats"))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
     ),
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-laws" % catsVersion,
+    ).map(_ % Test),
   )
 
 lazy val coretest = Project("coretest", file("modules/coretest"))

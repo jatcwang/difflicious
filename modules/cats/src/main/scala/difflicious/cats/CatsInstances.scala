@@ -1,7 +1,9 @@
-import cats.data.{NonEmptyMap, NonEmptyVector, NonEmptySet, NonEmptyChain, Chain, NonEmptyList}
+package difflicious.cats
+
+import _root_.cats.data._
 import difflicious.Differ
 import difflicious.Differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
-import difflicious.utils.{TypeName, SetLike, SeqLike, MapLike, Eachable}
+import difflicious.utils._
 import izumi.reflect.macrortti.LTag
 
 trait CatsInstances {

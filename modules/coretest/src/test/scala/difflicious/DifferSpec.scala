@@ -216,7 +216,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map: Allow updating value differs using the path 'each'") {
     val differ = Differ[Map[String, List[CC]]]
-      .configureRaw(ConfigurePath.of("each"), ConfigureOp.PairBy.func((s: CC) => s.i))
+      .configureRaw(ConfigurePath.of("each"), ConfigureOp.PairBy.ByFunc[CC, Int](_.i, implicitly))
       .unsafeGet
     val diffResult = differ.diff(
       Map(
@@ -424,7 +424,9 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Set: match by where the item tag does not match the expected should fail") {
     assertEquals(
-      Differ.seqDiffer[List, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
+      Differ
+        .seqDiffer[List, CC]
+        .configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[Int, Double](_.toDouble, implicitly)),
       Left(
         ConfigureError
           .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
@@ -526,7 +528,7 @@ class DifferSpec extends ScalaCheckSuite {
     val differ = Differ[HashSet[CC]]
       .configureRaw(ConfigurePath.of("each", "i"), ConfigureOp.ignore)
       .flatMap(
-        _.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func((c: CC) => c.s)),
+        _.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[CC, String](_.s, implicitly)),
       )
       .unsafeGet
     val diffResult = differ.diff(
@@ -557,7 +559,9 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Set: match by where the item tag does not match the expected should fail") {
     assertEquals(
-      Differ.setDiffer[Set, CC].configureRaw(ConfigurePath.current, ConfigureOp.PairBy.func[Int, Double](_.toDouble)),
+      Differ
+        .setDiffer[Set, CC]
+        .configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[Int, Double](_.toDouble, implicitly)),
       Left(
         ConfigureError
           .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
@@ -753,7 +757,7 @@ class DifferSpec extends ScalaCheckSuite {
       .configureRaw(
         ConfigurePath
           .of("SubSub2", "list"),
-        ConfigureOp.PairBy.func((c: CC) => c.i),
+        ConfigureOp.PairBy.ByFunc[CC, Int](_.i, implicitly),
       )
       .unsafeGet
 

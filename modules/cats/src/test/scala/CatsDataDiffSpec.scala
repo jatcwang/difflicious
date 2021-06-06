@@ -1,10 +1,10 @@
 import munit.FunSuite
-
-import CatsInstances._
+import difflicious.cats.CatsInstances._
 import cats.data._
+import cats.laws.discipline.arbitrary._
 import difflicious.Differ
 import difflicious.Differ.SetDiffer
-import difflicious.testtypes.CC
+import difflicious.testtypes.{CC, MapKey}
 import difflicious.testutils._
 import difflicious.implicits._
 
@@ -40,8 +40,7 @@ class CatsDataDiffSpec extends FunSuite {
          |)""".stripMargin,
     )
   }
-  /*
-  FIXME
+
   test("NonEmptyMap: Prop: isOk if equals") {
     assertOkIfValuesEqualProp[NonEmptyMap[MapKey, CC]](implicitly)
   }
@@ -49,7 +48,6 @@ class CatsDataDiffSpec extends FunSuite {
   test("NonEmptyMap: Prop: isOk == false if not equal") {
     assertNotOkIfNotEqualProp[NonEmptyMap[MapKey, CC]](implicitly)
   }
-   */
 
   test("NonEmptyList: Has list-like diff result") {
     assertConsoleDiffOutput(
