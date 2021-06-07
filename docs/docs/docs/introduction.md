@@ -6,11 +6,10 @@ permalink: docs/introduction
 
 # Introduction
 
-**Difflicious** is a library to help you diff objects in tests. It aims to:
+**Difflicious** helps you diff objects in tests. Its goals are:
 
 * **Readable** and **Actionable** diffs
-* **Customizability**: supporting all kinds of tweaks you'd want to do such as ignoring fields or compare lists independent of
-  element order.
+* **Customizability**: supporting all kinds of tweaks you'd want to do such as ignoring fields or compare lists independent of element order.
   
 Here's a motivational example!
 

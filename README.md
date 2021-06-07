@@ -1,148 +1,17 @@
 # Difflicious
 
-# TODO:
-Must have:
-- Replace differ at path
-- Swap two fields of the same type! (or a subtype to a super type)
-- Dynamic ignore (add new field ignores at runtime)
-  
-Nice to have:
-- Print a single value (i.e. no need for pprint if you want nice printout)
-- Nice string diff
-- Undo
-- Customizable "equals"? (e.g. cats.Eq)
-- Custom value output (e.g. JPG)
-- Modify map keys
+> Diffs for human consumption
 
-# Design
+[![Release](https://img.shields.io/nexus/r/com.github.jatcwang/difflicious-munit_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/releases/com/github/jatcwang/difflicious-munit_2.13/)
+[![(https://badges.gitter.im/gitterHQ/gitter.png)](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jatcwang/difflicious)
 
-- Different types should still show fields?
+Difflicious helps you find and compare the differences between values.
 
-## Set
+- Readable and Actionable diff results
+- Flexible & Configurable diffing logic
+  - Ignore unimportant fields when comparing
+  - Compare `List`s of items independent of order
+  - Match `Map` entries by key and show diffs of the values
+- Integration with test frameworks and popular libraries
 
-- Match by full value initially
-
-Operations:
-- Match entries by field (e.g. ID)
-
-## Product (case class)
-
-Compare field by field
-
-## Map
-
-Operations:
-- Swap two values of key
-
-## List
-
-- Initially compare by index
-
-Operations:
-- Match entries by field (e.g. ID)
-- Swap two index
-
-# API
-
-## Result API
-
-Example expected:
-
-[
-  {
-    (CaseCls)
-    id: "1"
-    f1: {
-      str: "a"
-    }
-  }
-]
-
-compare with obtained
-
-[
-  {
-    (CaseCls)
-    id: "1"
-    f1: {
-      str: "b"
-    }
-  },
-  {
-    (CaseCls)
-    id: "2",
-    f1: {
-      str: "c"
-    }
-  }
-]
-
-type: matching
-archetype: list
-items: 
-  - type: matching
-    archetype: record
-    fields: 
-      f1: 
-        type: matching // redundant?
-        cls: F
-        archetype: record
-        fields:
-          str:
-            archetype: string
-            obtained: b
-            expected: a
-    
-  - type: obtainedOnly
-    value:
-      cls: CaseCls
-      archetype: record
-      fields:
-        f1:
-          type: obtainedOnly
-          cls: F
-          archetype: record
-          fields:
-            str:
-              type: obtainedOnly
-              archetype: string
-              obtained: c
-    
-# Set
-Similar to list, just different available operations
-```
-archetype: set
-entries:
-
-```
-
-# Map
-
-Allow swapping two keys or values, as well as deleting an entry
-Adding an entry is more difficult
-
-```
-archetype: map
-entries:
-  - key:
-      archetype: string
-      obtained: k1
-    value:
-      archetype: record
-      type: matching
-      fields:
-        ...
-  - key:
-      archetype: string
-      obtained: k2
-    value:
-      archetype: record
-      type: obtainedOnly
-      fields:
-```
-  
-map / list / set
-
-## Operation API
-
-
+Hungry for some good diffs? Check out the [documentation](https://jatcwang.github.io/difflicious/)!
