@@ -6,24 +6,23 @@ permalink: docs/configuring-differs
 
 # Configuring Differs
 
-In Difflicious, Differs are built to be reconfigurable. This allow you to adapt an existing Differ for each test 
+In Difflicious, Differs are built to be reconfigurable. This allows you to adapt an existing Differ for each test 
 as needed.
 
-Here are some examples of what difflicious allows you to do:
+Difflicious also supports "deep configuration" where you can tweak how a particular sub-structure of a type is compared.
+with an intuitive API similar to the ones found in libraries like [diffx](https://github.com/softwaremill/diffx) and 
+[Quicklens](https://github.com/softwaremill/quicklens).
 
-- Compare two `Person` normally, except to compare the `wallet: List[Coin]` field disregarding the order of coins
-- Ignore `age` field when comparing two `Person` values
-
-Difflicious also supports deep configuration where you can tweak how a particular sub-structure of a type is compared,
-with an intuitive API similar to the ones found in libraries like [Quicklens](https://github.com/softwaremill/quicklens) 
-and [Monocle](https://www.optics.dev/Monocle/).
-
-Configuring a Differ creates a new Differ instead of mutating the existing instance.
+Differs are **immutable** - if you configure it it'll return a new Differ.
 
 ```scala mdoc:invisible
+import difflicious.Example._
+```
+
+Code examples in this page assumes the following import:
+```scala mdoc:silent
 import difflicious._
 import difflicious.implicits._
-import difflicious.Example._
 ```
 
 ## Basic Configuration
@@ -42,13 +41,13 @@ data structures are paired up for comparison.
 Difflicious supports configuring a subpart of a Differ with a complex type by using `.configure` which takes a "path expression"
 which you can use to express the path to the Differ you want to configure.
 
-| Differ Type  | Allowed Paths           | Explanation                                                       | 
-| --           | --                      | --                                                                | 
-| Seq          | `.each`                 | Traverse down to the Differ used to compare the elements      | 
-| Set          | `.each`                 | Traverse down to the Differ used to compare the elements      | 
-| Map          | `.each`                 | Traverse down to the Differ used to compare the values of the Map | 
-| Case Class   | (any case class field)  | Traverse down to the Differ for the specified sub type            | 
-| Sealed Trait | `.subType[SomeSubType]` | Traverse down to the Differ for the specified sub type            | 
+| Differ Type  | Allowed Paths          | Explanation                                                       |
+| --           | --                     | --                                                                |
+| Seq          | .each                  | Traverse down to the Differ used to compare the elements          |
+| Set          | .each                  | Traverse down to the Differ used to compare the elements          |
+| Map          | .each                  | Traverse down to the Differ used to compare the values of the Map |
+| Case Class   | (any case class field) | Traverse down to the Differ for the specified sub type            |
+| Sealed Trait | .subType[SomeSubType]  | Traverse down to the Differ for the specified sub type            |
 
 Some examples:
 
@@ -79,11 +78,12 @@ val differWithSubTypesFieldIgnored = sealedTraitDiffer.ignoreAt(_.each.subType[S
 
 ## Unsafe API with `configureRaw`
 
-This is a low-level API that you shouldn't really need in 99% of the cases. 
-(Pleaes raise an issue if you feel like you shouldn't need to but was forced :))
+This is a low-level API that you shouldn't need in normal usage. All the nice in the previous sections calls this 
+under the hood and it is exposed in case you really need it.
 
 `configureRaw` takes a stringly-typed path to configure the Differ and a raw `ConfigureOp`.
-You won't get much help from the compiler here, but don't worry! types are still checked at runtime thanks to [izumi-reflect](https://github.com/zio/izumi-reflect) 
+While the API tries to detect errors, since type are erased replacing Differs with a Differ for the wrong type will result in 
+run-time exceptions.
 
 ```scala
 def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
@@ -91,7 +91,7 @@ def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpda
 
 We need to provide:
 
-- A `path` to "travsere" to the Differ you want to cnofigure. Can be the current Differ (`ConfigurePath.current`), or a Differ embedded inside it.
+- A `path` parameter to "travsere" to the Differ you want to cnofigure. Can be the current Differ (`ConfigurePath.current`), or a Differ embedded inside it.
 - The type of configuration change you want to make e.g. Mark the Differ as `ignored`
 
 Let's look at some examples:

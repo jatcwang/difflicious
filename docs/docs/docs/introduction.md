@@ -6,7 +6,7 @@ permalink: docs/introduction
 
 # Introduction
 
-**Difflicious** helps you diff objects in tests. Its goals are:
+**Difflicious** is a library that produces nice readable diffs in your tests.
 
 * **Readable** and **Actionable** diffs
 * **Customizability**: supporting all kinds of tweaks you'd want to do such as ignoring fields or compare lists independent of element order.
@@ -73,9 +73,9 @@ List(
 )
 </pre>
 
-In the example above, difflicious helped us spot:
+In the example, we can see that:
 
-* That `Andy` is not the cat we expected. (Got a dog instead!)
-* The cat `Dr.Evil` is the "same" on both sides, because we decided to not check how many lives 
-  the cats have left (Cats love their privacy).
-* `Lucky`'s age is wrong.
+* Difflicious spots that **Andy** is not a Dog but instead a Cat!!
+* The cat **Dr.Evil** is considered to be the same on both sides, because we decided to not check how many lives 
+  the cats have left.
+* A diff is produced showing us that **Lucky's** age is wrong.

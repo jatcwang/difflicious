@@ -6,9 +6,9 @@ permalink: docs/types-of-differs
 
 # Types of Differs
 
-There are many types of basic Differs, each producing different kind of results.
+Here we list the kinds of Differs and how you can use them.
 
-Before we start, make sure you have imported the extension methods and givens.
+The examples below assume the following imports:
 
 ```scala mdoc:silent
 import difflicious._
@@ -17,7 +17,7 @@ import difflicious.implicits._
 
 # Value Differs
 
-For basic types like `Int`, `Double` and `String` we typically can just compare them directly e.g. using `equals` method.
+For basic types like `Int`, `Double` and `String` we typically can compare them directly e.g. using `equals` method.
 
 If you have a simple type where you don't need any advanced diffing, then you can use `Differ.useEquals` to make a 
 Differ instance for it.
@@ -46,7 +46,7 @@ Similarly, you can derive a `Differ` for a sealed trait (Also called **Enums** i
 derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)
 
 
-**Case class:**
+### Case class
 
 ```scala mdoc:silent
 final case class Person(name: String, age: Int)
@@ -70,7 +70,7 @@ Person(
 )
 </pre>
 
-**Sealed trait:**
+### Sealed trait / Scala 3 Enum
 
 ```scala mdoc:silent
 // Deriving Differ instance for sealed trait
@@ -106,15 +106,15 @@ Cat(
 
 # Seq Differ
 
-Differ for sequences (`Differ.seqDiffer`) allow diffing immutable sequences like `Seq`, `List`, and `Vector`.
+Differ for sequences allow diffing immutable sequences like `Seq`, `List`, and `Vector`.
 
 By default, Seq Differs will match elements by their index in the sequence.
 
 In the example below
 
-- age of Bob is wrong
-- An unexpected Alice is in the list
-- Charles is expected but missing
+- **Bob**'s age
+- **Alice** isn't expected to be in list
+- **Charles** is expected but missing
 
 ```scala mdoc:silent
 val alice = Person("Alice", 30)
@@ -183,8 +183,7 @@ List(
 
 # Map differ
 
-Map differ pair entries with the same keys and compare the values. It will also indicate which 
-keys are missing from either side.
+Map differ pair entries with the same keys and compare the values. Missing key-values will also be reported in the result.
 
 It requires 
 

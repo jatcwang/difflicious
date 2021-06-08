@@ -3,7 +3,7 @@ val catsVersion = "2.6.1"
 val scalatestVersion = "3.2.9"
 
 val scala213 = "2.13.6"
-val scala3 = "3.0.0-RC2"
+val scala3 = "3.0.0"
 
 inThisBuild(
   List(
@@ -107,7 +107,7 @@ lazy val docs = project
     mdocIn := file("docs/docs"),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     micrositeName := "Difflicious",
-    micrositeDescription := "Flexible test assertions with actionable results",
+    micrositeDescription := "Diffs for human consumption",
     micrositeUrl := "https://jatcwang.github.io",
     micrositeBaseUrl := "/difflicious",
     micrositeDocumentationUrl := s"${micrositeBaseUrl.value}/docs/introduction",
@@ -142,7 +142,6 @@ lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
   .settings(noPublishSettings)
 
 lazy val commonSettings = Seq(
-  version := "0.1.0",
   scalacOptions --= {
     if (sys.env.get("CI").isDefined) {
       Seq.empty
@@ -150,6 +149,7 @@ lazy val commonSettings = Seq(
       Seq("-Xfatal-warnings")
     }
   },
+  versionScheme := Some("early-semver"),
   scalacOptions ++= Seq("-Wmacros:after"),
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
