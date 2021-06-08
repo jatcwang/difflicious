@@ -2,6 +2,7 @@ package difflicious
 import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.internal.EitherGetSyntax._
+import difflicious.utils.TypeName.SomeTypeName
 import izumi.reflect.macrortti.LTag
 import magnolia._
 import difflicious.utils.{TypeName => DTypeName}
@@ -133,7 +134,7 @@ trait DifferGen {
 
   def derive[T]: Differ[T] = macro Magnolia.gen[T]
 
-  private def toDiffliciousTypeName(typeName: magnolia.TypeName): difflicious.utils.TypeName = {
+  private def toDiffliciousTypeName(typeName: magnolia.TypeName): SomeTypeName = {
     DTypeName(
       long = typeName.full,
       short = typeName.short,

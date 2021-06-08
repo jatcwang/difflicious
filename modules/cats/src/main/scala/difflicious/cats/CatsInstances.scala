@@ -7,9 +7,6 @@ import difflicious.utils._
 import izumi.reflect.macrortti.LTag
 
 trait CatsInstances {
-  protected def nonEmptyMapTypeName(args: List[TypeName]): TypeName =
-    TypeName("cats.data.NonEmptyMap", "NonEmptyMap", args)
-
   implicit val nonEmptyMapAsMap: MapLike[NonEmptyMap] = new MapLike[NonEmptyMap] {
     override def asMap[A, B](m: NonEmptyMap[A, B]): Map[A, B] = m.toSortedMap
   }

@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.utils.TypeName
+import difflicious.utils.TypeName.SomeTypeName
 
 import scala.collection.immutable.ListMap
 
@@ -28,7 +28,7 @@ sealed trait DiffResult {
 
 object DiffResult {
   final case class ListResult(
-    typeName: TypeName,
+    typeName: SomeTypeName,
     items: Vector[DiffResult],
     pairType: PairType,
     isIgnored: Boolean,
@@ -36,7 +36,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class SetResult(
-    typeName: TypeName,
+    typeName: SomeTypeName,
     items: Vector[DiffResult],
     pairType: PairType,
     isIgnored: Boolean,
@@ -44,7 +44,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class RecordResult(
-    typeName: TypeName,
+    typeName: SomeTypeName,
     fields: ListMap[String, DiffResult],
     pairType: PairType,
     isIgnored: Boolean,
@@ -52,7 +52,7 @@ object DiffResult {
   ) extends DiffResult
 
   final case class MapResult(
-    typeName: TypeName,
+    typeName: SomeTypeName,
     entries: Vector[MapResult.Entry],
     pairType: PairType,
     isIgnored: Boolean,
@@ -65,9 +65,9 @@ object DiffResult {
 
   final case class MismatchTypeResult(
     obtained: DiffResult,
-    obtainedTypeName: TypeName,
+    obtainedTypeName: SomeTypeName,
     expected: DiffResult,
-    expectedTypeName: TypeName,
+    expectedTypeName: SomeTypeName,
     pairType: PairType,
     isIgnored: Boolean,
   ) extends DiffResult {

@@ -5,9 +5,10 @@ import difflicious.DiffResult.{ValueResult, MapResult}
 import scala.collection.mutable
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.MapDiffer.mapKeyToString
+import difflicious.utils.TypeName.SomeTypeName
 import izumi.reflect.macrortti.LTag
-import difflicious.{PairType, Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
-import difflicious.utils.{TypeName, MapLike}
+import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
+import difflicious.utils.MapLike
 
 class MapDiffer[M[_, _], K, V](
   isIgnored: Boolean,
@@ -15,7 +16,7 @@ class MapDiffer[M[_, _], K, V](
   valueDiffer: Differ[V],
   val tag: LTag[M[K, V]],
   valueTag: LTag[V],
-  typeName: TypeName,
+  typeName: SomeTypeName,
   asMap: MapLike[M],
 ) extends Differ[M[K, V]] {
   override type R = MapResult

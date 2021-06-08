@@ -3,16 +3,17 @@ package difflicious.differ
 import difflicious.ConfigureOp.PairBy
 import difflicious.DiffResult.SetResult
 import difflicious.differ.SeqDiffer.diffPairByFunc
-import difflicious.utils.{TypeName, SetLike}
+import difflicious.utils.TypeName.SomeTypeName
+import difflicious.utils.SetLike
 import izumi.reflect.macrortti.LTag
-import difflicious.{PairType, Differ, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.{Differ, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 
 // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
 final class SetDiffer[F[_], A](
   isIgnored: Boolean,
   itemDiffer: Differ[A],
   matchFunc: A => Any,
-  typeName: TypeName,
+  typeName: SomeTypeName,
   override protected val tag: LTag[F[A]],
   itemTag: LTag[A],
   asSet: SetLike[F],
@@ -107,7 +108,7 @@ final class SetDiffer[F[_], A](
 object SetDiffer {
   def create[F[_], A](
     itemDiffer: Differ[A],
-    typeName: TypeName,
+    typeName: SomeTypeName,
     asSet: SetLike[F],
   )(
     implicit

@@ -2,7 +2,7 @@ package difflicious
 
 import difflicious.DiffResult.MapResult.Entry
 import difflicious.DiffResult.ValueResult
-import difflicious.utils.TypeName
+import difflicious.utils.TypeName.SomeTypeName
 import fansi.{Str, Color}
 
 object DiffResultPrinter {
@@ -104,7 +104,7 @@ object DiffResultPrinter {
   }
 
   private def listResultToStr(
-    typeName: TypeName,
+    typeName: SomeTypeName,
     diffResults: Seq[DiffResult],
     indentLevel: Int,
     matchType: PairType,

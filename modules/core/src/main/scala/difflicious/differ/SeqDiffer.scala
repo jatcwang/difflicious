@@ -1,11 +1,12 @@
 package difflicious.differ
 
 import difflicious.DiffResult.ListResult
-import difflicious.utils.{TypeName, SeqLike}
+import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
 import izumi.reflect.macrortti.LTag
-import difflicious.{PairType, Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 import SeqDiffer.diffPairByFunc
+import difflicious.utils.TypeName.SomeTypeName
 
 import scala.collection.mutable
 
@@ -13,7 +14,7 @@ final class SeqDiffer[F[_], A](
   isIgnored: Boolean,
   pairBy: PairBy[A],
   itemDiffer: Differ[A],
-  typeName: TypeName,
+  typeName: SomeTypeName,
   override protected val tag: LTag[F[A]],
   itemTag: LTag[A],
   asSeq: SeqLike[F],
@@ -152,7 +153,7 @@ final class SeqDiffer[F[_], A](
 object SeqDiffer {
   def create[F[_], A](
     itemDiffer: Differ[A],
-    typeName: TypeName,
+    typeName: SomeTypeName,
     asSeq: SeqLike[F],
   )(implicit tag: LTag[F[A]], itemTag: LTag[A]): SeqDiffer[F, A] = new SeqDiffer[F, A](
     isIgnored = false,

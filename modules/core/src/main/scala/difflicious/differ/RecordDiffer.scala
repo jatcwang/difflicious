@@ -1,8 +1,8 @@
 package difflicious.differ
 
 import scala.collection.immutable.ListMap
-import difflicious.utils.TypeName
 import difflicious._
+import difflicious.utils.TypeName.SomeTypeName
 import izumi.reflect.macrortti.LTag
 
 /**
@@ -12,7 +12,7 @@ final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
   isIgnored: Boolean,
   override protected val tag: LTag[T],
-  typeName: TypeName,
+  typeName: SomeTypeName,
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
 

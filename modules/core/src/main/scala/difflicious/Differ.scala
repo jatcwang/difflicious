@@ -3,6 +3,7 @@ import difflicious.ConfigureError.TypeTagMismatch
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ._
 import difflicious.internal.ConfigureMethods
+import difflicious.utils.TypeName.SomeTypeName
 import difflicious.utils.{TypeName, MapLike, SetLike, SeqLike}
 import izumi.reflect.macrortti.LTag
 
@@ -86,7 +87,7 @@ object Differ extends DifferTupleInstances with DifferGen {
     valueTag: LTag[V],
     asMap: MapLike[M],
   ): MapDiffer[M, K, V] = {
-    val typeName: TypeName = TypeName.fromLightTypeTag(tag.tag)
+    val typeName: SomeTypeName = TypeName.fromLightTypeTag(tag.tag)
     new MapDiffer(
       isIgnored = false,
       keyDiffer = keyDiffer,
