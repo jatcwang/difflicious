@@ -4,7 +4,6 @@ import _root_.cats.data._
 import difflicious.Differ
 import difflicious.differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
 import difflicious.utils._
-import izumi.reflect.macrortti.LTag
 
 trait CatsInstances {
   implicit val nonEmptyMapAsMap: MapLike[NonEmptyMap] = new MapLike[NonEmptyMap] {
@@ -36,61 +35,67 @@ trait CatsInstances {
   implicit def nonEmptyMapDiffer[K, V](
     implicit keyDiffer: ValueDiffer[K],
     valueDiffer: Differ[V],
-    kTag: LTag[K],
-    vTag: LTag[V],
+    typeName: TypeName[NonEmptyMap[K, V]],
   ): MapDiffer[NonEmptyMap, K, V] = new MapDiffer[NonEmptyMap, K, V](
     isIgnored = false,
     keyDiffer = keyDiffer,
     valueDiffer = valueDiffer,
-    valueTag = vTag,
-    typeName = TypeName("cats.data.NonEmptyMap", "NonEmptyMap", List(kTag.tag, vTag.tag).map(TypeName.fromLightTypeTag)),
+    typeName = typeName.copy(long = "cats.data.NonEmptyMap", short = "NonEmptyMap"),
     asMap = nonEmptyMapAsMap,
   )
 
   implicit def nonEmptyListDiffer[A](
     implicit aDiffer: Differ[A],
-    itemTag: LTag[A],
+    typeName: TypeName[NonEmptyList[A]],
   ): SeqDiffer[NonEmptyList, A] = {
-    val typeName = TypeName("cats.data.NonEmptyList", "NonEmptyList", List(TypeName.fromLightTypeTag(itemTag.tag)))
     SeqDiffer.create(
       itemDiffer = aDiffer,
-      typeName = typeName,
+      typeName = typeName.copy(
+        long = "cats.data.NonEmptyList",
+        short = "NonEmptyList",
+      ),
       asSeq = nonEmptyListAsSeq,
-    )(itemTag)
+    )
   }
 
   implicit def nonEmptyVectorDiffer[A](
     implicit aDiffer: Differ[A],
-    itemTag: LTag[A],
+    typeName: TypeName[NonEmptyVector[A]],
   ): SeqDiffer[NonEmptyVector, A] = {
-    val typeName = TypeName("cats.data.NonEmptyVector", "NonEmptyVector", List(TypeName.fromLightTypeTag(itemTag.tag)))
     SeqDiffer.create(
       itemDiffer = aDiffer,
-      typeName = typeName,
+      typeName = typeName.copy(
+        long = "cats.data.NonEmptyVector",
+        short = "NonEmptyVector",
+      ),
       asSeq = nonEmptyVectorAsSeq,
-    )(itemTag)
+    )
   }
 
   implicit def nonEmptyChainDiffer[A](
     implicit aDiffer: Differ[A],
-    itemTag: LTag[A],
+    typeName: TypeName[NonEmptyChain[A]],
   ): SeqDiffer[NonEmptyChain, A] = {
-    val typeName = TypeName("cats.data.NonEmptyChain", "NonEmptyChain", List(TypeName.fromLightTypeTag(itemTag.tag)))
     SeqDiffer.create(
       itemDiffer = aDiffer,
-      typeName = typeName,
+      typeName = typeName.copy(
+        long = "cats.data.NonEmptyChain",
+        short = "NonEmptyChain",
+      ),
       asSeq = nonEmptyChainAsSeq,
-    )(itemTag)
+    )
   }
 
   implicit def nonEmptySetDiffer[A](
     implicit aDiffer: Differ[A],
-    aTag: LTag[A],
+    typeName: TypeName[NonEmptySet[A]],
   ): SetDiffer[NonEmptySet, A] = {
-    val typeName = TypeName("cats.data.NonEmptySet", "NonEmptySet", List(TypeName.fromLightTypeTag(aTag.tag)))
     SetDiffer.create(
       itemDiffer = aDiffer,
-      typeName = typeName,
+      typeName = typeName.copy(
+        long = "cats.data.NonEmptySet",
+        short = "NonEmptySet",
+      ),
       asSet = nonEmptySetAsSet,
     )
   }

@@ -5,7 +5,6 @@ import difflicious.DiffResult.SetResult
 import difflicious.differ.SeqDiffer.diffPairByFunc
 import difflicious.utils.TypeName.SomeTypeName
 import difflicious.utils.SetLike
-import izumi.reflect.macrortti.LTag
 import difflicious.{Differ, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 
 // TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
@@ -14,7 +13,6 @@ final class SetDiffer[F[_], A](
   itemDiffer: Differ[A],
   matchFunc: A => Any,
   typeName: SomeTypeName,
-  itemTag: LTag[A],
   asSet: SetLike[F],
 ) extends Differ[F[A]] {
   override type R = SetResult
@@ -58,7 +56,6 @@ final class SetDiffer[F[_], A](
       itemDiffer = itemDiffer,
       matchFunc = matchFunc,
       typeName = typeName,
-      itemTag = itemTag,
       asSet = asSet,
     )
 
@@ -74,7 +71,6 @@ final class SetDiffer[F[_], A](
           itemDiffer = updatedItemDiffer,
           matchFunc = matchFunc,
           typeName = typeName,
-          itemTag = itemTag,
           asSet = asSet,
         )
       }
@@ -84,20 +80,15 @@ final class SetDiffer[F[_], A](
     op match {
       case PairBy.Index => Left(ConfigureError.InvalidConfigureOp(path, op, "SetDiffer"))
       case m: PairBy.ByFunc[_, _] =>
-        if (m.aTag == itemTag) {
-          Right(
-            new SetDiffer[F, A](
-              isIgnored = isIgnored,
-              itemDiffer = itemDiffer,
-              matchFunc = m.func.asInstanceOf[A => Any],
-              typeName = typeName,
-              itemTag = itemTag,
-              asSet = asSet,
-            ),
-          )
-        } else {
-          Left(ConfigureError.TypeTagMismatch(path, m.aTag.tag, itemTag.tag))
-        }
+        Right(
+          new SetDiffer[F, A](
+            isIgnored = isIgnored,
+            itemDiffer = itemDiffer,
+            matchFunc = m.func.asInstanceOf[A => Any],
+            typeName = typeName,
+            asSet = asSet,
+          ),
+        )
     }
 }
 
@@ -106,15 +97,11 @@ object SetDiffer {
     itemDiffer: Differ[A],
     typeName: SomeTypeName,
     asSet: SetLike[F],
-  )(
-    implicit
-    itemTag: LTag[A],
   ): SetDiffer[F, A] = new SetDiffer[F, A](
     isIgnored = false,
     itemDiffer,
     matchFunc = identity,
     typeName = typeName,
-    itemTag = itemTag,
     asSet = asSet,
   )
 

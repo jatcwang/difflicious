@@ -1,10 +1,9 @@
 package difflicious
 
-import difflicious.ConfigureError.{TypeTagMismatch, NonExistentField}
+import difflicious.ConfigureError.NonExistentField
 import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._
-import izumi.reflect.macrortti.LTag
 
 // Tests for configuring a Differ
 class DifferConfigureSpec extends munit.FunSuite {
@@ -230,7 +229,7 @@ class DifferConfigureSpec extends munit.FunSuite {
   test("'replace' for MapDiffer fails if step isn't 'each'") {
     assertEquals(
       Differ[Map[String, CC]]
-        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ)),
       Left(NonExistentField(configurePathResolved("nope"), "MapDiffer")),
     )
   }
@@ -273,7 +272,7 @@ class DifferConfigureSpec extends munit.FunSuite {
   test("'replace' for SeqDiffer fails if step isn't 'each'") {
     assertEquals(
       Differ[Seq[CC]]
-        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ)),
       Left(NonExistentField(configurePathResolved("nope"), "SeqDiffer")),
     )
   }
@@ -316,7 +315,7 @@ class DifferConfigureSpec extends munit.FunSuite {
   test("'replace' for SeqDiffer fails if step isn't 'each'") {
     assertEquals(
       Differ[Set[CC]]
-        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
+        .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ)),
       Left(NonExistentField(configurePathResolved("nope"), "SetDiffer")),
     )
   }

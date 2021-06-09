@@ -6,7 +6,6 @@ import scala.collection.mutable
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.MapDiffer.mapKeyToString
 import difflicious.utils.TypeName.SomeTypeName
-import izumi.reflect.macrortti.LTag
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 import difflicious.utils.MapLike
 
@@ -14,7 +13,6 @@ class MapDiffer[M[_, _], K, V](
   isIgnored: Boolean,
   keyDiffer: ValueDiffer[K],
   valueDiffer: Differ[V],
-  valueTag: LTag[V],
   typeName: SomeTypeName,
   asMap: MapLike[M],
 ) extends Differ[M[K, V]] {
@@ -88,7 +86,6 @@ class MapDiffer[M[_, _], K, V](
       isIgnored = newIgnored,
       keyDiffer = keyDiffer,
       valueDiffer = valueDiffer,
-      valueTag = valueTag,
       typeName = typeName,
       asMap = asMap,
     )
@@ -105,7 +102,6 @@ class MapDiffer[M[_, _], K, V](
           isIgnored = isIgnored,
           keyDiffer = keyDiffer,
           valueDiffer = newValueDiffer,
-          valueTag = valueTag,
           typeName = typeName,
           asMap = asMap,
         )

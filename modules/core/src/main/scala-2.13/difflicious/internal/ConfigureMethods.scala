@@ -4,7 +4,6 @@ import difflicious.ConfigureOp.PairBy
 import difflicious.internal.EitherGetSyntax.EitherExtensionOps
 import difflicious.{ConfigurePath, Differ}
 import difflicious.utils.Pairable
-import izumi.reflect.macrortti.LTag
 
 import scala.collection.mutable
 import scala.annotation.{tailrec, nowarn}
@@ -14,17 +13,17 @@ trait ConfigureMethods[T] { this: Differ[T] =>
 
   def ignoreAt[U](path: T => U): Differ[T] = macro ConfigureMacro.ignoreAt_impl[T, U]
 
-  def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U])(implicit tag: LTag[U]): Differ[T] =
+  def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] =
     macro ConfigureMacro.configure_impl[T, U]
 
-  def replace[U](path: T => U)(newDiffer: Differ[U])(implicit tag: LTag[U]): Differ[T] =
+  def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] =
     macro ConfigureMacro.replace_impl[T, U]
 }
 
 // pairBy has to be defined differently for better type inference.
 final class PairByOps[F[_], A](differ: Differ[F[A]]) {
-  def pairBy[B](f: A => B)(implicit aTag: LTag[A]): Differ[F[A]] =
-    differ.configureRaw(ConfigurePath.current, PairBy.ByFunc(f, aTag)).unsafeGet
+  def pairBy[B](f: A => B): Differ[F[A]] =
+    differ.configureRaw(ConfigurePath.current, PairBy.ByFunc(f)).unsafeGet
 
   def pairByIndex: Differ[F[A]] =
     differ.configureRaw(ConfigurePath.current, PairBy.Index).unsafeGet
@@ -45,9 +44,9 @@ object ConfigureMacro {
     path: c.Expr[T => U],
   )(
     configFunc: c.Expr[Differ[U] => Differ[U]],
-  )(tag: c.Expr[LTag[U]]): c.Tree = {
+  ): c.Tree = {
     import c.universe._
-    val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer($configFunc, $tag)"
+    val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer($configFunc)"
     toConfigureRawCall(c)(path, opTree)
   }
 
@@ -55,10 +54,10 @@ object ConfigureMacro {
     path: c.Expr[T => U],
   )(
     newDiffer: c.Expr[Differ[U]],
-  )(tag: c.Expr[LTag[U]])(implicit uTypeTag: c.WeakTypeTag[U]): c.Tree = {
+  )(implicit uTypeTag: c.WeakTypeTag[U]): c.Tree = {
     import c.universe._
     val opTree =
-      q"_root_.difflicious.ConfigureOp.TransformDiffer[${uTypeTag.tpe}](unused => { val _ = unused; $newDiffer }, $tag)"
+      q"_root_.difflicious.ConfigureOp.TransformDiffer[${uTypeTag.tpe}](unused => { val _ = unused; $newDiffer })"
     toConfigureRawCall(c)(path, opTree)
   }
 

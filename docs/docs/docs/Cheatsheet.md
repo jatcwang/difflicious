@@ -27,6 +27,23 @@ val intListDiffer = Differ[List[Int]]
 val differ = Differ.derive[Person]
 ```
 
+For classes with generic fields, you need to also ask for Differ instance of the field type (not just the generic type).
+
+```scala mdoc:silent:nest
+case class Box[A](
+  content: List[A]
+)
+
+case class Factory[A](
+  boxes: List[Box[A]]
+)
+
+implicit def boxDiffer[A](implicit listDiffer: Differ[List[A]]): Differ[Box[A]] = Differ.derive[Box[A]]
+implicit def factoryDiffer[A](implicit boxesDiffer: Differ[List[Box[A]]]): Differ[Factory[A]]  = Differ.derive[Factory[A]]
+
+val differ = Differ[Factory[Int]]
+```
+
 ### Configuring Differs
 
 ```scala mdoc:compile-only

@@ -5,7 +5,6 @@ import munit.ScalaCheckSuite
 import difflicious.testutils._
 import difflicious.testtypes._
 import difflicious.implicits._
-import izumi.reflect.macrortti.LTag
 import difflicious.internal.EitherGetSyntax._
 
 import scala.collection.immutable.HashSet
@@ -216,7 +215,7 @@ class DifferSpec extends ScalaCheckSuite {
 
   test("Map: Allow updating value differs using the path 'each'") {
     val differ = Differ[Map[String, List[CC]]]
-      .configureRaw(ConfigurePath.of("each"), ConfigureOp.PairBy.ByFunc[CC, Int](_.i, implicitly))
+      .configureRaw(ConfigurePath.of("each"), ConfigureOp.PairBy.ByFunc[CC, Int](_.i))
       .unsafeGet
     val diffResult = differ.diff(
       Map(
@@ -422,18 +421,6 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Set: match by where the item tag does not match the expected should fail") {
-    assertEquals(
-      Differ
-        .seqDiffer[List, CC]
-        .configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[Int, Double](_.toDouble, implicitly)),
-      Left(
-        ConfigureError
-          .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
-      ),
-    )
-  }
-
   test("Set: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.setDiffer[Set, CC])
   }
@@ -528,7 +515,7 @@ class DifferSpec extends ScalaCheckSuite {
     val differ = Differ[HashSet[CC]]
       .configureRaw(ConfigurePath.of("each", "i"), ConfigureOp.ignore)
       .flatMap(
-        _.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[CC, String](_.s, implicitly)),
+        _.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[CC, String](_.s)),
       )
       .unsafeGet
     val diffResult = differ.diff(
@@ -554,18 +541,6 @@ class DifferSpec extends ScalaCheckSuite {
     assertEquals(
       Differ[Set[String]].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
       Left(ConfigureError.NonExistentField(ConfigurePath(Vector("nono"), List.empty), "SetDiffer")),
-    )
-  }
-
-  test("Set: match by where the item tag does not match the expected should fail") {
-    assertEquals(
-      Differ
-        .setDiffer[Set, CC]
-        .configureRaw(ConfigurePath.current, ConfigureOp.PairBy.ByFunc[Int, Double](_.toDouble, implicitly)),
-      Left(
-        ConfigureError
-          .TypeTagMismatch(ConfigurePath(Vector.empty, List.empty), LTag[Int].tag, LTag[CC].tag),
-      ),
     )
   }
 
@@ -757,7 +732,7 @@ class DifferSpec extends ScalaCheckSuite {
       .configureRaw(
         ConfigurePath
           .of("SubSub2", "list"),
-        ConfigureOp.PairBy.ByFunc[CC, Int](_.i, implicitly),
+        ConfigureOp.PairBy.ByFunc[CC, Int](_.i),
       )
       .unsafeGet
 

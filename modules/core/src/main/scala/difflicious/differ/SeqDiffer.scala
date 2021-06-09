@@ -3,7 +3,6 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import izumi.reflect.macrortti.LTag
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 import SeqDiffer.diffPairByFunc
 import difflicious.utils.TypeName.SomeTypeName
@@ -15,7 +14,6 @@ final class SeqDiffer[F[_], A](
   pairBy: PairBy[A],
   itemDiffer: Differ[A],
   typeName: SomeTypeName,
-  itemTag: LTag[A],
   asSeq: SeqLike[F],
 ) extends Differ[F[A]] {
   override type R = ListResult
@@ -49,7 +47,7 @@ final class SeqDiffer[F[_], A](
             isOk = isIgnored || diffResults.forall(_.isOk),
           )
         }
-        case PairBy.ByFunc(func, _) => {
+        case PairBy.ByFunc(func) => {
           val (results, allIsOk) = diffPairByFunc(actual, expected, func, itemDiffer)
           ListResult(
             typeName = typeName,
@@ -89,7 +87,6 @@ final class SeqDiffer[F[_], A](
       pairBy = pairBy,
       itemDiffer = itemDiffer,
       typeName = typeName,
-      itemTag = itemTag,
       asSeq = asSeq,
     )
 
@@ -105,7 +102,6 @@ final class SeqDiffer[F[_], A](
           pairBy = pairBy,
           itemDiffer = newItemDiffer,
           typeName = typeName,
-          itemTag = itemTag,
           asSeq = asSeq,
         )
       }
@@ -120,28 +116,19 @@ final class SeqDiffer[F[_], A](
             pairBy = PairBy.Index,
             itemDiffer = itemDiffer,
             typeName = typeName,
-            itemTag = itemTag,
             asSeq = asSeq,
           ),
         )
       case m: PairBy.ByFunc[_, _] =>
-        if (m.aTag == itemTag) {
-          Right(
-            new SeqDiffer[F, A](
-              isIgnored = isIgnored,
-              pairBy = m.asInstanceOf[ConfigureOp.PairBy[A]],
-              itemDiffer = itemDiffer,
-              typeName = typeName,
-              itemTag = itemTag,
-              asSeq = asSeq,
-            ),
-          )
-        } else {
-          Left(
-            ConfigureError
-              .TypeTagMismatch(path, obtainedTag = m.aTag.tag, expectedTag = itemTag.tag),
-          )
-        }
+        Right(
+          new SeqDiffer[F, A](
+            isIgnored = isIgnored,
+            pairBy = m.asInstanceOf[ConfigureOp.PairBy[A]],
+            itemDiffer = itemDiffer,
+            typeName = typeName,
+            asSeq = asSeq,
+          ),
+        )
     }
 }
 
@@ -150,12 +137,11 @@ object SeqDiffer {
     itemDiffer: Differ[A],
     typeName: SomeTypeName,
     asSeq: SeqLike[F],
-  )(itemTag: LTag[A]): SeqDiffer[F, A] = new SeqDiffer[F, A](
+  ): SeqDiffer[F, A] = new SeqDiffer[F, A](
     isIgnored = false,
     pairBy = PairBy.Index,
     itemDiffer = itemDiffer,
     typeName = typeName,
-    itemTag = itemTag,
     asSeq = asSeq,
   )
 

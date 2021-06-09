@@ -10,7 +10,7 @@ final case class TypeName[A](long: String, short: String, typeArguments: List[Ty
 
 object TypeName extends TypeNamePlatform {
 
-  // A type name without a compile time type known
+  // A type name without a compile time type known.
   type SomeTypeName = TypeName[_]
 
   implicit def apply[A](implicit tag: LTag[A]): TypeName[A] = {

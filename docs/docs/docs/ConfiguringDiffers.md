@@ -82,8 +82,8 @@ This is a low-level API that you shouldn't need in normal usage. All the nice in
 under the hood and it is exposed in case you really need it.
 
 `configureRaw` takes a stringly-typed path to configure the Differ and a raw `ConfigureOp`.
-While the API tries to detect errors, since type are erased replacing Differs with a Differ for the wrong type will result in 
-run-time exceptions.
+While the API tries to detect errors, there is very little type safety and mistakes can lead to runtime exception.
+(For example, `configureRaw` won't stop you from replacing a Differ with a Differ of the wrong type)
 
 ```scala
 def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[DifferUpdateError, Differ[T]]
@@ -109,7 +109,7 @@ val defaultDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[P
 val differPairByName: Differ[Map[String, List[Person]]] = defaultDiffer
   .configureRaw(
     ConfigurePath.of("each"), 
-    ConfigureOp.PairBy.ByFunc[Person, String](_.name, implicitly)
+    ConfigureOp.PairBy.ByFunc[Person, String](_.name)
   ).right.get
   
 // Try it!  

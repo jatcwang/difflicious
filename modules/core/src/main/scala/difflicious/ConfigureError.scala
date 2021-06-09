@@ -32,6 +32,7 @@ object ConfigureError {
       s"The differ you're trying to configure (${differType}) does now allow the provided ConfigureOp ${op}" +
         s"Current path: ${resolvedPath(path)}"
   }
+  // FIXME: still need?
   final case class TypeTagMismatch(path: ConfigurePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
       extends ConfigureError {
     override def errorMessage: String =
