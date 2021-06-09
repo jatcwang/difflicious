@@ -3,7 +3,6 @@ package difflicious.differ
 import scala.collection.immutable.ListMap
 import difflicious._
 import difflicious.utils.TypeName.SomeTypeName
-import izumi.reflect.macrortti.LTag
 
 /**
   * A differ for a record-like data structure such as tuple or case classes.
@@ -11,7 +10,6 @@ import izumi.reflect.macrortti.LTag
 final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
   isIgnored: Boolean,
-  override protected val tag: LTag[T],
   typeName: SomeTypeName,
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
@@ -74,7 +72,7 @@ final class RecordDiffer[T](
   }
 
   override def configureIgnored(newIgnored: Boolean): Differ[T] =
-    new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName, tag = tag)
+    new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName)
 
   override def configurePath(
     step: String,
@@ -90,7 +88,6 @@ final class RecordDiffer[T](
       fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
       isIgnored = isIgnored,
       typeName = typeName,
-      tag = tag,
     )
 
   override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =

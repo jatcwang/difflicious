@@ -36,14 +36,12 @@ trait CatsInstances {
   implicit def nonEmptyMapDiffer[K, V](
     implicit keyDiffer: ValueDiffer[K],
     valueDiffer: Differ[V],
-    tag: LTag[NonEmptyMap[K, V]],
     kTag: LTag[K],
     vTag: LTag[V],
   ): MapDiffer[NonEmptyMap, K, V] = new MapDiffer[NonEmptyMap, K, V](
     isIgnored = false,
     keyDiffer = keyDiffer,
     valueDiffer = valueDiffer,
-    tag = tag,
     valueTag = vTag,
     typeName = TypeName("cats.data.NonEmptyMap", "NonEmptyMap", List(kTag.tag, vTag.tag).map(TypeName.fromLightTypeTag)),
     asMap = nonEmptyMapAsMap,
@@ -51,7 +49,6 @@ trait CatsInstances {
 
   implicit def nonEmptyListDiffer[A](
     implicit aDiffer: Differ[A],
-    tag: LTag[NonEmptyList[A]],
     itemTag: LTag[A],
   ): SeqDiffer[NonEmptyList, A] = {
     val typeName = TypeName("cats.data.NonEmptyList", "NonEmptyList", List(TypeName.fromLightTypeTag(itemTag.tag)))
@@ -59,12 +56,11 @@ trait CatsInstances {
       itemDiffer = aDiffer,
       typeName = typeName,
       asSeq = nonEmptyListAsSeq,
-    )
+    )(itemTag)
   }
 
   implicit def nonEmptyVectorDiffer[A](
     implicit aDiffer: Differ[A],
-    tag: LTag[NonEmptyVector[A]],
     itemTag: LTag[A],
   ): SeqDiffer[NonEmptyVector, A] = {
     val typeName = TypeName("cats.data.NonEmptyVector", "NonEmptyVector", List(TypeName.fromLightTypeTag(itemTag.tag)))
@@ -72,12 +68,11 @@ trait CatsInstances {
       itemDiffer = aDiffer,
       typeName = typeName,
       asSeq = nonEmptyVectorAsSeq,
-    )
+    )(itemTag)
   }
 
   implicit def nonEmptyChainDiffer[A](
     implicit aDiffer: Differ[A],
-    tag: LTag[NonEmptyChain[A]],
     itemTag: LTag[A],
   ): SeqDiffer[NonEmptyChain, A] = {
     val typeName = TypeName("cats.data.NonEmptyChain", "NonEmptyChain", List(TypeName.fromLightTypeTag(itemTag.tag)))
@@ -85,12 +80,11 @@ trait CatsInstances {
       itemDiffer = aDiffer,
       typeName = typeName,
       asSeq = nonEmptyChainAsSeq,
-    )
+    )(itemTag)
   }
 
   implicit def nonEmptySetDiffer[A](
     implicit aDiffer: Differ[A],
-    tag: LTag[NonEmptySet[A]],
     aTag: LTag[A],
   ): SetDiffer[NonEmptySet, A] = {
     val typeName = TypeName("cats.data.NonEmptySet", "NonEmptySet", List(TypeName.fromLightTypeTag(aTag.tag)))

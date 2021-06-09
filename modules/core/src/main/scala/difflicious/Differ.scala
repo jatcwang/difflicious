@@ -1,5 +1,4 @@
 package difflicious
-import difflicious.ConfigureError.TypeTagMismatch
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ._
 import difflicious.internal.ConfigureMethods
@@ -9,9 +8,6 @@ import izumi.reflect.macrortti.LTag
 
 trait Differ[T] extends ConfigureMethods[T] {
   type R <: DiffResult
-
-  // Type tag of T. Required for runtime typechecking
-  protected def tag: LTag[T]
 
   def diff(inputs: DiffInput[T]): R
 
@@ -34,7 +30,7 @@ trait Differ[T] extends ConfigureMethods[T] {
       case (step :: tail, op)                        => configurePath(step, ConfigurePath(path.resolvedSteps :+ step, tail), op)
       case (Nil, ConfigureOp.SetIgnored(newIgnored)) => Right(configureIgnored(newIgnored))
       case (Nil, pairByOp: ConfigureOp.PairBy[_])    => configurePairBy(path, pairByOp)
-      case (Nil, op: ConfigureOp.TransformDiffer[_]) => configureTransform(path, op)
+      case (Nil, op: ConfigureOp.TransformDiffer[_]) => Right(configureTransform(op))
     }
   }
 
@@ -47,15 +43,11 @@ trait Differ[T] extends ConfigureMethods[T] {
 
   protected def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[T]]
 
+  // FIXME: path not needed
   final private def configureTransform(
-    path: ConfigurePath,
     op: ConfigureOp.TransformDiffer[_],
-  ): Either[ConfigureError, Differ[T]] = {
-    Either.cond(
-      op.tag == tag,
-      op.unsafeCastFunc[T].apply(this),
-      TypeTagMismatch(path = path, obtainedTag = op.tag.tag, expectedTag = tag.tag),
-    )
+  ): Differ[T] = {
+    op.unsafeCastFunc[T].apply(this)
   }
 }
 
@@ -63,8 +55,8 @@ object Differ extends DifferTupleInstances with DifferGen {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
-  def useEquals[T](valueToString: T => String)(implicit tag: LTag[T]): EqualsDiffer[T] =
-    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString, tag = tag)
+  def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
+    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
 
   // TODO: better string diff (edit distance and a description of how to get there?
   //  this can help especially in cases like extra space or special char)
@@ -92,7 +84,6 @@ object Differ extends DifferTupleInstances with DifferGen {
       isIgnored = false,
       keyDiffer = keyDiffer,
       valueDiffer = valueDiffer,
-      tag = tag,
       valueTag = valueTag,
       typeName = typeName,
       asMap = asMap,
@@ -101,16 +92,15 @@ object Differ extends DifferTupleInstances with DifferGen {
 
   implicit def seqDiffer[F[_], A](
     implicit itemDiffer: Differ[A],
-    fullTag: LTag[F[A]],
+    typeName: TypeName[F[A]],
     itemTag: LTag[A],
     asSeq: SeqLike[F],
   ): SeqDiffer[F, A] = {
-    val typeName = TypeName.fromLightTypeTag(fullTag.tag)
     SeqDiffer.create(
       itemDiffer = itemDiffer,
       typeName = typeName,
       asSeq = asSeq,
-    )
+    )(itemTag)
   }
 
   implicit def setDiffer[F[_], A](

@@ -14,7 +14,6 @@ final class SetDiffer[F[_], A](
   itemDiffer: Differ[A],
   matchFunc: A => Any,
   typeName: SomeTypeName,
-  override protected val tag: LTag[F[A]],
   itemTag: LTag[A],
   asSet: SetLike[F],
 ) extends Differ[F[A]] {
@@ -59,7 +58,6 @@ final class SetDiffer[F[_], A](
       itemDiffer = itemDiffer,
       matchFunc = matchFunc,
       typeName = typeName,
-      tag = tag,
       itemTag = itemTag,
       asSet = asSet,
     )
@@ -76,7 +74,6 @@ final class SetDiffer[F[_], A](
           itemDiffer = updatedItemDiffer,
           matchFunc = matchFunc,
           typeName = typeName,
-          tag = tag,
           itemTag = itemTag,
           asSet = asSet,
         )
@@ -94,7 +91,6 @@ final class SetDiffer[F[_], A](
               itemDiffer = itemDiffer,
               matchFunc = m.func.asInstanceOf[A => Any],
               typeName = typeName,
-              tag = tag,
               itemTag = itemTag,
               asSet = asSet,
             ),
@@ -112,14 +108,12 @@ object SetDiffer {
     asSet: SetLike[F],
   )(
     implicit
-    tag: LTag[F[A]],
     itemTag: LTag[A],
   ): SetDiffer[F, A] = new SetDiffer[F, A](
     isIgnored = false,
     itemDiffer,
     matchFunc = identity,
     typeName = typeName,
-    tag = tag,
     itemTag = itemTag,
     asSet = asSet,
   )

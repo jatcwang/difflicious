@@ -13,7 +13,7 @@ object TupleDifferInstancesGen {
                s"a${t}Diff: Differ[A$t]"
              }
              .mkString(",\n  ")},
-         |  tag: LTag[${typeName}]
+         |  typeName: TypeName[${typeName}]
          |): RecordDiffer[$typeName] = new RecordDiffer[$typeName](
          |  ListMap(
          |    ${(1 to tupleSize)
@@ -23,8 +23,7 @@ object TupleDifferInstancesGen {
              .mkString(",\n    ")}
          |  ),
          |  isIgnored = false,
-         |  tag = tag,
-         |  typeName = TypeName.fromLightTypeTag(tag.tag)
+         |  typeName = typeName,
          |)
          |""".stripMargin
       }
@@ -38,7 +37,6 @@ object TupleDifferInstancesGen {
       |
       |import difflicious.differ.RecordDiffer
       |import difflicious.utils.TypeName
-      |import izumi.reflect.macrortti.LTag
       |
       |import scala.collection.immutable.ListMap
       |// $$COVERAGE-OFF$$

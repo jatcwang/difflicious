@@ -15,7 +15,6 @@ final class SeqDiffer[F[_], A](
   pairBy: PairBy[A],
   itemDiffer: Differ[A],
   typeName: SomeTypeName,
-  override protected val tag: LTag[F[A]],
   itemTag: LTag[A],
   asSeq: SeqLike[F],
 ) extends Differ[F[A]] {
@@ -90,7 +89,6 @@ final class SeqDiffer[F[_], A](
       pairBy = pairBy,
       itemDiffer = itemDiffer,
       typeName = typeName,
-      tag = tag,
       itemTag = itemTag,
       asSeq = asSeq,
     )
@@ -107,7 +105,6 @@ final class SeqDiffer[F[_], A](
           pairBy = pairBy,
           itemDiffer = newItemDiffer,
           typeName = typeName,
-          tag = tag,
           itemTag = itemTag,
           asSeq = asSeq,
         )
@@ -123,7 +120,6 @@ final class SeqDiffer[F[_], A](
             pairBy = PairBy.Index,
             itemDiffer = itemDiffer,
             typeName = typeName,
-            tag = tag,
             itemTag = itemTag,
             asSeq = asSeq,
           ),
@@ -136,7 +132,6 @@ final class SeqDiffer[F[_], A](
               pairBy = m.asInstanceOf[ConfigureOp.PairBy[A]],
               itemDiffer = itemDiffer,
               typeName = typeName,
-              tag = tag,
               itemTag = itemTag,
               asSeq = asSeq,
             ),
@@ -155,12 +150,11 @@ object SeqDiffer {
     itemDiffer: Differ[A],
     typeName: SomeTypeName,
     asSeq: SeqLike[F],
-  )(implicit tag: LTag[F[A]], itemTag: LTag[A]): SeqDiffer[F, A] = new SeqDiffer[F, A](
+  )(itemTag: LTag[A]): SeqDiffer[F, A] = new SeqDiffer[F, A](
     isIgnored = false,
     pairBy = PairBy.Index,
     itemDiffer = itemDiffer,
     typeName = typeName,
-    tag = tag,
     itemTag = itemTag,
     asSeq = asSeq,
   )

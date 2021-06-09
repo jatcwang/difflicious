@@ -3,9 +3,8 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName.SomeTypeName
-import izumi.reflect.macrortti.LTag
-import magnolia._
-import difflicious.utils.{TypeName => DTypeName}
+import magnolia.{TypeName => MTypeName, _}
+import difflicious.utils._
 
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
@@ -13,7 +12,7 @@ import scala.collection.immutable.ListMap
 trait DifferGen {
   type Typeclass[T] = Differ[T]
 
-  def combine[T](ctx: ReadOnlyCaseClass[Differ, T])(implicit tag: LTag[T]): Differ[T] = {
+  def combine[T](ctx: ReadOnlyCaseClass[Differ, T]): Differ[T] = {
     new RecordDiffer[T](
       ctx.parameters
         .map { p =>
@@ -22,13 +21,11 @@ trait DifferGen {
         }
         .to(ListMap),
       isIgnored = false,
-      tag = tag,
-      typeName = DTypeName.fromLightTypeTag(tag.tag),
+      typeName = toDiffliciousTypeName(ctx.typeName),
     )
   }
 
-  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean, override protected val tag: LTag[T])
-      extends Differ[T] {
+  final class SealedTraitDiffer[T](ctx: SealedTrait[Differ, T], isIgnored: Boolean) extends Differ[T] {
     // $COVERAGE-OFF$
     require(
       {
@@ -88,7 +85,7 @@ trait DifferGen {
         annotationsArray = ctx.annotations.toArray,
         typeAnnotationsArray = ctx.typeAnnotations.toArray,
       )
-      new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored, tag = tag)
+      new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
     }
 
     override def configurePath(
@@ -119,7 +116,7 @@ trait DifferGen {
                 annotationsArray = ctx.annotations.toArray,
                 typeAnnotationsArray = ctx.typeAnnotations.toArray,
               )
-              new SealedTraitDiffer[T](newSealedTrait, isIgnored, tag = tag)
+              new SealedTraitDiffer[T](newSealedTrait, isIgnored)
             }
         case None =>
           Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
@@ -129,13 +126,13 @@ trait DifferGen {
       Left(ConfigureError.InvalidConfigureOp(path, op, "SealedTraitDiffer"))
   }
 
-  def dispatch[T](ctx: SealedTrait[Differ, T])(implicit tag: LTag[T]): Differ[T] =
-    new SealedTraitDiffer[T](ctx, isIgnored = false, tag = tag)
+  def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
+    new SealedTraitDiffer[T](ctx, isIgnored = false)
 
   def derive[T]: Differ[T] = macro Magnolia.gen[T]
 
-  private def toDiffliciousTypeName(typeName: magnolia.TypeName): SomeTypeName = {
-    DTypeName(
+  private def toDiffliciousTypeName(typeName: MTypeName): SomeTypeName = {
+    TypeName(
       long = typeName.full,
       short = typeName.short,
       typeArguments = typeName.typeArguments

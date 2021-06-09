@@ -3,10 +3,8 @@ package difflicious.differ
 import difflicious.Differ.Typeclass
 import difflicious.ConfigureOp.PairBy
 import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
-import izumi.reflect.macrortti.LTag
 
-final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, override protected val tag: LTag[T])
-    extends ValueDiffer[T] {
+final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) extends ValueDiffer[T] {
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
     case DiffInput.Both(obtained, expected) =>
       DiffResult.ValueResult
@@ -23,7 +21,7 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, over
   }
 
   override def configureIgnored(newIgnored: Boolean): Typeclass[T] =
-    new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString, tag = tag)
+    new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString)
 
   override def configurePath(
     step: String,

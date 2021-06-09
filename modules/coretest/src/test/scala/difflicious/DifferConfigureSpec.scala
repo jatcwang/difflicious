@@ -235,20 +235,6 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("'replace' for MapDiffer fails if type tag mismatches") {
-    assertEquals(
-      Differ[Map[String, CC]]
-        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
-      Left(
-        TypeTagMismatch(
-          path = configurePathResolved("each"),
-          obtainedTag = LTag[Sealed].tag,
-          expectedTag = LTag[CC].tag,
-        ),
-      ),
-    )
-  }
-
   test("'replace' for SeqDiffer replaces ite differ when step is 'each'") {
     val differ: Differ[Seq[CC]] = Differ[Seq[CC]].configure(_.each)(_.ignore)
     val differWithReplace = differ.replace[CC](_.each)(CC.differ)
@@ -292,20 +278,6 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("'replace' for SeqDiffer fails if type tag mismatches") {
-    assertEquals(
-      Differ[Seq[CC]]
-        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
-      Left(
-        TypeTagMismatch(
-          path = configurePathResolved("each"),
-          obtainedTag = LTag[Sealed].tag,
-          expectedTag = LTag[CC].tag,
-        ),
-      ),
-    )
-  }
-
   test("'replace' for SetDiffer replaces ite differ when step is 'each'") {
     val differ: Differ[Set[CC]] = Differ[Set[CC]].configure(_.each)(_.ignore)
     val differWithReplace = differ.replace[CC](_.each)(CC.differ)
@@ -341,25 +313,11 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("'replace' for SetDiffer fails if type tag mismatches") {
+  test("'replace' for SeqDiffer fails if step isn't 'each'") {
     assertEquals(
       Differ[Set[CC]]
         .configureRaw(ConfigurePath.of("nope"), ConfigureOp.TransformDiffer[CC](_ => CC.differ, LTag[CC])),
       Left(NonExistentField(configurePathResolved("nope"), "SetDiffer")),
-    )
-  }
-
-  test("'replace' for SeqDiffer fails if step isn't 'each'") {
-    assertEquals(
-      Differ[Set[CC]]
-        .configureRaw(ConfigurePath.of("each"), ConfigureOp.TransformDiffer[Sealed](_ => Sealed.differ, LTag[Sealed])),
-      Left(
-        TypeTagMismatch(
-          path = configurePathResolved("each"),
-          obtainedTag = LTag[Sealed].tag,
-          expectedTag = LTag[CC].tag,
-        ),
-      ),
     )
   }
 

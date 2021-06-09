@@ -1,10 +1,8 @@
 package difflicious.differ
 
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
-import izumi.reflect.macrortti.LTag
 
-final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override protected val tag: LTag[T])
-    extends ValueDiffer[T] {
+final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T]) extends ValueDiffer[T] {
   @inline
   private def valueToString(t: T) = t.toString
 
@@ -24,7 +22,7 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override p
   }
 
   override def configureIgnored(newIgnored: Boolean): Differ[T] =
-    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, tag = tag)
+    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric)
 
   override def configurePath(
     step: String,
@@ -38,6 +36,6 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], override p
 }
 
 object NumericDiffer {
-  def make[T](implicit numeric: Numeric[T], tag: LTag[T]): NumericDiffer[T] =
-    new NumericDiffer[T](isIgnored = false, numeric = numeric, tag = tag)
+  def make[T](implicit numeric: Numeric[T]): NumericDiffer[T] =
+    new NumericDiffer[T](isIgnored = false, numeric = numeric)
 }
