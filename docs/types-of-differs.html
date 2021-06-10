@@ -1,0 +1,265 @@
+<!DOCTYPE html><html><head><title>Difflicious: Types of Differ</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Jacob Wang" /><meta name="description" content="Diffs for human consumption" /><meta name="og:image" content="/difflicious/img/poster.png" /><meta name="image" property="og:image" content="/difflicious/img/poster.png" /><meta name="og:title" content="Difflicious: Types of Differ" /><meta name="title" property="og:title" content="Difflicious: Types of Differ" /><meta name="og:site_name" content="Difflicious" /><meta name="og:url" content="https://github.com/jatcwang/difflicious" /><meta name="og:type" content="website" /><meta name="og:description" content="Diffs for human consumption" /><link rel="icon" type="image/png" href="/difflicious/img/favicon.png" /><meta name="twitter:title" content="Difflicious: Types of Differ" /><meta name="twitter:image" content="https://jatcwang.github.io/difflicious/img/poster.png" /><meta name="twitter:description" content="Diffs for human consumption" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/difflicious/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/difflicious/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/difflicious/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/difflicious/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/difflicious/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/difflicious/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/difflicious/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/difflicious/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/difflicious/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/difflicious/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/difflicious/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/difflicious/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/difflicious/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/difflicious/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/difflicious/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/difflicious/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/difflicious/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/difflicious/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/difflicious/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/difflicious/img/favicon310x150.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/difflicious/highlight/styles/a11y-light.css" /><link rel="stylesheet" href="/difflicious/css/light-style.css" /><link rel="stylesheet" href="/difflicious/css/main.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/difflicious/" class="brand"><div class="brand-wrapper"></div><span>Difflicious</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/difflicious/docs/introduction" title="Introduction" class="">Introduction</a></div> <div class="sidebar-nav-item active "><a href="/difflicious/docs/types-of-differs" title="Types of Differs" class="active">Types of Differs</a></div> <div class="sidebar-nav-item  "><a href="/difflicious/docs/configuring-differs" title="Configuring Differs" class="">Configuring Differs</a></div> <div class="sidebar-nav-item  "><a href="/difflicious/docs/test-framework-integrations" title="Test Framework Integrations" class="">Test Framework Integrations</a></div> <div class="sidebar-nav-item  "><a href="/difflicious/docs/best-practices-and-faq" title="Best Practices / FAQ" class="">Best Practices / FAQ</a></div> <div class="sidebar-nav-item  "><a href="/difflicious/docs/cheatsheet" title="Cheatsheet" class="">Cheatsheet</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/jatcwang/difflicious" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/jatcwang/difflicious" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="jatcwang" data-github-repo="difflicious"><div class="content-wrapper"><section><h1 id="types-of-differs">Types of Differs</h1>
+
+<p>Here we list the kinds of Differs and how you can use them.</p>
+
+<p>The examples below assume the following imports:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">difflicious._</span>
+<span class="k">import</span> <span class="nn">difflicious.implicits._</span>
+</code></pre></div></div>
+
+<h1 id="value-differs">Value Differs</h1>
+
+<p>For basic types like <code class="language-plaintext highlighter-rouge">Int</code>, <code class="language-plaintext highlighter-rouge">Double</code> and <code class="language-plaintext highlighter-rouge">String</code> we typically can compare them directly e.g. using <code class="language-plaintext highlighter-rouge">equals</code> method.</p>
+
+<p>If you have a simple type where you don’t need any advanced diffing, then you can use <code class="language-plaintext highlighter-rouge">Differ.useEquals</code> to make a 
+Differ instance for it.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">MyInt</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+
+<span class="k">object</span> <span class="nc">MyInt</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">differ</span><span class="k">:</span> <span class="kt">Differ</span><span class="o">[</span><span class="kt">MyInt</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Differ</span><span class="o">.</span><span class="py">useEquals</span><span class="o">[</span><span class="kt">MyInt</span><span class="o">](</span><span class="n">valueToString</span> <span class="k">=</span> <span class="nv">_</span><span class="o">.</span><span class="py">toString</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">MyInt</span><span class="o">.</span><span class="py">differ</span><span class="o">.</span><span class="py">diff</span><span class="o">(</span><span class="nc">MyInt</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="nc">MyInt</span><span class="o">(</span><span class="mi">2</span><span class="o">))</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+<span style="color: red;">MyInt(1)</span> -&gt; <span style="color: green;">MyInt(2)</span>
+</pre>
+
+<h1 id="differs-for-algebraic-data-types-enums-sealed-traits-and-case-classes">Differs for Algebraic Data Types (enums, sealed traits and case classes)</h1>
+
+<p>You can derive <code class="language-plaintext highlighter-rouge">Differ</code> for a case class provided that there is a <code class="language-plaintext highlighter-rouge">Differ</code> instance for all your fields.</p>
+
+<p>Similarly, you can derive a <code class="language-plaintext highlighter-rouge">Differ</code> for a sealed trait (Also called <strong>Enums</strong> in Scala 3) provided that we’re able to 
+derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)</p>
+
+<h3 id="case-class">Case class</h3>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Person</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+
+<span class="k">object</span> <span class="nc">Person</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">differ</span><span class="k">:</span> <span class="kt">Differ</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Differ</span><span class="o">.</span><span class="py">derive</span><span class="o">[</span><span class="kt">Person</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">Person</span><span class="o">.</span><span class="py">differ</span><span class="o">.</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">Person</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="mi">40</span><span class="o">),</span>
+  <span class="nc">Person</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="mi">35</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+Person(
+  name: "Alice",
+  age: <span style="color: red;">40</span> -&gt; <span style="color: green;">35</span>,
+)
+</pre>
+
+<h3 id="sealed-trait--scala-3-enum">Sealed trait / Scala 3 Enum</h3>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Deriving Differ instance for sealed trait
+</span><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">HousePet</span>
+<span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Dog</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">age</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">HousePet</span>
+<span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Cat</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">livesLeft</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">HousePet</span>
+
+<span class="k">object</span> <span class="nc">HousePet</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">differ</span><span class="k">:</span> <span class="kt">Differ</span><span class="o">[</span><span class="kt">HousePet</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Differ</span><span class="o">.</span><span class="py">derive</span><span class="o">[</span><span class="kt">HousePet</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">HousePet</span><span class="o">.</span><span class="py">differ</span><span class="o">.</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">Dog</span><span class="o">(</span><span class="s">"Lucky"</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span>
+  <span class="nc">Cat</span><span class="o">(</span><span class="s">"Lucky"</span><span class="o">,</span> <span class="mi">1</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+<span style="color: red;">Dog</span> != <span style="color: green;">Cat</span>
+<span style="color: red;">=== Obtained ===
+Dog(
+  name: "Lucky",
+  age: 1,
+)</span>
+<span style="color: green;">=== Expected ===
+Cat(
+  name: "Lucky",
+  livesLeft: 1,
+)</span>
+</pre>
+
+<h1 id="seq-differ">Seq Differ</h1>
+
+<p>Differ for sequences allow diffing immutable sequences like <code class="language-plaintext highlighter-rouge">Seq</code>, <code class="language-plaintext highlighter-rouge">List</code>, and <code class="language-plaintext highlighter-rouge">Vector</code>.</p>
+
+<p>By default, Seq Differs will match elements by their index in the sequence.</p>
+
+<p>In the example below</p>
+
+<ul>
+  <li><strong>Bob</strong>’s age</li>
+  <li><strong>Alice</strong> isn’t expected to be in list</li>
+  <li><strong>Charles</strong> is expected but missing</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="mi">30</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="mi">25</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">bob50</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="mi">50</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">charles</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"Charles"</span><span class="o">,</span> <span class="mi">80</span><span class="o">)</span>
+
+<span class="nv">Differ</span><span class="o">.</span><span class="py">seqDiffer</span><span class="o">[</span><span class="kt">List</span>, <span class="kt">Person</span><span class="o">].</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">List</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob50</span><span class="o">),</span>
+  <span class="nc">List</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charles</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+List(
+  Person(
+    name: "Alice",
+    age: 30,
+  ),
+  Person(
+    name: "Bob",
+    age: <span style="color: red;">50</span> -&gt; <span style="color: green;">25</span>,
+  ),
+  <span style="color: green;">Person(
+    name: "Charles",
+    age: 80,
+  )</span>,
+)
+</pre>
+
+<h2 id="pair-by-field">Pair by field</h2>
+
+<p>In many test scenarios we actually don’t care about order of elements, as long as the two sequences 
+contains the same elements. One example of this is inserting multiple records into a database and then retrieving them
+, where you expect the same records to be returned by not necessarily in the original order.</p>
+
+<p>In this case, you can configure a <code class="language-plaintext highlighter-rouge">Differ</code> to pair by a field instead.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">differByName</span> <span class="k">=</span> <span class="nc">Differ</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Person</span><span class="o">]].</span><span class="py">pairBy</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">name</span><span class="o">)</span>
+
+<span class="nv">differByName</span><span class="o">.</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">List</span><span class="o">(</span><span class="n">bob50</span><span class="o">,</span> <span class="n">charles</span><span class="o">,</span> <span class="n">alice</span><span class="o">),</span>
+  <span class="nc">List</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charles</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<p>When we match by a person’s name instead of index, we can now easily spot that Bob has the wrong age.</p>
+
+<pre class="diff-render">
+List(
+  Person(
+    name: "Bob",
+    age: <span style="color: red;">50</span> -&gt; <span style="color: green;">25</span>,
+  ),
+  Person(
+    name: "Charles",
+    age: 80,
+  ),
+  Person(
+    name: "Alice",
+    age: 30,
+  ),
+)
+</pre>
+
+<h1 id="map-differ">Map differ</h1>
+
+<p>Map differ pair entries with the same keys and compare the values. Missing key-values will also be reported in the result.</p>
+
+<p>It requires</p>
+
+<ul>
+  <li>a <code class="language-plaintext highlighter-rouge">ValueDiffer</code> instance for the map key type (for display purposes)</li>
+  <li>a <code class="language-plaintext highlighter-rouge">Differ</code> instance for the map value type</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Differ</span><span class="o">[</span><span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Person</span><span class="o">]].</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">Map</span><span class="o">(</span>
+    <span class="s">"a"</span> <span class="o">-&gt;</span> <span class="n">alice</span><span class="o">,</span>
+    <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="n">bob</span>
+  <span class="o">),</span>
+  <span class="nc">Map</span><span class="o">(</span>
+    <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="n">bob50</span><span class="o">,</span>
+    <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="n">charles</span>
+  <span class="o">),</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+Map(
+  <span style="color: red;">"a"</span> -&gt; <span style="color: red;">Person(
+      name: "Alice",
+      age: 30,
+    )</span>,
+  "b" -&gt; Person(
+      name: "Bob",
+      age: <span style="color: red;">25</span> -&gt; <span style="color: green;">50</span>,
+    ),
+  <span style="color: green;">"c"</span> -&gt; <span style="color: green;">Person(
+      name: "Charles",
+      age: 80,
+    )</span>,
+)
+</pre>
+
+<h1 id="set-differ">Set differ</h1>
+
+<p>Set differ can diff two Sets by pairing the set elements and diffing them. 
+By default, the pairing is based on matching elements that are equal to each other (using <code class="language-plaintext highlighter-rouge">equals</code>).</p>
+
+<p>However, you most likely want to pair elements using a field on an element instead for better diffs reports 
+(See next section).</p>
+
+<h2 id="pair-by-field-1">Pair by field</h2>
+
+<p>For the best error reporting, you want to configure <code class="language-plaintext highlighter-rouge">SetDiffer</code> to pair by a field.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">differByName</span><span class="k">:</span> <span class="kt">Differ</span><span class="o">[</span><span class="kt">Set</span><span class="o">[</span><span class="kt">Person</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Differ</span><span class="o">[</span><span class="kt">Set</span><span class="o">[</span><span class="kt">Person</span><span class="o">]].</span><span class="py">pairBy</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">name</span><span class="o">)</span>
+
+<span class="nv">differByName</span><span class="o">.</span><span class="py">diff</span><span class="o">(</span>
+  <span class="nc">Set</span><span class="o">(</span><span class="n">bob50</span><span class="o">,</span> <span class="n">charles</span><span class="o">,</span> <span class="n">alice</span><span class="o">),</span>
+  <span class="nc">Set</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charles</span><span class="o">)</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<pre class="diff-render">
+Set(
+  Person(
+    name: "Bob",
+    age: <span style="color: red;">50</span> -&gt; <span style="color: green;">25</span>,
+  ),
+  Person(
+    name: "Charles",
+    age: 80,
+  ),
+  Person(
+    name: "Alice",
+    age: 30,
+  ),
+)
+</pre>
+
+</section></div></div></div></div><script src="/difflicious/highlight/highlight.pack.js"></script><script src="/difflicious/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'jatcwang/difflicious'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/difflicious/js/search.js"></script><script src="/difflicious/js/docs.js"></script></body></html>
