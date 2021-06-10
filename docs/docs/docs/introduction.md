@@ -58,7 +58,7 @@ List(
     age: 12,
   )</span>
   <span style="color: green;">=== Expected ===
-  Catmenu.yml(
+  Cat(
     name: "Andy",
     livesLeft: [IGNORED],
   )</span>,
