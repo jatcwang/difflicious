@@ -5,10 +5,15 @@ val scalatestVersion = "3.2.9"
 val scala213 = "2.13.6"
 val scala3 = "3.0.0"
 
+val isScala3 = Def.setting {
+  // doesn't work well with >= 3.0.0 for `3.0.0-M1`
+  scalaVersion.value.startsWith("3")
+}
+
 inThisBuild(
   List(
-    scalaVersion := scala213,
-    crossScalaVersions := Seq(scala213 /*, scala3*/ ),
+    scalaVersion := scala3, // FIXME:
+    crossScalaVersions := Seq(scala213, scala3),
     organization := "com.github.jatcwang",
     homepage := Some(url("https://github.com/jatcwang/difflicious")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -31,9 +36,10 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.propensive" %% "magnolia"      % "0.17.0",
-      "dev.zio"        %% "izumi-reflect" % "1.1.1",
-      "com.lihaoyi"    %% "fansi"         % "0.2.12",
+      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M6"
+      else "com.propensive" %% "magnolia" % "0.17.0",
+      "dev.zio" %% "izumi-reflect" % "1.1.2",
+      "com.lihaoyi" %% "fansi" % "0.2.14",
     ) ++ (
       if (scalaVersion.value.startsWith("2"))
         Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
@@ -152,9 +158,9 @@ lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
   scalacOptions ++= Seq("-Wmacros:after"),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.0" cross CrossVersion.full),
-    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
-  ).filterNot(_ => scalaVersion.value.startsWith("3")),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+  ).filterNot(_ => isScala3.value),
 )
 
 lazy val noPublishSettings = Seq(
