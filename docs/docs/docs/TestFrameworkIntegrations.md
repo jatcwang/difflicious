@@ -38,7 +38,7 @@ and then in your test suites you can call `assertNoDiff` on any `Differ`.
 
 ```scala mdoc:nest
 import org.scalatest.funsuite.AnyFunSuite
-import difflicious.scalatest.MUnitDiff._
+import difflicious.scalatest.ScalatestDiff._
 import difflicious.Differ
 
 class MyTest extends AnyFunSuite {
