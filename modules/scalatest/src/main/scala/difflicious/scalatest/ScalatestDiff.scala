@@ -4,7 +4,7 @@ import difflicious.{Differ, DiffResultPrinter}
 import org.scalactic.source.Position
 import org.scalatest.Assertions.fail
 
-trait MUnitDiff {
+trait ScalatestDiff {
   implicit class DifferExtensions[A](differ: Differ[A]) {
     def assertNoDiff(obtained: A, expected: A)(implicit pos: Position): Unit = {
       val result = differ.diff(obtained, expected)
@@ -14,4 +14,4 @@ trait MUnitDiff {
   }
 }
 
-object MUnitDiff extends MUnitDiff
+object ScalatestDiff extends ScalatestDiff
