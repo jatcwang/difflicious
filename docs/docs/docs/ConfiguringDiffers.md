@@ -76,6 +76,23 @@ val sealedTraitDiffer: Differ[List[MySealedTrait]] = Differ[List[MySealedTrait]]
 val differWithSubTypesFieldIgnored = sealedTraitDiffer.ignoreAt(_.each.subType[SomeSubType].fieldInSubType)
 ```
 
+## Replace differs
+
+You can completely replace the underlying differ at a path using `replace`. This is useful when you want to reuse an existing
+Differ you have extensively configured.
+
+```scala mdoc:silent
+val mapDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]
+val pairAndCompareByAge = Differ[List[Person]].pairBy(_.age).ignoreAt(_.each.name)
+val pairByName = Differ[List[Person]].pairBy(_.name)
+
+// Use this to compare each person list by age only
+mapDiffer.replace(_.each)(pairAndCompareByAge)
+
+// Use this to compare each person list paired by name
+mapDiffer.replace(_.each)(pairByName)
+```
+
 ## Unsafe API with `configureRaw`
 
 This is a low-level API that you shouldn't need in normal usage. All the nice in the previous sections calls this 
