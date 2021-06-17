@@ -1,10 +1,10 @@
 ---
 layout: docs
-title:  "Test Framework Integrations"
-permalink: docs/test-framework-integrations
+title:  "Library Integrations"
+permalink: docs/library-integrations
 ---
 
-# Test Framework Integrations
+# Library Integrations
 
 ## MUnit
 
@@ -47,3 +47,22 @@ class MyTest extends AnyFunSuite {
   }
 }
 ```
+
+## Cats
+
+Differ instances for cats data structures like `NonEmptyList` and `Chain` can be found in
+
+```
+"com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" % Test
+```
+
+```scala mdoc:nest
+import difflicious.Differ
+import difflicious.cats.implicits._
+import cats.data.{NonEmptyMap, NonEmptyList}
+
+val differ: Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]] = Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]]
+```
+
+
+

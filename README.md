@@ -16,7 +16,12 @@
 
 Hungry for some good diffs? Check out the [documentation](https://jatcwang.github.io/difflicious/)!
 
-# Attributions & Inspirations
+# Contributing 
+
+All contributions are welcome including suggestions and ideas. For larger changes please raise an issue
+first to avoid duplicate work :) 
+
+# Attributions
 
 This project takes many inspirations from 
 
