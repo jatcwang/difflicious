@@ -55,8 +55,9 @@ Feature-wise, difflicious has:
 - Better configurability: Difflicious takes a more "structured" approach to configurability, where Differ of a complex type
   can still have all its underlying Differs tweaked or even replaced (using `replace`). This is handy in some scenarios
   where you can reuse existing Differs by "swapping" them in and out of a larger Differ.
+  
+On the other hand, diffx has:
 
-DiffX also has fully automatic derivation on by default, which can lead to long compile times.
+- Opt-in fully automatic derivation, if you want to convenience and willing to accept longer compile times.
 
-
-
+**Note**: Diffx is an actively maintained library, so some comparison may not be up to date and corrections are welcome :)
