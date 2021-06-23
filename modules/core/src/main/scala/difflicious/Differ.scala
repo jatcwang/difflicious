@@ -49,7 +49,7 @@ trait Differ[T] extends ConfigureMethods[T] {
   }
 }
 
-object Differ extends DifferTupleInstances with DifferGen {
+object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstances {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
