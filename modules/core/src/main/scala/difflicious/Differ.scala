@@ -41,7 +41,6 @@ trait Differ[T] extends ConfigureMethods[T] {
 
   protected def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[T]]
 
-  // FIXME: path not needed
   final private def configureTransform(
     op: ConfigureOp.TransformDiffer[_],
   ): Differ[T] = {
@@ -58,17 +57,17 @@ object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstanc
 
   // TODO: better string diff (edit distance and a description of how to get there?
   //  this can help especially in cases like extra space or special char)
-  implicit val stringDiff: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
-  implicit val charDiff: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
-  implicit val booleanDiff: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
+  implicit val stringDiffer: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
+  implicit val charDiffer: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
+  implicit val booleanDiffer: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
 
-  implicit val intDiff: NumericDiffer[Int] = NumericDiffer.make[Int]
-  implicit val doubleDiff: NumericDiffer[Double] = NumericDiffer.make[Double]
-  implicit val shortDiff: NumericDiffer[Short] = NumericDiffer.make[Short]
-  implicit val byteDiff: NumericDiffer[Byte] = NumericDiffer.make[Byte]
-  implicit val longDiff: NumericDiffer[Long] = NumericDiffer.make[Long]
-  implicit val bigDecimalDiff: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal]
-  implicit val bigIntDiff: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
+  implicit val intDiffer: NumericDiffer[Int] = NumericDiffer.make[Int]
+  implicit val doubleDiffer: NumericDiffer[Double] = NumericDiffer.make[Double]
+  implicit val shortDiffer: NumericDiffer[Short] = NumericDiffer.make[Short]
+  implicit val byteDiffer: NumericDiffer[Byte] = NumericDiffer.make[Byte]
+  implicit val longDiffer: NumericDiffer[Long] = NumericDiffer.make[Long]
+  implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal]
+  implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
 
   implicit def mapDiffer[M[_, _], K, V](
     implicit keyDiffer: ValueDiffer[K],

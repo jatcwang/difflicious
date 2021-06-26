@@ -1,6 +1,6 @@
 package difflicious.differ
 
-import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
 
 final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T]) extends ValueDiffer[T] {
   @inline
@@ -21,16 +21,19 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T]) extends Va
       DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
   }
 
-  override def configureIgnored(newIgnored: Boolean): Differ[T] =
+  override def configureIgnored(newIgnored: Boolean): NumericDiffer[T] =
     new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric)
 
   override def configurePath(
     step: String,
     nextPath: ConfigurePath,
     op: ConfigureOp,
-  ): Either[ConfigureError, Differ[T]] = Left(ConfigureError.PathTooLong(nextPath))
+  ): Either[ConfigureError, NumericDiffer[T]] = Left(ConfigureError.PathTooLong(nextPath))
 
-  override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+  override def configurePairBy(
+    path: ConfigurePath,
+    op: ConfigureOp.PairBy[_],
+  ): Either[ConfigureError, NumericDiffer[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "NumericDiffer"))
 
 }

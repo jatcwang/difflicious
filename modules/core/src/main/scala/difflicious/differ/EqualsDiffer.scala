@@ -1,6 +1,5 @@
 package difflicious.differ
 
-import difflicious.Differ.Typeclass
 import difflicious.ConfigureOp.PairBy
 import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
 
@@ -20,16 +19,16 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) exte
       DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
   }
 
-  override def configureIgnored(newIgnored: Boolean): Typeclass[T] =
+  override def configureIgnored(newIgnored: Boolean): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString)
 
   override def configurePath(
     step: String,
     nextPath: ConfigurePath,
     op: ConfigureOp,
-  ): Either[ConfigureError, Typeclass[T]] = Left(ConfigureError.PathTooLong(nextPath))
+  ): Either[ConfigureError, EqualsDiffer[T]] = Left(ConfigureError.PathTooLong(nextPath))
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Typeclass[T]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, EqualsDiffer[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "EqualsDiffer"))
 
 }

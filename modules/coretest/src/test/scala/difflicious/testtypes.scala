@@ -57,6 +57,14 @@ object testtypes {
     implicit val differ: EqualsDiffer[EqClass] = Differ.useEquals[EqClass](_.toString)
   }
 
+  final case class NewInt(int: Int)
+
+  object NewInt {
+    implicit val arb: Arbitrary[NewInt] = Arbitrary.apply(Arbitrary.arbitrary[Int].map(NewInt(_)))
+
+    implicit val differ: ValueDiffer[NewInt] = Differ.intDiffer.contramap(_.int)
+  }
+
   sealed trait SealedWithCustom
 
   object SealedWithCustom {
