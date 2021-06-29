@@ -61,3 +61,22 @@ On the other hand, diffx has:
 - Opt-in fully automatic derivation, if you want to convenience and willing to accept longer compile times.
 
 **Note**: Diffx is an actively maintained library, so some comparison may not be up to date and corrections are welcome :)
+
+## How can I provide a Differ for my newtypes / opaque types?
+
+Many Scala users like to use a wrapper type around primitive types for additional type-safety.
+
+All `ValueDiffer` has a `contramap` method you can use.
+
+```scala mdoc:invisible
+import difflicious._
+```
+
+```scala mdoc:silent
+final case class UserId(value: String)
+
+val userIdDiffer: Differ[UserId] = Differ.stringDiffer.contramap(_.value)
+```
+
+Note that the type of Differ.stringDiffer is a `ValueDiffer` (`ValueDiffer` is a subtype of `Differ`)
+

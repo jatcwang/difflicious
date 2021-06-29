@@ -3,6 +3,11 @@ package difflicious.differ
 import difflicious.ConfigureOp.PairBy
 import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
 
+/**
+  * Differ where the two values are compared by using the equals method.
+  * If the two values aren't equal, then we use the provided [[valueToString]] function
+  * to output the diagnostic output.
+  */
 final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) extends ValueDiffer[T] {
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
     case DiffInput.Both(obtained, expected) =>
