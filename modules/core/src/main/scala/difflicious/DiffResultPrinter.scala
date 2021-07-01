@@ -2,7 +2,6 @@ package difflicious
 
 import difflicious.DiffResult.MapResult.Entry
 import difflicious.DiffResult.ValueResult
-import difflicious.utils.TypeName.SomeTypeName
 import fansi.{Str, Color}
 
 object DiffResultPrinter {
@@ -27,20 +26,16 @@ object DiffResultPrinter {
     if (res.isIgnored) ignoredStr
     else
       res match {
-        case r: DiffResult.ListResult =>
-          listResultToStr(
-            typeName = r.typeName,
-            diffResults = r.items,
-            indentLevel = indentLevel,
-            matchType = r.pairType,
-          )
-        case r: DiffResult.SetResult =>
-          listResultToStr(
-            typeName = r.typeName,
-            diffResults = r.items,
-            indentLevel = indentLevel,
-            matchType = r.pairType,
-          )
+        case r: DiffResult.ListResult => {
+          val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
+          val listStrs = r.items
+            .map { res =>
+              consoleOutput(res, indentLevel + 1) ++ ","
+            }
+            .foldLeft(Str("")) { case (accum, next) => accum ++ indentForFields ++ next }
+          val allStr = Str(s"${r.typeName.short}(") ++ listStrs ++ Str(s"\n${indentLevel.asSpaces})")
+          colorOnMatchType(str = allStr, matchType = r.pairType)
+        }
         case r: DiffResult.RecordResult => {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val fieldsStr = r.fields
@@ -101,22 +96,6 @@ object DiffResultPrinter {
             case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected)
           }
       }
-  }
-
-  private def listResultToStr(
-    typeName: SomeTypeName,
-    diffResults: Seq[DiffResult],
-    indentLevel: Int,
-    matchType: PairType,
-  ) = {
-    val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
-    val listStrs = diffResults
-      .map { res =>
-        consoleOutput(res, indentLevel + 1) ++ ","
-      }
-      .foldLeft(Str("")) { case (accum, next) => accum ++ indentForFields ++ next }
-    val allStr = Str(s"${typeName.short}(") ++ listStrs ++ Str(s"\n${indentLevel.asSpaces})")
-    colorOnMatchType(str = allStr, matchType = matchType)
   }
 
   private def colorOnMatchType(

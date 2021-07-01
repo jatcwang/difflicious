@@ -35,14 +35,6 @@ object DiffResult {
     isOk: Boolean,
   ) extends DiffResult
 
-  final case class SetResult(
-    typeName: SomeTypeName,
-    items: Vector[DiffResult],
-    pairType: PairType,
-    isIgnored: Boolean,
-    isOk: Boolean,
-  ) extends DiffResult
-
   final case class RecordResult(
     typeName: SomeTypeName,
     fields: ListMap[String, DiffResult],

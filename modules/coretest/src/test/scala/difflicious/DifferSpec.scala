@@ -818,4 +818,16 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("TransformedDiffer: isOk == true if two underlying values are equal") {
+    assertOkIfValuesEqualProp(NewInt.differ)
+  }
+
+  test("TransformedDiffer: isOk == false if two underlying values are NOT equal") {
+    assertNotOkIfNotEqualProp(NewInt.differ)
+  }
+
+  test("TransformedDiffer: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(NewInt.differ)
+  }
+
 }

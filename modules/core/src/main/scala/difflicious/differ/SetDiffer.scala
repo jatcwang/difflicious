@@ -1,13 +1,12 @@
 package difflicious.differ
 
 import difflicious.ConfigureOp.PairBy
-import difflicious.DiffResult.SetResult
+import difflicious.DiffResult.ListResult
 import difflicious.differ.SeqDiffer.diffPairByFunc
 import difflicious.utils.TypeName.SomeTypeName
 import difflicious.utils.SetLike
 import difflicious.{Differ, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
 
-// TODO: maybe find a way for stable ordering (i.e. only order on non-ignored fields)
 final class SetDiffer[F[_], A](
   isIgnored: Boolean,
   itemDiffer: Differ[A],
@@ -15,11 +14,11 @@ final class SetDiffer[F[_], A](
   typeName: SomeTypeName,
   asSet: SetLike[F],
 ) extends Differ[F[A]] {
-  override type R = SetResult
+  override type R = ListResult
 
   override def diff(inputs: DiffInput[F[A]]): R = inputs.map(asSet.asSet) match {
     case DiffInput.ObtainedOnly(actual) =>
-      SetResult(
+      ListResult(
         typeName = typeName,
         actual.toVector.map { a =>
           itemDiffer.diff(DiffInput.ObtainedOnly(a))
@@ -29,7 +28,7 @@ final class SetDiffer[F[_], A](
         isOk = isIgnored,
       )
     case DiffInput.ExpectedOnly(expected) =>
-      SetResult(
+      ListResult(
         typeName = typeName,
         items = expected.toVector.map { e =>
           itemDiffer.diff(DiffInput.ExpectedOnly(e))
@@ -40,7 +39,7 @@ final class SetDiffer[F[_], A](
       )
     case DiffInput.Both(obtained, expected) => {
       val (results, overallIsSame) = diffPairByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
-      SetResult(
+      ListResult(
         typeName = typeName,
         items = results,
         pairType = PairType.Both,

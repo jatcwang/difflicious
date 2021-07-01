@@ -1,7 +1,5 @@
 package difflicious
 
-import izumi.reflect.macrortti.LightTypeTag
-
 sealed trait ConfigureError extends Throwable {
   def errorMessage: String
   override def getMessage: String = errorMessage
@@ -31,12 +29,5 @@ object ConfigureError {
     override def errorMessage: String =
       s"The differ you're trying to configure (${differType}) does now allow the provided ConfigureOp ${op}" +
         s"Current path: ${resolvedPath(path)}"
-  }
-  // FIXME: still need?
-  final case class TypeTagMismatch(path: ConfigurePath, obtainedTag: LightTypeTag, expectedTag: LightTypeTag)
-      extends ConfigureError {
-    override def errorMessage: String =
-      s"The new differ's type tag is different from the to-be-replaced differ's type tag. At path: ${resolvedPath(path)}. " +
-        s"Expected ${expectedTag} but got ${obtainedTag}"
   }
 }
