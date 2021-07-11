@@ -1,9 +1,9 @@
 package difflicious.differ
 
-import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult}
 
 /**
-  * A Differ that transforms any input of [[diff]] method and pass it to its underlying Differ.
+  * A Differ that transforms any input of diff method and pass it to its underlying Differ.
   * See [[ValueDiffer.contramap]]
   */
 class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T => U) extends ValueDiffer[T] {
