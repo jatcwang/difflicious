@@ -1,4 +1,4 @@
-val munitVersion = "0.7.26"
+val munitVersion = "0.7.27"
 val catsVersion = "2.6.1"
 val scalatestVersion = "3.2.9"
 
@@ -31,9 +31,9 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.propensive" %% "magnolia" % "0.17.0",
-      "dev.zio" %% "izumi-reflect" % "1.1.1",
-      "com.lihaoyi" %% "fansi" % "0.2.12",
+      "com.propensive" %% "magnolia"      % "0.17.0",
+      "dev.zio"        %% "izumi-reflect" % "1.1.1",
+      "com.lihaoyi"    %% "fansi"         % "0.2.12",
     ) ++ (
       if (scalaVersion.value.startsWith("2"))
         Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
@@ -86,7 +86,7 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
     ),
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %% "munit"            % munitVersion,
       "org.scalameta" %% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
@@ -152,8 +152,8 @@ lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
   scalacOptions ++= Seq("-Wmacros:after"),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
-    compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+    compilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => scalaVersion.value.startsWith("3")),
 )
 
@@ -198,7 +198,7 @@ ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.map {
     case w: WorkflowStep.Sbt if w.commands == List("test") =>
-      w.copy(commands = List("test", "makeMicrosite"))
+      w.copy(commands = List("test", "makeMicrosite", "publishLocal"))
     case w => w
   }
 }
