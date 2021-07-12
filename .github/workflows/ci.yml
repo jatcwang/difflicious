@@ -61,7 +61,7 @@ jobs:
         run: sbt --client '++${{ matrix.scala }}; githubWorkflowCheck'
 
       - name: Build project
-        run: sbt --client '++${{ matrix.scala }}; test; makeMicrosite'
+        run: sbt --client '++${{ matrix.scala }}; test; makeMicrosite; publishLocal'
 
       - name: Compress target directories
         run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target

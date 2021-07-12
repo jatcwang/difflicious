@@ -29,7 +29,9 @@ object DiffResultPrinter {
         case r: DiffResult.ListResult => {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val listStrs = r.items
-            .map { res => consoleOutput(res, indentLevel + 1) ++ "," }
+            .map { res =>
+              consoleOutput(res, indentLevel + 1) ++ ","
+            }
             .foldLeft(Str("")) { case (accum, next) => accum ++ indentForFields ++ next }
           val allStr = Str(s"${r.typeName.short}(") ++ listStrs ++ Str(s"\n${indentLevel.asSpaces})")
           colorOnMatchType(str = allStr, matchType = r.pairType)
