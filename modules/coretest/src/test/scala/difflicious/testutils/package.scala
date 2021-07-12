@@ -3,7 +3,7 @@ package difflicious
 import difflicious.DiffResultPrinter.consoleOutput
 import munit.Assertions.assertEquals
 import org.scalacheck.Prop.{forAll, propBoolean}
-import org.scalacheck.{Prop, Arbitrary}
+import org.scalacheck.{Arbitrary, Prop}
 import difflicious.internal.EitherGetSyntax._
 
 package object testutils {
@@ -51,7 +51,17 @@ package object testutils {
     res: DiffResult,
     expectedOutputStr: String,
   ): Unit = {
-    val obtainedOutputStr = consoleOutput(res, 0).render
+
+    // Reverse "recolor each line" difflicious.DiffResultPrinter.colorOnMatchType
+    // to make test expectations easier to read and write
+    def removeMultilineRecoloring(str: String): String = {
+      val k = s"$X\n $R"
+      val j = s"$X\n $G"
+      val replaced = str.replace(k, "\n ").replace(j, "\n ")
+      replaced
+    }
+
+    val obtainedOutputStr = removeMultilineRecoloring(consoleOutput(res, 0).render)
 
     if (obtainedOutputStr != expectedOutputStr) {
       println("=== Obtained Output === ")

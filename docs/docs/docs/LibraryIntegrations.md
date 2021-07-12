@@ -34,7 +34,14 @@ Add this to your SBT build
 "com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" % Test
 ```
 
-and then in your test suites you can call `assertNoDiff` on any `Differ`.
+Tests should be run with the `-oW` option to disable Scalatest from coloring test failures all red as it interferes with 
+difflicious color display.
+
+```
+testOnly -- -oW
+```
+
+Here's an example of what a test using difflicious looks like:
 
 ```scala mdoc:nest
 import org.scalatest.funsuite.AnyFunSuite

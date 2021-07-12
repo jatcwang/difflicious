@@ -2,7 +2,7 @@ package difflicious
 
 import difflicious.DiffResult.MapResult.Entry
 import difflicious.DiffResult.ValueResult
-import fansi.{Str, Color}
+import fansi.{Color, EscapeAttr, Str}
 
 object DiffResultPrinter {
   private val colorObtained = Color.Red
@@ -29,9 +29,7 @@ object DiffResultPrinter {
         case r: DiffResult.ListResult => {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val listStrs = r.items
-            .map { res =>
-              consoleOutput(res, indentLevel + 1) ++ ","
-            }
+            .map { res => consoleOutput(res, indentLevel + 1) ++ "," }
             .foldLeft(Str("")) { case (accum, next) => accum ++ indentForFields ++ next }
           val allStr = Str(s"${r.typeName.short}(") ++ listStrs ++ Str(s"\n${indentLevel.asSpaces})")
           colorOnMatchType(str = allStr, matchType = r.pairType)
@@ -98,14 +96,32 @@ object DiffResultPrinter {
       }
   }
 
+  private val dummyColoSeparator = Str(" ").overlay(Color.Reset)
   private def colorOnMatchType(
     str: Str,
     matchType: PairType,
   ): Str = {
+    // Because SBT (and maybe other tools) put their own logging prefix on each line (e.g. [info])
+    // they effectively resets the color of each line. Therefore we need to ensure every line is "recolored"
+    // Because we always indent with spaces, we do this by recoloring the first space we find on each line.
+    def recolorEachLine(orig: Str, color: EscapeAttr) = {
+      orig.plainText.linesIterator
+        .map { s =>
+          if (s.startsWith(" "))
+            dummyColoSeparator ++ Str(s.drop(1)).overlay(color)
+          else
+            Str(s).overlay(color)
+        }
+        .reduceLeft((accum, next) => accum ++ Str("\n") ++ next)
+    }
+
     matchType match {
-      case PairType.Both         => str
-      case PairType.ObtainedOnly => str.overlay(colorObtained)
-      case PairType.ExpectedOnly => str.overlay(colorExpected)
+      case PairType.Both => str
+      case PairType.ObtainedOnly => {
+        recolorEachLine(str, colorObtained)
+      }
+      case PairType.ExpectedOnly =>
+        recolorEachLine(str, colorExpected)
     }
   }
 
