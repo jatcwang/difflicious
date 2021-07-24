@@ -79,17 +79,19 @@ final class RecordDiffer[T](
     nextPath: ConfigurePath,
     op: ConfigureOp,
   ): Either[ConfigureError, Differ[T]] =
-    for {
-      (getter, fieldDiffer) <- fieldDiffers
-        .get(step)
-        .toRight(ConfigureError.NonExistentField(nextPath, "RecordDiffer"))
-      newFieldDiffer <- fieldDiffer.configureRaw(nextPath, op)
-    } yield new RecordDiffer[T](
-      fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
-      isIgnored = isIgnored,
-      typeName = typeName,
-    )
-
+    fieldDiffers
+      .get(step)
+      .toRight(ConfigureError.NonExistentField(nextPath, "RecordDiffer"))
+      .flatMap {
+        case (getter, fieldDiffer) =>
+          fieldDiffer.configureRaw(nextPath, op).map { newFieldDiffer =>
+            new RecordDiffer[T](
+              fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
+              isIgnored = isIgnored,
+              typeName = typeName,
+            )
+          }
+      }
   override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "RecordDiffer"))
 }

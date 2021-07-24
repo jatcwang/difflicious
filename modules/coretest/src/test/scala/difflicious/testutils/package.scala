@@ -17,7 +17,7 @@ package object testutils {
   val justIgnoredStr = s"[IGNORED]"
 
   def assertOkIfValuesEqualProp[A: Arbitrary](differ: Differ[A]): Prop = {
-    forAll { l: A =>
+    forAll { (l: A) =>
       val res = differ.diff(l, l)
       res.isOk
     }

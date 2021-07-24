@@ -1,12 +1,9 @@
 package difflicious.internal
 
-import difflicious.ConfigureOp.PairBy
-import difflicious.internal.EitherGetSyntax.EitherExtensionOps
-import difflicious.{ConfigurePath, Differ}
-import difflicious.utils.Pairable
+import difflicious.Differ
 
 import scala.collection.mutable
-import scala.annotation.{tailrec, nowarn}
+import scala.annotation.{nowarn, tailrec}
 import scala.reflect.macros.blackbox
 
 trait ConfigureMethods[T] { this: Differ[T] =>
@@ -18,20 +15,6 @@ trait ConfigureMethods[T] { this: Differ[T] =>
 
   def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] =
     macro ConfigureMacro.replace_impl[T, U]
-}
-
-// pairBy has to be defined differently for better type inference.
-final class PairByOps[F[_], A](differ: Differ[F[A]]) {
-  def pairBy[B](f: A => B): Differ[F[A]] =
-    differ.configureRaw(ConfigurePath.current, PairBy.ByFunc(f)).unsafeGet
-
-  def pairByIndex: Differ[F[A]] =
-    differ.configureRaw(ConfigurePath.current, PairBy.Index).unsafeGet
-}
-
-trait ToPairByOps {
-  @nowarn("msg=.*never used.*")
-  implicit def toPairByOps[F[_]: Pairable, A](differ: Differ[F[A]]): PairByOps[F, A] = new PairByOps(differ)
 }
 
 // Implementation inspired by quicklen's path macro.

@@ -1,8 +1,13 @@
+package difflicious.internal
+import difflicious.Differ
+import scala.annotation.nowarn
+
 trait ConfigureMethods[T]:
-  this => Differ[T]
+  this: Differ[T] =>
 
-  def ignoreAt[U](path: T => U): Differ[T]
+  inline def ignoreAt[U](path: T => U): Differ[T] = ??? // FIXME:
 
-  def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] =
+  inline def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] = ??? // FIXME:
 
-  def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] =
+  inline def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] = ??? // FIXME:
+

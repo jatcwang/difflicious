@@ -3,8 +3,7 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName.SomeTypeName
-import magnolia.{TypeName => MTypeName, _}
-import difflicious.utils._
+import magnolia._
 
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
@@ -45,15 +44,18 @@ trait DifferGen {
       case DiffInput.ExpectedOnly(expected) =>
         ctx.dispatch(expected)(sub => sub.typeclass.diff(DiffInput.ExpectedOnly(sub.cast(expected))))
       case DiffInput.Both(obtained, expected) => {
-        ctx.dispatch(obtained) { actualSubtype =>
+        ctx.dispatch(obtained) { obtainedSubtype =>
           ctx.dispatch(expected) { expectedSubtype =>
-            if (actualSubtype.typeName.short == expectedSubtype.typeName.short) {
-              actualSubtype.typeclass
-                .diff(actualSubtype.cast(obtained), expectedSubtype.cast(expected).asInstanceOf[actualSubtype.SType])
+            if (obtainedSubtype.typeName.short == expectedSubtype.typeName.short) {
+              obtainedSubtype.typeclass
+                .diff(
+                  obtainedSubtype.cast(obtained),
+                  expectedSubtype.cast(expected).asInstanceOf[obtainedSubtype.SType]
+                )
             } else {
               MismatchTypeResult(
-                obtained = actualSubtype.typeclass.diff(DiffInput.ObtainedOnly(actualSubtype.cast(obtained))),
-                obtainedTypeName = toDiffliciousTypeName(actualSubtype.typeName),
+                obtained = obtainedSubtype.typeclass.diff(DiffInput.ObtainedOnly(obtainedSubtype.cast(obtained))),
+                obtainedTypeName = toDiffliciousTypeName(obtainedSubtype.typeName),
                 expected = expectedSubtype.typeclass.diff(DiffInput.ExpectedOnly(expectedSubtype.cast(expected))),
                 expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeName),
                 pairType = PairType.Both,
@@ -132,8 +134,8 @@ trait DifferGen {
 
   def derived[T]: Differ[T] = macro Magnolia.gen[T]
 
-  private def toDiffliciousTypeName(typeName: MTypeName): SomeTypeName = {
-    TypeName(
+  private def toDiffliciousTypeName(typeName: magnolia.TypeName): SomeTypeName = {
+    difflicious.utils.TypeName(
       long = typeName.full,
       short = typeName.short,
       typeArguments = typeName.typeArguments

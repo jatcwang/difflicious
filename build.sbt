@@ -3,7 +3,7 @@ val catsVersion = "2.6.1"
 val scalatestVersion = "3.2.9"
 
 val scala213 = "2.13.6"
-val scala3 = "3.0.0"
+val scala3 = "3.0.1"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -36,10 +36,11 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M6"
-      else "com.propensive" %% "magnolia" % "0.17.0",
-      "dev.zio" %% "izumi-reflect" % "1.1.2",
-      "com.lihaoyi" %% "fansi" % "0.2.14",
+      if (isScala3.value) "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M4"
+//      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M7-SNAPSHOT"
+      else "com.softwaremill.magnolia"                %% "magnolia-core" % "1.0.0-M4",
+      "dev.zio"     %% "izumi-reflect" % "1.1.2",
+      "com.lihaoyi" %% "fansi"         % "0.2.14",
     ) ++ (
       if (scalaVersion.value.startsWith("2"))
         Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
@@ -107,6 +108,7 @@ lazy val docs = project
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "org.scalameta" %% "mdoc"      % "2.2.21",
     ),
   )
   .settings(
@@ -156,10 +158,10 @@ lazy val commonSettings = Seq(
     }
   },
   versionScheme := Some("early-semver"),
-  scalacOptions ++= Seq("-Wmacros:after"),
+  scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
-    compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+    compilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => isScala3.value),
 )
 
