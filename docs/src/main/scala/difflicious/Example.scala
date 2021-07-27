@@ -4,7 +4,7 @@ object Example {
   case class Person(name: String, age: Int)
 
   object Person {
-    implicit val differ: Differ[Person] = Differ.derive[Person]
+    implicit val differ: Differ[Person] = Differ.derived[Person]
   }
 
   def printHtml(diffResult: DiffResult) = {

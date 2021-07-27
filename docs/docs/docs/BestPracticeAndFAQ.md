@@ -19,7 +19,7 @@ Here are some tips to help you best manage `Differ` instances when using difflic
 
 ```scala
 object DifferInstances {
-  implicit val personDiffer: Differ[Person] = Differ.derive[Person]
+  implicit val personDiffer: Differ[Person] = Differ.derived[Person]
   
   val personByNameSeqDiffer: Differ[List[Person]] = Differ[List[Person]].pairBy(_.name)
 }
@@ -27,7 +27,7 @@ object DifferInstances {
 // ...Somewhere else
 val schoolDiffer: Differ[School] = {
   implicit val personByNameSeqDiffer: Differ[List[Person]] = DifferInstances.personByNameSeqDiffer
-  Differ.derive[School]
+  Differ.derived[School]
 }
 ```
 

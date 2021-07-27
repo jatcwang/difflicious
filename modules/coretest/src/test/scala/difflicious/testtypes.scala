@@ -31,7 +31,7 @@ object testtypes {
     implicit def differ[A](
       implicit differ: Differ[Seq[A]],
     ): Differ[HasASeq[A]] = {
-      Differ.derive[HasASeq[A]]
+      Differ.derived[HasASeq[A]]
     }
   }
 
@@ -44,7 +44,7 @@ object testtypes {
       dd <- Arbitrary.arbitrary[Double]
     } yield CC(i, s, dd))
 
-    implicit val differ: Differ[CC] = Differ.derive[CC]
+    implicit val differ: Differ[CC] = Differ.derived[CC]
 
     implicit val order: Order[CC] = Order.by(a => (a.i, a.s, a.dd))
   }
@@ -70,17 +70,17 @@ object testtypes {
   object SealedWithCustom {
     case class Custom(i: Int) extends SealedWithCustom
     object Custom {
-      implicit val differ: Differ[Custom] = Differ.derive[Custom].ignoreAt(_.i)
+      implicit val differ: Differ[Custom] = Differ.derived[Custom].ignoreAt(_.i)
     }
     case class Normal(i: Int) extends SealedWithCustom
 
-    implicit val differ: Differ[SealedWithCustom] = Differ.derive[SealedWithCustom]
+    implicit val differ: Differ[SealedWithCustom] = Differ.derived[SealedWithCustom]
   }
 
   sealed trait Sealed
 
   object Sealed {
-    implicit val differ: Differ[Sealed] = Differ.derive[Sealed]
+    implicit val differ: Differ[Sealed] = Differ.derived[Sealed]
 
     private val genSub1: Gen[Sub1] = Arbitrary.arbitrary[Int].map(Sub1)
     private val genSubSub1: Gen[SubSub1] = Arbitrary.arbitrary[Double].map(SubSub1(_))

@@ -56,7 +56,7 @@ sealed trait MySealedTrait
 case class SomeSubType(fieldInSubType: String) extends MySealedTrait
 
 object MySealedTrait {
-  implicit val differ: Differ[MySealedTrait] = Differ.derive[MySealedTrait]
+  implicit val differ: Differ[MySealedTrait] = Differ.derived[MySealedTrait]
 }
 ```
 

@@ -52,7 +52,7 @@ derive a Differ for subclass of the sealed trait (or a Differ instance is alread
 final case class Person(name: String, age: Int)
 
 object Person {
-  implicit val differ: Differ[Person] = Differ.derive[Person]
+  implicit val differ: Differ[Person] = Differ.derived[Person]
 }
 ```
 
@@ -79,7 +79,7 @@ final case class Dog(name: String, age: Int) extends HousePet
 final case class Cat(name: String, livesLeft: Int) extends HousePet
 
 object HousePet {
-  implicit val differ: Differ[HousePet] = Differ.derive[HousePet]
+  implicit val differ: Differ[HousePet] = Differ.derived[HousePet]
 }
 ```
 
@@ -258,5 +258,15 @@ Set(
 )
 </pre>
 
+# Always ignored Differ
 
+Sometimes for certain types you can't really compare them (e.g. Something that's not a plain data structure).
+
+In that case you can use `Differ.alwaysIgnore`
+
+```scala mdoc:silent
+class CantCompare()
+
+val alwaysIgnoredDiffer: Differ[CantCompare] = Differ.alwaysIgnore[CantCompare]
+```
 

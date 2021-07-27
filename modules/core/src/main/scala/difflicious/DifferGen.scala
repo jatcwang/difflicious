@@ -130,7 +130,7 @@ trait DifferGen {
   def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
     new SealedTraitDiffer[T](ctx, isIgnored = false)
 
-  def derive[T]: Differ[T] = macro Magnolia.gen[T]
+  def derived[T]: Differ[T] = macro Magnolia.gen[T]
 
   private def toDiffliciousTypeName(typeName: MTypeName): SomeTypeName = {
     TypeName(
