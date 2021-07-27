@@ -21,5 +21,6 @@ projectFilesBackup/
 version.properties
 RUNNING_PID
 .metals
+metals.sbt
 .bsp
 TempGo.scala

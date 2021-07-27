@@ -55,6 +55,9 @@ object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstanc
   def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
 
+  /** A Differ that always return an Ignored result. Useful when you can't really diff something */
+  def alwaysIgnore[T]: AlwaysIgnoreDiffer[T] = new AlwaysIgnoreDiffer[T]
+
   // TODO: better string diff (edit distance and a description of how to get there?
   //  this can help especially in cases like extra space or special char)
   implicit val stringDiffer: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
