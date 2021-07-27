@@ -24,7 +24,7 @@ object HousePet {
   final case class Dog(name: String, age: Int) extends HousePet
   final case class Cat(name: String, livesLeft: Int) extends HousePet
   
-  implicit val differ: Differ[HousePet] = Differ.derive
+  implicit val differ: Differ[HousePet] = Differ.derived
 }
 
 import HousePet.{Cat, Dog}

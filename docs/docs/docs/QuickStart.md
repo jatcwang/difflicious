@@ -40,7 +40,7 @@ import difflicious.munit.MUnitDiff._
 class ExampleTest extends FunSuite {
 
   // Derive Differs for case class and sealed traits 
-  implicit val personDiffer: Differ[Person] = Differ.derive[Person]
+  implicit val personDiffer: Differ[Person] = Differ.derived[Person]
 
   test("two list of people should be the same") {
     Differ[List[Person]].assertNoDiff(

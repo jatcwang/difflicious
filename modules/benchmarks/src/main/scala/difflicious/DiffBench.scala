@@ -40,7 +40,7 @@ final case class Big(
 )
 
 object Big {
-  implicit val diff: Differ[Big] = Differ.derive[Big]
+  implicit val diff: Differ[Big] = Differ.derived[Big]
 }
 
 final case class Dog(

@@ -24,7 +24,7 @@ val intListDiffer = Differ[List[Int]]
 ### Deriving instances for case class and sealed traits (Scala 3 enums)
 
 ```scala mdoc:nest:silent
-val differ = Differ.derive[Person]
+val differ = Differ.derived[Person]
 ```
 
 For classes with generic fields, you need to also ask for Differ instance of the field type (not just the generic type).
@@ -38,8 +38,8 @@ case class Factory[A](
   boxes: List[Box[A]]
 )
 
-implicit def boxDiffer[A](implicit listDiffer: Differ[List[A]]): Differ[Box[A]] = Differ.derive[Box[A]]
-implicit def factoryDiffer[A](implicit boxesDiffer: Differ[List[Box[A]]]): Differ[Factory[A]]  = Differ.derive[Factory[A]]
+implicit def boxDiffer[A](implicit listDiffer: Differ[List[A]]): Differ[Box[A]] = Differ.derived[Box[A]]
+implicit def factoryDiffer[A](implicit boxesDiffer: Differ[List[Box[A]]]): Differ[Factory[A]]  = Differ.derived[Factory[A]]
 
 val differ = Differ[Factory[Int]]
 ```
