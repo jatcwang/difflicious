@@ -72,6 +72,9 @@ object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstanc
   implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal]
   implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
 
+  implicit def optionDiffer[T: Differ]: Differ[Option[T]] = derived[Option[T]]
+  implicit def eitherDiffer[A: Differ, B: Differ]: Differ[Either[A, B]] = derived[Either[A, B]]
+
   implicit def mapDiffer[M[_, _], K, V](
     implicit keyDiffer: ValueDiffer[K],
     valueDiffer: Differ[V],

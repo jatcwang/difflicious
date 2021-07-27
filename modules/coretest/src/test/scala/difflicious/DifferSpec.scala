@@ -121,6 +121,71 @@ class DifferSpec extends ScalaCheckSuite {
     )
   }
 
+  test("Option: fail if one is Some and one is None") {
+    assertConsoleDiffOutput(
+      Differ[Option[CC]],
+      Some(CC(2, "2", 3.0)),
+      None,
+      s"""${R}Some$X != ${G}None$X
+         |${R}=== Obtained ===
+         |Some(
+         |  value: CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 3.0,
+         |  ),
+         |)$X
+         |${G}=== Expected ===
+         |None(
+         |)$X""".stripMargin,
+    )
+  }
+
+  test("Option: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Differ[Option[CC]])
+  }
+
+  test("Option: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(Differ[Option[CC]])
+  }
+
+  test("Option: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Differ[Option[CC]])
+  }
+
+  test("Either: fail if one is Some and one is None") {
+    assertConsoleDiffOutput(
+      Differ[Either[String, CC]],
+      Right(CC(2, "2", 3.0)),
+      Left("nope"),
+      s"""${R}Right$X != ${G}Left$X
+         |${R}=== Obtained ===
+         |Right(
+         |  value: CC(
+         |    i: 2,
+         |    s: "2",
+         |    dd: 3.0,
+         |  ),
+         |)$X
+         |${G}=== Expected ===
+         |Left(
+         |  value: "nope",
+         |)$X""".stripMargin,
+    )
+  }
+
+  test("Either: isOk == true if two values are equal") {
+    assertOkIfValuesEqualProp(Differ[Either[String, CC]])
+  }
+
+  test("Either: isOk == false if two values are NOT equal") {
+    assertNotOkIfNotEqualProp(Differ[Either[String, CC]])
+  }
+
+  test("Either: isOk always true if differ is marked ignored") {
+    assertIsOkIfIgnoredProp(Differ[Either[String, CC]])
+  }
+
   test("Map: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(Differ.mapDiffer[Map, MapKey, CC])
   }
