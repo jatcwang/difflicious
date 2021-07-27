@@ -830,4 +830,44 @@ class DifferSpec extends ScalaCheckSuite {
     assertIsOkIfIgnoredProp(NewInt.differ)
   }
 
+  test("Differ.alwaysIgnore: Always returns ignored result") {
+    assertEquals(
+      AlwaysIgnoreClass.differ.diff(AlwaysIgnoreClass(1), AlwaysIgnoreClass(2)),
+      DiffResult.ValueResult.Both(
+        "[ALWAYS IGNORED]",
+        "[ALWAYS IGNORED]",
+        isSame = true,
+        isIgnored = true,
+      ),
+    )
+  }
+
+  test("Differ.alwaysIgnore: still return ignored result after unignore") {
+    assertEquals(
+      AlwaysIgnoreClass.differ.unignore.diff(AlwaysIgnoreClass(1), AlwaysIgnoreClass(2)): DiffResult,
+      DiffResult.ValueResult.Both(
+        "[ALWAYS IGNORED]",
+        "[ALWAYS IGNORED]",
+        isSame = true,
+        isIgnored = true,
+      ),
+    )
+  }
+
+  test("Differ.alwaysIgnore: configurePath returns PathTooLong error") {
+    assertEquals(
+      intercept[ConfigureError](
+        AlwaysIgnoreClass.differ.configure(_.i)(_.ignore),
+      ),
+      ConfigureError.PathTooLong(ConfigurePath(Vector("i"), Nil)),
+    )
+  }
+
+  test("Differ.alwaysIgnore: configurePairBy returns InvalidConfigureOp error") {
+    assertEquals(
+      AlwaysIgnoreClass.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
+      Left(ConfigureError.InvalidConfigureOp(ConfigurePath.current, ConfigureOp.PairBy.Index, "AlwaysIgnoreDiffer")),
+    )
+  }
+
 }

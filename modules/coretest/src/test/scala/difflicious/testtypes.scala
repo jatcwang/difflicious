@@ -127,4 +127,10 @@ object testtypes {
 
   final case class OpenSub(i: Int) extends OpenSuperType
 
+  case class AlwaysIgnoreClass(i: Int)
+
+  object AlwaysIgnoreClass {
+    implicit val differ: AlwaysIgnoreDiffer[AlwaysIgnoreClass] = Differ.alwaysIgnore
+  }
+
 }
