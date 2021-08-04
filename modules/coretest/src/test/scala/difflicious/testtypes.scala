@@ -27,8 +27,8 @@ object testtypes extends ScalaVersionDependentTestTypes {
   case class HasASeq[A](seq: Seq[A])
 
   object HasASeq {
-    implicit def differ[A](
-      implicit differ: Differ[Seq[A]],
+    implicit def differ[A](implicit
+      differ: Differ[Seq[A]],
     ): Differ[HasASeq[A]] = {
       Differ.derived[HasASeq[A]]
     }
@@ -82,10 +82,10 @@ object testtypes extends ScalaVersionDependentTestTypes {
       Gen.oneOf(
         genSub1,
         genSub2,
+        genSub3,
       ),
     )
   }
-
 
   sealed trait SealedWithCustom
 
@@ -98,7 +98,6 @@ object testtypes extends ScalaVersionDependentTestTypes {
 
     implicit val differ: Differ[SealedWithCustom] = Differ.derived[SealedWithCustom]
   }
-
 
   final case class MapKey(a: Int, b: String)
 

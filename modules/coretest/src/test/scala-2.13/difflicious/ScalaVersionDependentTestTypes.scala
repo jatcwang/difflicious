@@ -1,9 +1,8 @@
 package difflicious
 
 import difflicious.Differ
-import difflicious.testtypes.SubSealed.{SubSub1, SubSub2}
 import org.scalacheck.{Arbitrary, Gen}
-import difflicious.testtypes.{Sub1, CC}
+import difflicious.implicits._
 
 trait ScalaVersionDependentTestTypes {
   sealed trait SealedNested
@@ -19,11 +18,11 @@ trait ScalaVersionDependentTestTypes {
 
     import SubSealed._
     implicit val arb: Arbitrary[SealedNested] = {
-      val sub1 = Gen.posNum[Int].map(SubFoo.apply)
+      val subFoo = Gen.posNum[Int].map(SubFoo.apply)
       val subsub1 = Gen.posNum[Double].map(SubSub1.apply)
       val subsub2 = Gen.alphaStr.map(SubSub2.apply)
 
-      Arbitrary(Gen.oneOf(sub1, subsub1, subsub2))
+      Arbitrary(Gen.oneOf(subFoo, subsub1, subsub2))
     }
     implicit val differ: Differ[SealedNested] = Differ.derived[SealedNested]
   }

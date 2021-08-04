@@ -12,7 +12,7 @@ val isScala3 = Def.setting {
 
 inThisBuild(
   List(
-    scalaVersion := scala3, // FIXME:
+    scalaVersion := scala213,
     crossScalaVersions := Seq(scala213, scala3),
     organization := "com.github.jatcwang",
     homepage := Some(url("https://github.com/jatcwang/difflicious")),
@@ -42,10 +42,10 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       "dev.zio" %% "izumi-reflect" % "1.1.2",
       "com.lihaoyi" %% "fansi" % "0.2.14",
     ) ++ (
-      if (scalaVersion.value.startsWith("2"))
-        Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
-      else
+      if (isScala3.value)
         Seq.empty
+      else
+        Seq("org.scala-lang" % "scala-reflect" % scala213)
     ),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"

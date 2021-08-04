@@ -30,12 +30,6 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configure path's subType call errors when super type isn't sealed") {
-    val compileError = compileErrors("Differ[List[OpenSuperType]].ignoreAt(_.each.subType[OpenSub])")
-    val firstLine = compileError.linesIterator.toList.drop(1).head
-    assertEquals(firstLine, "Specified subtype is not a known direct subtype of trait OpenSuperType.")
-  }
-
   test("configure path allows 'each' to resolve underlying differ in a Map") {
     assertConsoleDiffOutput(
       Differ[Map[String, CC]].ignoreAt(_.each.dd),

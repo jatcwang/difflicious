@@ -731,7 +731,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     val differ = Differ[Sealed]
       .configureRaw(
         ConfigurePath
-          .of("SubSub2", "list"),
+          .of("Sub3", "list"),
         ConfigureOp.PairBy.ByFunc[CC, Int](_.i),
       )
       .unsafeGet

@@ -4,8 +4,7 @@ import difflicious.{ConfigurePath, Differ, ConfigureOp}
 import scala.annotation.nowarn
 import scala.quoted.*
 import scala.annotation.tailrec
-import difflicious.internal.ConfigureMethodImpls._
-import difflicious.internal.EitherGetSyntax._
+import difflicious.internal.ConfigureMethodImpls.*
 
 trait ConfigureMethods[T]:
   this: Differ[T] =>
@@ -15,19 +14,21 @@ trait ConfigureMethods[T]:
   inline def ignoreAt[U](inline path: T => U): Differ[T] =
     ${ ignoreAt_impl('this, 'path) }
 
-  inline def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] =
+  inline def configure[U](inline path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] =
     ${ configure_impl('this, 'path, 'configFunc) }
 
-  inline def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] =
+  inline def replace[U](inline path: T => U)(newDiffer: Differ[U]): Differ[T] =
     ${ replace_impl('this, 'path, 'newDiffer) }
 
 private[difflicious] object ConfigureMethodImpls:
 
   def ignoreAt_impl[T: Type, U](differ: Expr[Differ[T]], path: Expr[T => U])(using Quotes): Expr[Differ[T]] = {
     '{
-      ${ differ }
-        .configureRaw(ConfigurePath.fromPath(${ collectPathElements(path) }), ConfigureOp.ignore)
-        .unsafeGet
+      (${ differ }
+        .configureRaw(ConfigurePath.fromPath(${ collectPathElements(path) }), ConfigureOp.ignore)) match {
+        case Right(d) => d
+        case Left(e)  => throw e
+      }
     }
   }
 
@@ -39,12 +40,14 @@ private[difflicious] object ConfigureMethodImpls:
     Quotes,
   ): Expr[Differ[T]] =
     '{
-      ${ differ }
+      (${ differ }
         .configureRaw(
           ConfigurePath.fromPath(${ collectPathElements(path) }),
           ConfigureOp.TransformDiffer(${ configFunc }),
-        )
-        .unsafeGet
+        )) match {
+        case Right(d) => d
+        case Left(e)  => throw e
+      }
     }
 
   def replace_impl[T: Type, U: Type](
@@ -59,35 +62,49 @@ private[difflicious] object ConfigureMethodImpls:
         .configureRaw(
           ConfigurePath.fromPath(${ collectPathElements(path) }),
           ConfigureOp.TransformDiffer[U](_ => ${ newDiffer }),
-        )
-        .unsafeGet
+        ) match {
+        case Right(d) => d
+        case Left(e)  => throw e
+      }
     }
 
   def collectPathElements[T, U](pathExpr: Expr[T => U])(using Quotes): Expr[List[String]] = {
     import quotes.reflect.*
 
+//    import dotty.tools.dotc.ast.Trees._
+    def resolveSubTypeName(typeTree: Tree)(using Quotes): String =
+      typeTree match {
+        case TypeIdent(name)     => name.toString
+        case TypeSelect(_, name) => name.toString
+      }
+
     @tailrec
-    def goCollect(pathAccum: List[String], cur: Term): List[String] =
-      // FIXME:
+    def collectPathElementsLoop(pathAccum: List[String], cur: Term): List[String] =
       cur match {
         case Select(rest, name) =>
-          goCollect(name.toString :: pathAccum, rest)
-        case TypeApply(Select(Apply(_, rest :: Nil), "subType"), TypeSelect(_, subTypeName) :: Nil) =>
-          // FIXME: need to check is sealed trait subtype
-          goCollect(subTypeName.toString :: pathAccum, rest)
+          collectPathElementsLoop(name.toString :: pathAccum, rest)
+        case x @ TypeApply(Select(Apply(TypeApply(_, superType :: Nil), rest :: Nil), "subType"), subType :: Nil) =>
+          if superType.symbol.children.contains(subType.symbol) then
+            collectPathElementsLoop(resolveSubTypeName(subType) :: pathAccum, rest)
+          else
+            report.error(
+              s"subType requires that the super type be a sealed trait (enum), and the subtype being a direct children of the super type.",
+              x.asExpr,
+            )
+            List.empty
         case Apply(Apply(TypeApply(Ident(name), _), rest :: Nil), _) if name.toString == "toEachableOps" =>
-          goCollect(pathAccum, rest)
+          collectPathElementsLoop(pathAccum, rest)
         case Ident(_) => pathAccum
         case _ => {
-          throw new Exception("FIXME handle other cases than Select")
+          throw new Exception(cur.show(using Printer.TreeShortCode) ++ "|||" ++ cur.show(using Printer.TreeStructure))
         }
       }
 
     pathExpr.asTerm match {
-      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(rest, name)))), _)) =>
-        Expr(goCollect(List(name.toString), rest))
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(tree))), _)) =>
+        Expr(collectPathElementsLoop(List.empty, tree))
       case _ =>
-        println(pathExpr.asTerm.show(using Printer.TreeStructure))
-        Expr(List(pathExpr.asTerm.show(using Printer.TreeStructure)))
+        report.error(s"XXX ${pathExpr.asTerm.show(using Printer.TreeStructure)}")
+        '{ ??? }
     }
   }
