@@ -2,7 +2,6 @@ package difflicious
 
 import difflicious.Differ
 import org.scalacheck.{Arbitrary, Gen}
-import difflicious.implicits._
 
 trait ScalaVersionDependentTestTypes {
   sealed trait SealedNested

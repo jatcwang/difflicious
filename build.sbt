@@ -127,7 +127,7 @@ lazy val docs = project
     micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
   )
   .settings(
-    // Disble any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
+    // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
     // use implicit conversion to string
     scalacOptions ~= { opts =>
       val extraOpts =
@@ -151,7 +151,7 @@ lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
 
 lazy val commonSettings = Seq(
   scalacOptions --= {
-    if (sys.env.get("CI").isDefined) {
+    if (sys.env.get("CI").isDefined && !isScala3.value) { // TODO: Reenable Scala 3 fatal warnings once nowarn is supported
       Seq.empty
     } else {
       Seq("-Xfatal-warnings")
