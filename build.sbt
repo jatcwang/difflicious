@@ -3,12 +3,17 @@ val catsVersion = "2.6.1"
 val scalatestVersion = "3.2.9"
 
 val scala213 = "2.13.6"
-val scala3 = "3.0.0"
+val scala3 = "3.0.1"
+
+val isScala3 = Def.setting {
+  // doesn't work well with >= 3.0.0 for `3.0.0-M1`
+  scalaVersion.value.startsWith("3")
+}
 
 inThisBuild(
   List(
     scalaVersion := scala213,
-    crossScalaVersions := Seq(scala213 /*, scala3*/ ),
+    crossScalaVersions := Seq(scala213, scala3),
     organization := "com.github.jatcwang",
     homepage := Some(url("https://github.com/jatcwang/difflicious")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -31,14 +36,16 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.propensive" %% "magnolia"      % "0.17.0",
-      "dev.zio"        %% "izumi-reflect" % "1.1.1",
-      "com.lihaoyi"    %% "fansi"         % "0.2.12",
+      if (isScala3.value) "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M4"
+//      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M7-SNAPSHOT"
+      else "com.softwaremill.magnolia" %% "magnolia-core" % "1.0.0-M4",
+      "dev.zio" %% "izumi-reflect" % "1.1.2",
+      "com.lihaoyi" %% "fansi" % "0.2.14",
     ) ++ (
-      if (scalaVersion.value.startsWith("2"))
-        Seq("org.scala-lang" % "scala-reflect" % "2.13.5")
-      else
+      if (isScala3.value)
         Seq.empty
+      else
+        Seq("org.scala-lang" % "scala-reflect" % scala213)
     ),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
@@ -86,12 +93,12 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
     ),
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit"            % munitVersion,
+      "org.scalameta" %% "munit" % munitVersion,
       "org.scalameta" %% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
 
-lazy val docs = project
+lazy val docs: Project = project
   .dependsOn(core, coretest, cats, munit, scalatest)
   .enablePlugins(MicrositesPlugin)
   .settings(
@@ -101,7 +108,13 @@ lazy val docs = project
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "org.scalameta" %% "mdoc" % "2.2.21",
     ),
+    makeMicrosite := Def.taskDyn {
+      val orig = (ThisProject / makeMicrosite).taskValue
+      if (isScala3.value) Def.task({})
+      else Def.task(orig.value)
+    }.value
   )
   .settings(
     mdocIn := file("docs/docs"),
@@ -119,7 +132,7 @@ lazy val docs = project
     micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
   )
   .settings(
-    // Disble any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
+    // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
     // use implicit conversion to string
     scalacOptions ~= { opts =>
       val extraOpts =
@@ -143,18 +156,18 @@ lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
 
 lazy val commonSettings = Seq(
   scalacOptions --= {
-    if (sys.env.get("CI").isDefined) {
+    if (sys.env.get("CI").isDefined && !isScala3.value) { // TODO: Reenable Scala 3 fatal warnings once nowarn is supported
       Seq.empty
     } else {
       Seq("-Xfatal-warnings")
     }
   },
   versionScheme := Some("early-semver"),
-  scalacOptions ++= Seq("-Wmacros:after"),
+  scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.0" cross CrossVersion.full),
-    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
-  ).filterNot(_ => scalaVersion.value.startsWith("3")),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+  ).filterNot(_ => isScala3.value),
 )
 
 lazy val noPublishSettings = Seq(

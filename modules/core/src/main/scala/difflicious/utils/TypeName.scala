@@ -8,7 +8,7 @@ final case class TypeName[A](long: String, short: String, typeArguments: List[Ty
   }
 }
 
-object TypeName extends TypeNamePlatform {
+object TypeName {
 
   // A type name without a compile time type known.
   type SomeTypeName = TypeName[_]
@@ -19,8 +19,8 @@ object TypeName extends TypeNamePlatform {
 
   def fromLightTypeTag[A](t: LightTypeTag): TypeName[A] = {
     TypeName[A](
-      long = unescapeIdentifierName(t.longName),
-      short = unescapeIdentifierName(t.shortName),
+      long = t.longName,
+      short = t.shortName,
       typeArguments = t.typeArgs.map(fromLightTypeTag),
     )
   }

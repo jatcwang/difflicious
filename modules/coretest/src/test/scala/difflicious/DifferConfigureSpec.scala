@@ -30,29 +30,6 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
-  test("configure path's subType call errors when super type isn't sealed") {
-    val compileError = compileErrors("Differ[List[OpenSuperType]].ignoreAt(_.each.subType[OpenSub])")
-    val firstLine = compileError.linesIterator.toList.drop(1).head
-    assertEquals(firstLine, "Specified subtype is not a known direct subtype of trait OpenSuperType.")
-  }
-
-  test("configure path's subType handles multi-level hierarchies") {
-    assertConsoleDiffOutput(
-      Differ[List[Sealed]].ignoreAt(_.each.subType[SubSealed.SubSub1].d),
-      List(
-        SubSealed.SubSub1(1.0),
-      ),
-      List(
-        SubSealed.SubSub1(2.0),
-      ),
-      s"""List(
-        |  SubSub1(
-        |    d: $grayIgnoredStr,
-        |  ),
-        |)""".stripMargin,
-    )
-  }
-
   test("configure path allows 'each' to resolve underlying differ in a Map") {
     assertConsoleDiffOutput(
       Differ[Map[String, CC]].ignoreAt(_.each.dd),
@@ -71,6 +48,7 @@ class DifferConfigureSpec extends munit.FunSuite {
         |)""".stripMargin,
     )
   }
+
   test("configure path allows 'each' to resolve underlying differ in a Seq") {
     assertConsoleDiffOutput(
       Differ[List[CC]].ignoreAt(_.each.dd),
@@ -110,6 +88,7 @@ class DifferConfigureSpec extends munit.FunSuite {
   }
 
   test("configure path can handle escaped sub-type and field names") {
+    import Sealed.`Weird@Sub`
     assertConsoleDiffOutput(
       Differ[List[Sealed]].ignoreAt(_.each.subType[`Weird@Sub`].`weird@Field`),
       List(

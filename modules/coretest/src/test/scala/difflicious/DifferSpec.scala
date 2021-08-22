@@ -9,7 +9,7 @@ import difflicious.internal.EitherGetSyntax._
 
 import scala.collection.immutable.HashSet
 
-class DifferSpec extends ScalaCheckSuite {
+class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
   test("NumericDiffer: configure fails if path is not terminal") {
     assertEquals(
       Differ[Int].configureRaw(ConfigurePath.of("nono"), ConfigureOp.ignore),
@@ -712,15 +712,15 @@ class DifferSpec extends ScalaCheckSuite {
   test("Sealed trait: should display obtained and expected types when mismatch") {
     assertConsoleDiffOutput(
       Sealed.differ,
-      Sub1(1),
-      SubSealed.SubSub1(1),
-      s"""${R}Sub1$X != ${G}SubSub1$X
+      Sealed.Sub1(1),
+      Sealed.Sub2(1.0),
+      s"""${R}Sub1$X != ${G}Sub2${X}
         |${R}=== Obtained ===
         |Sub1(
         |  i: 1,
         |)$X
         |$G=== Expected ===
-        |SubSub1(
+        |Sub2(
         |  d: 1.0,
         |)$X""".stripMargin,
     )
@@ -729,15 +729,15 @@ class DifferSpec extends ScalaCheckSuite {
   test("Sealed trait: should display obtained and expected types when mismatch") {
     assertConsoleDiffOutput(
       Sealed.differ,
-      Sub1(1),
-      SubSealed.SubSub1(1),
-      s"""${R}Sub1$X != ${G}SubSub1$X
+      Sealed.Sub1(1),
+      Sealed.Sub2(1),
+      s"""${R}Sub1$X != ${G}Sub2${X}
          |${R}=== Obtained ===
          |Sub1(
          |  i: 1,
          |)$X
          |$G=== Expected ===
-         |SubSub1(
+         |Sub2(
          |  d: 1.0,
          |)$X""".stripMargin,
     )
@@ -758,7 +758,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("Sealed trait: When only 'obtained' is provided when diffing") {
     assertConsoleDiffOutput(
       Differ[List[Sealed]],
-      List(Sub1(1)),
+      List(Sealed.Sub1(1)),
       List.empty[Sealed],
       s"""List(
          |  ${R}Sub1(
@@ -772,7 +772,7 @@ class DifferSpec extends ScalaCheckSuite {
     assertConsoleDiffOutput(
       Differ[List[Sealed]],
       List.empty[Sealed],
-      List(Sub1(1)),
+      List(Sealed.Sub1(1)),
       s"""List(
          |  ${G}Sub1(
          |    i: 1,
@@ -796,19 +796,19 @@ class DifferSpec extends ScalaCheckSuite {
     val differ = Differ[Sealed]
       .configureRaw(
         ConfigurePath
-          .of("SubSub2", "list"),
+          .of("Sub3", "list"),
         ConfigureOp.PairBy.ByFunc[CC, Int](_.i),
       )
       .unsafeGet
 
     val diffResult = differ.diff(
-      SubSealed.SubSub2(
+      Sealed.Sub3(
         List(
           CC(1, "1", 1),
           CC(2, "2", 2),
         ),
       ),
-      SubSealed.SubSub2(
+      Sealed.Sub3(
         List(
           CC(2, "2", 2),
           CC(1, "1", 1),
@@ -820,19 +820,19 @@ class DifferSpec extends ScalaCheckSuite {
 
     assertConsoleDiffOutput(
       differ,
-      SubSealed.SubSub2(
+      Sealed.Sub3(
         List(
           CC(1, "1", 1),
           CC(2, "2", 2),
         ),
       ),
-      SubSealed.SubSub2(
+      Sealed.Sub3(
         List(
           CC(2, "2", 2),
           CC(1, "2", 1),
         ),
       ),
-      s"""SubSub2(
+      s"""Sub3(
         |  list: List(
         |    CC(
         |      i: 1,
@@ -860,7 +860,7 @@ class DifferSpec extends ScalaCheckSuite {
       Left(
         ConfigureError.UnrecognizedSubType(
           ConfigurePath(Vector("nope"), List("list")),
-          Vector("Sub1", "SubSub1", "SubSub2", "Weird@Sub"),
+          Vector("Sub1", "Sub2", "Sub3", "Weird@Sub"),
         ),
       ),
     )

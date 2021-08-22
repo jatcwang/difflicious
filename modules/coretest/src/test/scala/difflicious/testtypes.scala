@@ -3,9 +3,8 @@ package difflicious
 import cats.kernel.Order
 import org.scalacheck.{Gen, Arbitrary}
 import difflicious.differ.{ValueDiffer, EqualsDiffer}
-import difflicious.testtypes.SubSealed.{SubSub1, SubSub2}
 
-object testtypes {
+object testtypes extends ScalaVersionDependentTestTypes {
 
   // Dummy differ that fails when any of its method is called. For tests where we just need a Differ[T]
   def dummyDiffer[T]: Differ[T] = new Differ[T] {
@@ -28,8 +27,8 @@ object testtypes {
   case class HasASeq[A](seq: Seq[A])
 
   object HasASeq {
-    implicit def differ[A](
-      implicit differ: Differ[Seq[A]],
+    implicit def differ[A](implicit
+      differ: Differ[Seq[A]],
     ): Differ[HasASeq[A]] = {
       Differ.derived[HasASeq[A]]
     }
@@ -65,6 +64,29 @@ object testtypes {
     implicit val differ: ValueDiffer[NewInt] = Differ.intDiffer.contramap(_.int)
   }
 
+  sealed trait Sealed
+
+  object Sealed {
+    case class Sub1(i: Int) extends Sealed
+    final case class Sub2(d: Double) extends Sealed
+    final case class Sub3(list: List[CC]) extends Sealed
+    final case class `Weird@Sub`(i: Int, `weird@Field`: String) extends Sealed
+
+    implicit val differ: Differ[Sealed] = Differ.derived[Sealed]
+
+    private val genSub1: Gen[Sub1] = Arbitrary.arbitrary[Int].map(Sub1.apply)
+    private val genSub2: Gen[Sub2] = Arbitrary.arbitrary[Double].map(Sub2.apply)
+    private val genSub3: Gen[Sub3] = Arbitrary.arbitrary[List[CC]].map(Sub3.apply)
+
+    implicit val arb: Arbitrary[Sealed] = Arbitrary(
+      Gen.oneOf(
+        genSub1,
+        genSub2,
+        genSub3,
+      ),
+    )
+  }
+
   sealed trait SealedWithCustom
 
   object SealedWithCustom {
@@ -75,35 +97,6 @@ object testtypes {
     case class Normal(i: Int) extends SealedWithCustom
 
     implicit val differ: Differ[SealedWithCustom] = Differ.derived[SealedWithCustom]
-  }
-
-  sealed trait Sealed
-
-  object Sealed {
-    implicit val differ: Differ[Sealed] = Differ.derived[Sealed]
-
-    private val genSub1: Gen[Sub1] = Arbitrary.arbitrary[Int].map(Sub1)
-    private val genSubSub1: Gen[SubSub1] = Arbitrary.arbitrary[Double].map(SubSub1(_))
-    private val genSubSub2: Gen[SubSub2] = Arbitrary.arbitrary[List[CC]].map(SubSub2)
-
-    implicit val arb: Arbitrary[Sealed] = Arbitrary(
-      Gen.oneOf(
-        genSub1,
-        genSubSub1,
-        genSubSub2,
-      ),
-    )
-  }
-
-  case class Sub1(i: Int) extends Sealed
-
-  final case class `Weird@Sub`(i: Int, `weird@Field`: String) extends Sealed
-
-  sealed trait SubSealed extends Sealed
-
-  object SubSealed {
-    case class SubSub1(d: Double) extends SubSealed
-    case class SubSub2(list: List[CC]) extends SubSealed
   }
 
   final case class MapKey(a: Int, b: String)
