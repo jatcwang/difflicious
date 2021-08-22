@@ -98,7 +98,7 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
     ).map(_ % Test),
   )
 
-lazy val docs = project
+lazy val docs: Project = project
   .dependsOn(core, coretest, cats, munit, scalatest)
   .enablePlugins(MicrositesPlugin)
   .settings(
@@ -110,6 +110,11 @@ lazy val docs = project
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "org.scalameta" %% "mdoc" % "2.2.21",
     ),
+    makeMicrosite := Def.taskDyn {
+      val orig = (ThisProject / makeMicrosite).taskValue
+      if (isScala3.value) Def.task({})
+      else Def.task(orig.value)
+    }.value
   )
   .settings(
     mdocIn := file("docs/docs"),
