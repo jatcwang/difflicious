@@ -21,7 +21,7 @@ trait DifferGen extends Derivation[Differ]:
       isIgnored = false,
       typeName = toDiffliciousTypeName(ctx.typeInfo)
     )
-    
+
   override def split[T](ctx: SealedTrait[Differ, T]): Differ[T] =
     new SealedTraitDiffer(ctx, isIgnored = false)
 
@@ -70,6 +70,7 @@ trait DifferGen extends Derivation[Differ]:
         subtypes = IArray(newSubtypes.toArray: _*),
         annotations = ctx.annotations,
         typeAnnotations = ctx.typeAnnotations,
+        isEnum = ctx.isEnum,
       )
       new SealedTraitDiffer[T](newSealedTrait, isIgnored = newIgnored)
 
@@ -99,6 +100,7 @@ trait DifferGen extends Derivation[Differ]:
                 subtypes = newSubtypes,
                 annotations = ctx.annotations,
                 typeAnnotations = ctx.typeAnnotations,
+                isEnum = ctx.isEnum,
               )
               new SealedTraitDiffer[T](newSealedTrait, isIgnored)
             }
