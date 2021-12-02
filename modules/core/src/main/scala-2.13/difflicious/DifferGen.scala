@@ -3,7 +3,7 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.internal.EitherGetSyntax._
 import difflicious.utils.TypeName.SomeTypeName
-import magnolia._
+import magnolia1._
 
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
@@ -11,7 +11,7 @@ import scala.collection.immutable.ListMap
 trait DifferGen {
   type Typeclass[T] = Differ[T]
 
-  def combine[T](ctx: ReadOnlyCaseClass[Differ, T]): Differ[T] = {
+  def join[T](ctx: ReadOnlyCaseClass[Differ, T]): Differ[T] = {
     new RecordDiffer[T](
       ctx.parameters
         .map { p =>
@@ -40,17 +40,17 @@ trait DifferGen {
 
     override def diff(inputs: DiffInput[T]): DiffResult = inputs match {
       case DiffInput.ObtainedOnly(obtained) =>
-        ctx.dispatch(obtained)(sub => sub.typeclass.diff(DiffInput.ObtainedOnly(sub.cast(obtained))))
+        ctx.split(obtained)(sub => sub.typeclass.diff(DiffInput.ObtainedOnly(sub.cast(obtained))))
       case DiffInput.ExpectedOnly(expected) =>
-        ctx.dispatch(expected)(sub => sub.typeclass.diff(DiffInput.ExpectedOnly(sub.cast(expected))))
+        ctx.split(expected)(sub => sub.typeclass.diff(DiffInput.ExpectedOnly(sub.cast(expected))))
       case DiffInput.Both(obtained, expected) => {
-        ctx.dispatch(obtained) { obtainedSubtype =>
-          ctx.dispatch(expected) { expectedSubtype =>
+        ctx.split(obtained) { obtainedSubtype =>
+          ctx.split(expected) { expectedSubtype =>
             if (obtainedSubtype.typeName.short == expectedSubtype.typeName.short) {
               obtainedSubtype.typeclass
                 .diff(
                   obtainedSubtype.cast(obtained),
-                  expectedSubtype.cast(expected).asInstanceOf[obtainedSubtype.SType]
+                  expectedSubtype.cast(expected).asInstanceOf[obtainedSubtype.SType],
                 )
             } else {
               MismatchTypeResult(
@@ -129,12 +129,12 @@ trait DifferGen {
 
   }
 
-  def dispatch[T](ctx: SealedTrait[Differ, T]): Differ[T] =
+  def split[T](ctx: SealedTrait[Differ, T]): Differ[T] =
     new SealedTraitDiffer[T](ctx, isIgnored = false)
 
   def derived[T]: Differ[T] = macro Magnolia.gen[T]
 
-  private def toDiffliciousTypeName(typeName: magnolia.TypeName): SomeTypeName = {
+  private def toDiffliciousTypeName(typeName: magnolia1.TypeName): SomeTypeName = {
     difflicious.utils.TypeName(
       long = typeName.full,
       short = typeName.short,

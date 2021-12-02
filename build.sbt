@@ -36,9 +36,9 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      if (isScala3.value) "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M4"
+      if (isScala3.value) "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M7"
 //      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M7-SNAPSHOT"
-      else "com.softwaremill.magnolia" %% "magnolia-core" % "1.0.0-M4",
+      else "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0-M7",
       "dev.zio" %% "izumi-reflect" % "1.1.2",
       "com.lihaoyi" %% "fansi" % "0.2.14",
     ) ++ (
@@ -114,7 +114,7 @@ lazy val docs: Project = project
       val orig = (ThisProject / makeMicrosite).taskValue
       if (isScala3.value) Def.task({})
       else Def.task(orig.value)
-    }.value
+    }.value,
   )
   .settings(
     mdocIn := file("docs/docs"),
