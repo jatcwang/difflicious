@@ -1,9 +1,11 @@
-val munitVersion = "0.7.27"
-val catsVersion = "2.6.1"
-val scalatestVersion = "3.2.9"
+import sbtghactions.JavaSpec
 
-val scala213 = "2.13.6"
-val scala3 = "3.0.1"
+val munitVersion = "0.7.29"
+val catsVersion = "2.7.0"
+val scalatestVersion = "3.2.11"
+
+val scala213 = "2.13.8"
+val scala3 = "3.1.1"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -36,17 +38,15 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      if (isScala3.value) "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M7"
-//      if (isScala3.value) "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M7-SNAPSHOT"
-      else "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0-M7",
-      "dev.zio" %% "izumi-reflect" % "1.1.2",
-      "com.lihaoyi" %% "fansi" % "0.2.14",
-    ) ++ (
-      if (isScala3.value)
-        Seq.empty
-      else
-        Seq("org.scala-lang" % "scala-reflect" % scala213)
-    ),
+      "dev.zio" %% "izumi-reflect" % "2.0.8",
+      "com.lihaoyi" %% "fansi" % "0.3.0",
+    ) ++ (if (isScala3.value) {
+            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0")
+          } else
+            Seq(
+              "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0",
+              "org.scala-lang" % "scala-reflect" % scala213,
+            )),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
       IO.write(file, TupleDifferInstancesGen.fileContent)
@@ -108,7 +108,6 @@ lazy val docs: Project = project
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
-      "org.scalameta" %% "mdoc" % "2.2.21",
     ),
     makeMicrosite := Def.taskDyn {
       val orig = (ThisProject / makeMicrosite).taskValue
@@ -165,7 +164,7 @@ lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
   scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => isScala3.value),
 )
@@ -174,7 +173,7 @@ lazy val noPublishSettings = Seq(
   publish / skip := true,
 )
 
-ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.11")
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
