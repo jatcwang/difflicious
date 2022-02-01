@@ -39,12 +39,11 @@ object DiffResultPrinter {
         case r: DiffResult.RecordResult => {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val fieldsStr = r.fields
-            .map {
-              case (fieldName, vRes) =>
-                Str(fieldName) ++ ": " ++ consoleOutput(
-                  vRes,
-                  indentLevel = indentLevel + 1,
-                ) ++ ","
+            .map { case (fieldName, vRes) =>
+              Str(fieldName) ++ ": " ++ consoleOutput(
+                vRes,
+                indentLevel = indentLevel + 1,
+              ) ++ ","
             }
             .foldLeft(Str("")) { case (accum, nextStr) => accum ++ indentForFields ++ nextStr }
           val allStr = Str(s"${r.typeName.short}(") ++ fieldsStr ++ s"\n${indentLevel.asSpaces})"
@@ -61,9 +60,8 @@ object DiffResultPrinter {
                 keyStr ++ " -> " ++ valueStr ++ ","
               }
             }
-            .foldLeft(Str("")) {
-              case (accum, nextStr) =>
-                accum ++ indentPlusStr ++ nextStr
+            .foldLeft(Str("")) { case (accum, nextStr) =>
+              accum ++ indentPlusStr ++ nextStr
             }
           val allStr = Str(r.typeName.short ++ "(") ++ keyValStr ++ s"\n${indentLevel.asSpaces})"
           colorOnMatchType(allStr, r.pairType)
@@ -92,8 +90,8 @@ object DiffResultPrinter {
                 obtainedStr.overlay(colorObtained) ++ " -> " ++ expectedStr.overlay(colorExpected)
               }
             }
-            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained)
-            case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected)
+            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained).overlay(colorObtained)
+            case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected).overlay(colorExpected)
           }
       }
   }
