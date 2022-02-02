@@ -79,7 +79,7 @@ val differWithSubTypesFieldIgnored = sealedTraitDiffer.ignoreAt(_.each.subType[S
 ## Replace differs
 
 You can completely replace the underlying differ at a path using `replace`. This is useful when you want to reuse an existing
-Differ you have extensively configured.
+Differ you already have.
 
 ```scala mdoc:silent
 val mapDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]

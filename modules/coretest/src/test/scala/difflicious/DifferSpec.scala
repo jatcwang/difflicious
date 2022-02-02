@@ -39,9 +39,9 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
         "c" -> EqClass(3),
       ),
       s"""Map(
-         |  $R"b"$X -> EqClass(2),
+         |  $R"b"$X -> ${R}EqClass(2)${X},
          |  "a" -> EqClass(1),
-         |  $G"c"$X -> EqClass(3),
+         |  $G"c"$X -> ${G}EqClass(3)${X},
          |)""".stripMargin,
     )
   }
