@@ -72,20 +72,15 @@ private[difflicious] object ConfigureMethodImpls:
     import quotes.reflect.*
 
 //    import dotty.tools.dotc.ast.Trees._
-    def resolveSubTypeName(typeTree: Tree)(using Quotes): String =
-      typeTree match {
-        case TypeIdent(name)     => name.toString
-        case TypeSelect(_, name) => name.toString
-      }
-
     @tailrec
     def collectPathElementsLoop(pathAccum: List[String], cur: Term): List[String] =
       cur match {
         case Select(rest, name) =>
           collectPathElementsLoop(name.toString :: pathAccum, rest)
         case x @ TypeApply(Select(Apply(TypeApply(_, superType :: Nil), rest :: Nil), "subType"), subType :: Nil) =>
-          if superType.symbol.children.contains(subType.symbol) then
-            collectPathElementsLoop(resolveSubTypeName(subType) :: pathAccum, rest)
+          val typeSym = subType.tpe.dealias.typeSymbol
+          if superType.symbol.children.contains(subType.tpe.dealias.typeSymbol) then
+            collectPathElementsLoop(typeSym.name :: pathAccum, rest)
           else
             report.error(
               s"subType requires that the super type be a sealed trait (enum), and the subtype being a direct children of the super type.",
@@ -104,7 +99,7 @@ private[difflicious] object ConfigureMethodImpls:
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(tree))), _)) =>
         Expr(collectPathElementsLoop(List.empty, tree))
       case _ =>
-        report.error(s"XXX ${pathExpr.asTerm.show(using Printer.TreeStructure)}")
+        report.error(s"Unexpected path expression. This is a bug: ${pathExpr.asTerm.show(using Printer.TreeStructure)}")
         '{ ??? }
     }
   }

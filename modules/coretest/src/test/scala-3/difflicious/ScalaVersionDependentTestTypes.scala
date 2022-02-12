@@ -6,6 +6,7 @@ trait ScalaVersionDependentTestTypes:
   enum MyEnum {
     case I
     case V(i: Int)
+    case XY(i: Int, j: String)
   }
 
   object MyEnum:

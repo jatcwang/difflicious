@@ -27,3 +27,60 @@ trait ScalaVersionDependentTests:
   test("Derived Enum: isOk always true if differ is marked ignored") {
     assertIsOkIfIgnoredProp(MyEnum.given_Differ_MyEnum)
   }
+
+  test(".subType[MyEnum.XY] in path expression works") {
+    assertConsoleDiffOutput(
+      Differ[List[MyEnum]].ignoreAt(_.each.subType[MyEnum.XY].i),
+      List(
+        MyEnum.XY(1, "2"),
+      ),
+      List(
+        MyEnum.XY(5, "6"),
+      ),
+      s"""List(
+         |  XY(
+         |    i: $grayIgnoredStr,
+         |    j: ${R}"2"${X} -> ${G}"6"${X},
+         |  ),
+         |)""".stripMargin,
+    )
+  }
+
+  test(".subType[XY] in path expression works") {
+    import MyEnum.XY
+    assertConsoleDiffOutput(
+      Differ[List[MyEnum]].ignoreAt(_.each.subType[XY].i),
+      List(
+        MyEnum.XY(1, "2"),
+      ),
+      List(
+        MyEnum.XY(5, "6"),
+      ),
+      s"""List(
+           |  XY(
+           |    i: $grayIgnoredStr,
+           |    j: ${R}"2"${X} -> ${G}"6"${X},
+           |  ),
+           |)""".stripMargin,
+    )
+  }
+
+  test(".subType[TypeAlias] in path expression works") {
+    import MyEnum.XY
+    type Alias = XY
+    assertConsoleDiffOutput(
+      Differ[List[MyEnum]].ignoreAt(_.each.subType[Alias].i),
+      List(
+        MyEnum.XY(1, "2"),
+      ),
+      List(
+        MyEnum.XY(5, "6"),
+      ),
+      s"""List(
+           |  XY(
+           |    i: $grayIgnoredStr,
+           |    j: ${R}"2"${X} -> ${G}"6"${X},
+           |  ),
+           |)""".stripMargin,
+    )
+  }
