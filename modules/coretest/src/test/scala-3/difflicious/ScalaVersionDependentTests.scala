@@ -40,8 +40,8 @@ trait ScalaVersionDependentTests:
       s"""List(
          |  XY(
          |    i: $grayIgnoredStr,
-         |    j: ${R}"2"${X} -> ${G}"6"${X},
-         |  ),
+         |    j: ${R}"2"${X} -> ${G}"6"${X}
+         |  )
          |)""".stripMargin,
     )
   }
@@ -59,8 +59,8 @@ trait ScalaVersionDependentTests:
       s"""List(
            |  XY(
            |    i: $grayIgnoredStr,
-           |    j: ${R}"2"${X} -> ${G}"6"${X},
-           |  ),
+           |    j: ${R}"2"${X} -> ${G}"6"${X}
+           |  )
            |)""".stripMargin,
     )
   }
@@ -79,8 +79,8 @@ trait ScalaVersionDependentTests:
       s"""List(
            |  XY(
            |    i: $grayIgnoredStr,
-           |    j: ${R}"2"${X} -> ${G}"6"${X},
-           |  ),
+           |    j: ${R}"2"${X} -> ${G}"6"${X}
+           |  )
            |)""".stripMargin,
     )
   }

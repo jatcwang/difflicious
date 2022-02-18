@@ -25,7 +25,7 @@ class DifferConfigureSpec extends munit.FunSuite {
       s"""CC(
          |  i: 1,
          |  s: "s",
-         |  dd: ${R}1.0$X -> ${G}2.0$X,
+         |  dd: ${R}1.0$X -> ${G}2.0$X
          |)""".stripMargin,
     )
   }
@@ -43,8 +43,8 @@ class DifferConfigureSpec extends munit.FunSuite {
         |  "a" -> CC(
         |      i: 1,
         |      s: "s",
-        |      dd: $I[IGNORED]$X,
-        |    ),
+        |      dd: $I[IGNORED]$X
+        |    )
         |)""".stripMargin,
     )
   }
@@ -62,8 +62,8 @@ class DifferConfigureSpec extends munit.FunSuite {
        |  CC(
        |    i: 1,
        |    s: "s",
-       |    dd: $I[IGNORED]$X,
-       |  ),
+       |    dd: $I[IGNORED]$X
+       |  )
        |)""".stripMargin,
     )
   }
@@ -81,8 +81,8 @@ class DifferConfigureSpec extends munit.FunSuite {
        |  CC(
        |    i: 1,
        |    s: "s",
-       |    dd: $I[IGNORED]$X,
-       |  ),
+       |    dd: $I[IGNORED]$X
+       |  )
        |)""".stripMargin,
     )
   }
@@ -100,8 +100,8 @@ class DifferConfigureSpec extends munit.FunSuite {
       s"""List(
          |  Weird@Sub(
          |    i: 1,
-         |    weird@Field: $I[IGNORED]$X,
-         |  ),
+         |    weird@Field: $I[IGNORED]$X
+         |  )
          |)""".stripMargin,
     )
   }
@@ -126,14 +126,14 @@ class DifferConfigureSpec extends munit.FunSuite {
          |    CC(
          |      i: 1,
          |      s: "s",
-         |      dd: ${R}1.0$X -> ${G}2.0$X,
+         |      dd: ${R}1.0$X -> ${G}2.0$X
          |    ),
          |    CC(
          |      i: 2,
          |      s: "s",
-         |      dd: ${R}2.0$X -> ${G}4.0$X,
-         |    ),
-         |  ),
+         |      dd: ${R}2.0$X -> ${G}4.0$X
+         |    )
+         |  )
          |)""".stripMargin,
     )
   }
@@ -158,14 +158,14 @@ class DifferConfigureSpec extends munit.FunSuite {
          |      CC(
          |        i: 1,
          |        s: "s",
-         |        dd: ${R}1.0$X -> ${G}2.0$X,
+         |        dd: ${R}1.0$X -> ${G}2.0$X
          |      ),
          |      CC(
          |        i: 2,
          |        s: "s",
-         |        dd: ${R}2.0$X -> ${G}4.0$X,
-         |      ),
-         |    ),
+         |        dd: ${R}2.0$X -> ${G}4.0$X
+         |      )
+         |    )
          |)""".stripMargin,
     )
   }
@@ -183,7 +183,7 @@ class DifferConfigureSpec extends munit.FunSuite {
         "a" -> CC(1, "s", 4.0),
       ),
       s"""Map(
-         |  "a" -> $grayIgnoredStr,
+         |  "a" -> $grayIgnoredStr
          |)""".stripMargin,
     )
 
@@ -199,8 +199,8 @@ class DifferConfigureSpec extends munit.FunSuite {
          |  "a" -> CC(
          |      i: 1,
          |      s: "s",
-         |      dd: ${R}1.0$X -> ${G}4.0$X,
-         |    ),
+         |      dd: ${R}1.0$X -> ${G}4.0$X
+         |    )
          |)""".stripMargin,
     )
   }
@@ -226,7 +226,7 @@ class DifferConfigureSpec extends munit.FunSuite {
         CC(1, "s", 4.0),
       ),
       s"""Seq(
-         |  $grayIgnoredStr,
+         |  $grayIgnoredStr
          |)""".stripMargin,
     )
 
@@ -242,8 +242,8 @@ class DifferConfigureSpec extends munit.FunSuite {
          |  CC(
          |    i: 1,
          |    s: "s",
-         |    dd: ${R}1.0$X -> ${G}4.0$X,
-         |  ),
+         |    dd: ${R}1.0$X -> ${G}4.0$X
+         |  )
          |)""".stripMargin,
     )
   }
@@ -269,7 +269,7 @@ class DifferConfigureSpec extends munit.FunSuite {
         CC(1, "s", 1.0),
       ),
       s"""Set(
-         |  $grayIgnoredStr,
+         |  $grayIgnoredStr
          |)""".stripMargin,
     )
 
@@ -285,8 +285,8 @@ class DifferConfigureSpec extends munit.FunSuite {
          |  CC(
          |    i: 1,
          |    s: "s",
-         |    dd: 1.0,
-         |  ),
+         |    dd: 1.0
+         |  )
          |)""".stripMargin,
     )
   }
