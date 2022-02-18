@@ -18,8 +18,8 @@ trait ScalaVersionDependentTests { this: FunSuite =>
       ),
       s"""List(
          |  SubSub1(
-         |    d: $grayIgnoredStr,
-         |  ),
+         |    d: $grayIgnoredStr
+         |  )
          |)""".stripMargin,
     )
   }

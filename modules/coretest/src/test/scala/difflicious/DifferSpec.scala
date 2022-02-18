@@ -41,7 +41,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       s"""Map(
          |  $R"b"$X -> ${R}EqClass(2)${X},
          |  "a" -> EqClass(1),
-         |  $G"c"$X -> ${G}EqClass(3)${X},
+         |  $G"c"$X -> ${G}EqClass(3)${X}
          |)""".stripMargin,
     )
   }
@@ -115,8 +115,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  _3: CC(
          |    i: ${R}1$X -> ${G}2$X,
          |    s: ${R}"1"$X -> ${G}"2"$X,
-         |    dd: ${R}1.0$X -> ${G}3.0$X,
-         |  ),
+         |    dd: ${R}1.0$X -> ${G}3.0$X
+         |  )
          |)""".stripMargin,
     )
   }
@@ -132,8 +132,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  value: CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 3.0,
-         |  ),
+         |    dd: 3.0
+         |  )
          |)$X
          |${G}=== Expected ===
          |None(
@@ -164,12 +164,12 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  value: CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 3.0,
-         |  ),
+         |    dd: 3.0
+         |  )
          |)$X
          |${G}=== Expected ===
          |Left(
-         |  value: "nope",
+         |  value: "nope"
          |)$X""".stripMargin,
     )
   }
@@ -215,23 +215,23 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  ${R}MapKey(2,sa)$X -> ${R}CC(
          |      i: $justIgnoredStr,
          |      s: "s2",
-         |      dd: 2.0,
+         |      dd: 2.0
          |    )$X,
          |  MapKey(1,s) -> CC(
          |      i: $grayIgnoredStr,
          |      s: "s1",
-         |      dd: 1.0,
+         |      dd: 1.0
          |    ),
          |  MapKey(4,diff) -> CC(
          |      i: $grayIgnoredStr,
          |      s: $R"s4"$X -> $G"sx"$X,
-         |      dd: 1.0,
+         |      dd: 1.0
          |    ),
          |  ${G}MapKey(3,se)$X -> ${G}CC(
          |      i: $justIgnoredStr,
          |      s: "s3",
-         |      dd: 2.0,
-         |    )${X},
+         |      dd: 2.0
+         |    )${X}
          |)""".stripMargin,
     )
   }
@@ -250,9 +250,9 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |    MapKey(1,s) -> CC(
          |        i: 1,
          |        s: "s1",
-         |        dd: 1.0,
-         |      ),
-         |  )$X,
+         |        dd: 1.0
+         |      )
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -271,9 +271,9 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |    MapKey(1,s) -> CC(
          |        i: 1,
          |        s: "s1",
-         |        dd: 1.0,
-         |      ),
-         |  )$X,
+         |        dd: 1.0
+         |      )
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -345,18 +345,18 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  CC(
          |    i: 1,
          |    s: $R"s1"$X -> $G"s2"$X,
-         |    dd: $grayIgnoredStr,
+         |    dd: $grayIgnoredStr
          |  ),
          |  CC(
          |    i: 2,
          |    s: $R"s2"$X -> $G"s1"$X,
-         |    dd: $grayIgnoredStr,
+         |    dd: $grayIgnoredStr
          |  ),
          |  CC(
          |    i: 3,
          |    s: "s2",
-         |    dd: $grayIgnoredStr,
-         |  ),
+         |    dd: $grayIgnoredStr
+         |  )
          |)""".stripMargin,
     )
   }
@@ -380,23 +380,23 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  CC(
          |    i: 1,
          |    s: $R"s1"$X -> $G"s2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: $R"s2"$X -> $G"s1"$X,
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${R}CC(
          |    i: 3,
          |    s: "s2",
-         |    dd: 3.0,
+         |    dd: 3.0
          |  )${X},
          |  ${G}CC(
          |    i: 4,
          |    s: "s2",
-         |    dd: 4.0,
-         |  )${X},
+         |    dd: 4.0
+         |  )${X}
          |)""".stripMargin,
     )
   }
@@ -417,7 +417,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       ),
       s"""List(
          |  ${R}1$X -> ${G}2$X,
-         |  ${R}2$X -> ${G}1$X,
+         |  ${R}2$X -> ${G}1$X
          |)""".stripMargin,
     )
   }
@@ -433,8 +433,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  $R"a"$X -> ${R}List(
          |      1,
          |      2,
-         |      3,
-         |    )$X,
+         |      3
+         |    )$X
          |)""".stripMargin,
     )
   }
@@ -450,8 +450,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  $G"a"$X -> ${G}List(
          |      1,
          |      2,
-         |      3,
-         |    )$X,
+         |      3
+         |    )$X
          |)""".stripMargin,
     )
   }
@@ -518,28 +518,28 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  ${R}CC(
          |    i: 1,
          |    s: "s1",
-         |    dd: $justIgnoredStr,
+         |    dd: $justIgnoredStr
          |  )$X,
          |  ${R}CC(
          |    i: 2,
          |    s: "s2",
-         |    dd: $justIgnoredStr,
+         |    dd: $justIgnoredStr
          |  )$X,
          |  CC(
          |    i: 3,
          |    s: "s2",
-         |    dd: $grayIgnoredStr,
+         |    dd: $grayIgnoredStr
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "s2",
-         |    dd: $justIgnoredStr,
+         |    dd: $justIgnoredStr
          |  )${X},
          |  ${G}CC(
          |    i: 2,
          |    s: "s1",
-         |    dd: $justIgnoredStr,
-         |  )$X,
+         |    dd: $justIgnoredStr
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -554,8 +554,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       s"""List(
          |  ${R}Set(
          |    1,
-         |    2,
-         |  )$X,
+         |    2
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -570,8 +570,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       s"""List(
          |  ${G}Set(
          |    1,
-         |    2,
-         |  )$X,
+         |    2
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -638,23 +638,23 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  CC(
          |    i: 1,
          |    s: $R"s1"$X -> $G"s2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: $R"s2"$X -> $G"s1"$X,
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${R}CC(
          |    i: 3,
          |    s: "s2",
-         |    dd: 3.0,
+         |    dd: 3.0
          |  )${X},
          |  ${G}CC(
          |    i: 4,
          |    s: "s2",
-         |    dd: 4.0,
-         |  )${X},
+         |    dd: 4.0
+         |  )${X}
          |)""".stripMargin,
     )
   }
@@ -717,11 +717,11 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       s"""${R}Sub1$X != ${G}Sub2${X}
         |${R}=== Obtained ===
         |Sub1(
-        |  i: 1,
+        |  i: 1
         |)$X
         |$G=== Expected ===
         |Sub2(
-        |  d: 1.0,
+        |  d: 1.0
         |)$X""".stripMargin,
     )
   }
@@ -734,11 +734,11 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       s"""${R}Sub1$X != ${G}Sub2${X}
          |${R}=== Obtained ===
          |Sub1(
-         |  i: 1,
+         |  i: 1
          |)$X
          |$G=== Expected ===
          |Sub2(
-         |  d: 1.0,
+         |  d: 1.0
          |)$X""".stripMargin,
     )
   }
@@ -762,8 +762,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       List.empty[Sealed],
       s"""List(
          |  ${R}Sub1(
-         |    i: 1,
-         |  )$X,
+         |    i: 1
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -775,8 +775,8 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       List(Sealed.Sub1(1)),
       s"""List(
          |  ${G}Sub1(
-         |    i: 1,
-         |  )$X,
+         |    i: 1
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -787,7 +787,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
       SealedWithCustom.Custom(1),
       SealedWithCustom.Custom(2),
       s"""Custom(
-        |  i: $grayIgnoredStr,
+        |  i: $grayIgnoredStr
         |)""".stripMargin,
     )
   }
@@ -837,14 +837,14 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
         |    CC(
         |      i: 1,
         |      s: $R"1"$X -> $G"2"$X,
-        |      dd: 1.0,
+        |      dd: 1.0
         |    ),
         |    CC(
         |      i: 2,
         |      s: "2",
-        |      dd: 2.0,
-        |    ),
-        |  ),
+        |      dd: 2.0
+        |    )
+        |  )
         |)""".stripMargin,
     )
   }

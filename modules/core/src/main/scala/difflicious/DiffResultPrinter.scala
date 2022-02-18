@@ -13,6 +13,8 @@ object DiffResultPrinter {
 
   private val ignoredStr: Str = Str("[IGNORED]").overlay(colorIgnored)
 
+  private val emptyStr = Str("")
+
   def printDiffResult(
     res: DiffResult,
   ): Unit = {
@@ -30,9 +32,11 @@ object DiffResultPrinter {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val listStrs = r.items
             .map { res =>
-              consoleOutput(res, indentLevel + 1) ++ ","
+              consoleOutput(res, indentLevel + 1)
             }
-            .foldLeft(Str("")) { case (accum, next) => accum ++ indentForFields ++ next }
+            .reduceLeftOption[Str] { case (accum, next) => accum ++ "," ++ indentForFields ++ next }
+            .map(accum => indentForFields ++ accum)
+            .getOrElse(emptyStr)
           val allStr = Str(s"${r.typeName.short}(") ++ listStrs ++ Str(s"\n${indentLevel.asSpaces})")
           colorOnMatchType(str = allStr, matchType = r.pairType)
         }
@@ -43,26 +47,28 @@ object DiffResultPrinter {
               Str(fieldName) ++ ": " ++ consoleOutput(
                 vRes,
                 indentLevel = indentLevel + 1,
-              ) ++ ","
+              )
             }
-            .foldLeft(Str("")) { case (accum, nextStr) => accum ++ indentForFields ++ nextStr }
+            .reduceLeftOption[Str] { case (accum, nextStr) => accum ++ "," ++ indentForFields ++ nextStr }
+            .map(accum => indentForFields ++ accum)
+            .getOrElse(emptyStr)
           val allStr = Str(s"${r.typeName.short}(") ++ fieldsStr ++ s"\n${indentLevel.asSpaces})"
           colorOnMatchType(str = allStr, matchType = r.pairType)
         }
         case r: DiffResult.MapResult => {
-          val indentPlusStr = s"\n${indentLevel.asSpacesPlus1}"
+          val indentPlusStr = Str(s"\n${indentLevel.asSpacesPlus1}")
           val keyValStr = r.entries
-            .map {
-              case Entry(keyJson, valueDiff) => {
-                val keyStr =
-                  colorOnMatchType(str = Str(keyJson), matchType = valueDiff.pairType)
-                val valueStr = consoleOutput(valueDiff, indentLevel + 2)
-                keyStr ++ " -> " ++ valueStr ++ ","
-              }
+            .map { case Entry(keyJson, valueDiff) =>
+              val keyStr =
+                colorOnMatchType(str = Str(keyJson), matchType = valueDiff.pairType)
+              val valueStr = consoleOutput(valueDiff, indentLevel + 2)
+              keyStr ++ " -> " ++ valueStr
             }
-            .foldLeft(Str("")) { case (accum, nextStr) =>
-              accum ++ indentPlusStr ++ nextStr
+            .reduceLeftOption[Str] { case (accum, nextStr) =>
+              accum ++ "," ++ indentPlusStr ++ nextStr
             }
+            .map(accum => indentPlusStr ++ accum)
+            .getOrElse(emptyStr)
           val allStr = Str(r.typeName.short ++ "(") ++ keyValStr ++ s"\n${indentLevel.asSpaces})"
           colorOnMatchType(allStr, r.pairType)
         }

@@ -26,18 +26,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  "a" -> CC(
          |      i: 1,
          |      s: $R"1"$X -> $G"x"$X,
-         |      dd: 1.0,
+         |      dd: 1.0
          |    ),
          |  "b" -> CC(
          |      i: 2,
          |      s: "2",
-         |      dd: 2.0,
+         |      dd: 2.0
          |    ),
          |  $G"c"$X -> ${G}CC(
          |      i: 1,
          |      s: "x",
-         |      dd: 1.0,
-         |    )$X,
+         |      dd: 1.0
+         |    )$X
          |)""".stripMargin,
     )
   }
@@ -66,18 +66,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: 1,
          |    s: $R"1"$X -> $G"2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "x",
-         |    dd: 1.0,
-         |  )$X,
+         |    dd: 1.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -97,18 +97,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: ${R}1$X -> ${G}2$X,
          |    s: "1",
-         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |    dd: ${R}1.0$X -> ${G}2.0$X
          |  ),
          |  ${R}CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  )$X,
          |  ${G}CC(
          |    i: 2,
          |    s: "3",
-         |    dd: 2.0,
-         |  )$X,
+         |    dd: 2.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -129,18 +129,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: 1,
          |    s: $R"1"$X -> $G"2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "x",
-         |    dd: 1.0,
-         |  )$X,
+         |    dd: 1.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -160,18 +160,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: ${R}1$X -> ${G}2$X,
          |    s: "1",
-         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |    dd: ${R}1.0$X -> ${G}2.0$X
          |  ),
          |  ${R}CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  )$X,
          |  ${G}CC(
          |    i: 2,
          |    s: "3",
-         |    dd: 2.0,
-         |  )$X,
+         |    dd: 2.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -192,18 +192,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: 1,
          |    s: $R"1"$X -> $G"2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "x",
-         |    dd: 1.0,
-         |  )$X,
+         |    dd: 1.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -223,18 +223,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: ${R}1$X -> ${G}2$X,
          |    s: "1",
-         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |    dd: ${R}1.0$X -> ${G}2.0$X
          |  ),
          |  ${R}CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  )$X,
          |  ${G}CC(
          |    i: 2,
          |    s: "3",
-         |    dd: 2.0,
-         |  )$X,
+         |    dd: 2.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -255,18 +255,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: 1,
          |    s: $R"1"$X -> $G"2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "x",
-         |    dd: 1.0,
-         |  )$X,
+         |    dd: 1.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -286,18 +286,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: ${R}1$X -> ${G}2$X,
          |    s: "1",
-         |    dd: ${R}1.0$X -> ${G}2.0$X,
+         |    dd: ${R}1.0$X -> ${G}2.0$X
          |  ),
          |  ${R}CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  )$X,
          |  ${G}CC(
          |    i: 2,
          |    s: "3",
-         |    dd: 2.0,
-         |  )$X,
+         |    dd: 2.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -318,23 +318,23 @@ class CatsDataDiffSpec extends FunSuite {
          |  ${R}CC(
          |    i: 1,
          |    s: "1",
-         |    dd: 1.0,
+         |    dd: 1.0
          |  )$X,
          |  CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  ),
          |  ${G}CC(
          |    i: 1,
          |    s: "2",
-         |    dd: 1.0,
+         |    dd: 1.0
          |  )$X,
          |  ${G}CC(
          |    i: 1,
          |    s: "x",
-         |    dd: 1.0,
-         |  )$X,
+         |    dd: 1.0
+         |  )$X
          |)""".stripMargin,
     )
   }
@@ -354,18 +354,18 @@ class CatsDataDiffSpec extends FunSuite {
          |  CC(
          |    i: 1,
          |    s: $R"1"$X -> $G"2"$X,
-         |    dd: 1.0,
+         |    dd: 1.0
          |  ),
          |  ${R}CC(
          |    i: 2,
          |    s: "2",
-         |    dd: 2.0,
+         |    dd: 2.0
          |  )$X,
          |  ${G}CC(
          |    i: 3,
          |    s: "3",
-         |    dd: 3.0,
-         |  )$X,
+         |    dd: 3.0
+         |  )$X
          |)""".stripMargin,
     )
   }
