@@ -31,7 +31,7 @@ inThisBuild(
 )
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest)
+  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest, autoDerivation, autoDerivationTests)
   .settings(commonSettings, noPublishSettings)
 
 lazy val core = Project("difflicious-core", file("modules/core"))
@@ -52,6 +52,25 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       IO.write(file, TupleDifferInstancesGen.fileContent)
       Seq(file)
     }.taskValue,
+  )
+
+lazy val autoDerivation = Project("difflicious-auto", file("modules/auto-derivation"))
+  .dependsOn(core)
+  .settings(commonSettings)
+
+
+lazy val autoDerivationTests = Project("autoDerivationTests", file("modules/auto-derivation-test"))
+  .dependsOn(autoDerivation)
+  .settings(commonSettings, noPublishSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % catsVersion,
+    ),
+    // Test deps
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %% "munit-scalacheck" % munitVersion,
+    ).map(_ % Test),
   )
 
 lazy val munit = Project("difflicious-munit", file("modules/munit"))
