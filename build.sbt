@@ -192,7 +192,7 @@ ThisBuild / githubWorkflowPublish := Seq(
 
 val setupJekyllSteps = Seq(
   WorkflowStep.Use(
-    UseRef.Public("actions", "setup-ruby", "v1"),
+    UseRef.Public("ruby", "setup-ruby", "v1"),
     name = Some("Setup ruby"),
     params = Map("ruby-version" -> "2.7"),
   ),
