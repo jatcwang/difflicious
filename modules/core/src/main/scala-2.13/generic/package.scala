@@ -1,7 +1,6 @@
 package difflicious.generic
 
 import difflicious.Derived
-import difflicious.DerivedGen
 import difflicious.DifferGen
 import difflicious.Differ
 

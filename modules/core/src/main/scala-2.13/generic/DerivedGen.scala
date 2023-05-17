@@ -1,8 +1,9 @@
-package difflicious
+package difflicious.generic
 
+import difflicious.Derived
 import magnolia1.Magnolia
 
-object DerivedGen {
+private[generic] object DerivedGen {
 
   import scala.reflect.macros.whitebox
 
