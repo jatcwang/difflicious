@@ -12,4 +12,5 @@ trait AutoDerivation extends DifferGen {
 
   implicit def diffForCaseClass[T]: Derived[T] = macro DerivedGen.derivedGen[T]
 
+  def fallback[T]: Differ[T] = Differ.useEquals[T](_.toString)
 }

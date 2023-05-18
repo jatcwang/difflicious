@@ -13,4 +13,6 @@ trait DerivedAutoDerivation extends AutoDerivation[Differ] with DifferGen {
   given derivedDiff[T]: Conversion[Differ[T], Derived[T]] = d => Derived(d)
 
   inline implicit def diffForCaseClass[T](implicit m: Mirror.Of[T]): Derived[T] = Derived(derived[T])
+
+  def fallback[T]: Differ[T] = Differ.useEquals[T](_.toString)
 }
