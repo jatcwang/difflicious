@@ -35,7 +35,7 @@ val schoolDiffer: Differ[School] = {
 
 ## Where is fully automatic derivation for `Differ`s?
 
-Fully automatic derivation is strongly discourage, however it might be convenient in certain debugging use-cases.
+Fully automatic derivation is strongly discouraged, however it might be convenient in certain debugging use-cases.
 
 With automatic derivation, the compiler will derive the instances **every time it is needed**.
 This very frequently leads to extremely long compile times which isn't worth the few lines of code it saves you.
