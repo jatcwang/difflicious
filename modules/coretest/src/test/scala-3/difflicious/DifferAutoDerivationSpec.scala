@@ -2,7 +2,7 @@ package difflicioustest
 
 import munit.ScalaCheckSuite
 
-class DifferSpec extends ScalaCheckSuite {
+class DifferAutoDerivationSpec extends ScalaCheckSuite {
   test("should not compile without instance in scope") {
     val result = compileErrors("""
         import difflicious._
@@ -29,7 +29,6 @@ class DifferSpec extends ScalaCheckSuite {
   test("should find auto derived instance for product") {
     val result = compileErrors("""
         import difflicious._
-        import difflicious.generic.auto._
         import difflicious.generic.auto.given
 
         final case class P1(f1: String)
@@ -41,7 +40,7 @@ class DifferSpec extends ScalaCheckSuite {
   test("should put auto derived instance back into scope") {
     val result = compileErrors("""
         import difflicious._
-        import difflicious.generic.auto._
+        import difflicious.generic.auto.given
 
         final case class P1(f1: String)
         implicit val d: Differ[P1] = implicitly[Derived[P1]].differ

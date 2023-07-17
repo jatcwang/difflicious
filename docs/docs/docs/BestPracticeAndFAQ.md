@@ -49,7 +49,6 @@ import difflicious.generic.auto._
 
 for scala 3
 ```scala
-import difflicious.generic.auto._
 import difflicious.generic.auto.given
 ```
 

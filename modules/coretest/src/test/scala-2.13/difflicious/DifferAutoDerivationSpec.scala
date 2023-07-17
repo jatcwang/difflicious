@@ -2,7 +2,7 @@ package difflicioustest
 
 import munit.ScalaCheckSuite
 
-class DifferSpec extends ScalaCheckSuite {
+class DifferAutoDerivationSpec extends ScalaCheckSuite {
   test("should not compile without instance in scope") {
     val result = compileErrors("""
         import difflicious._
