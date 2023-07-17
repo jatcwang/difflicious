@@ -25,3 +25,4 @@ metals.sbt
 .bsp
 TempGo.scala
 metals.sbt
+.bloop

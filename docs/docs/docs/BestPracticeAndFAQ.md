@@ -35,10 +35,22 @@ val schoolDiffer: Differ[School] = {
 
 ## Where is fully automatic derivation for `Differ`s?
 
-Fully automatic derivation is intentionally left out for compile time reasons.
+Fully automatic derivation is strongly discouraged, however it might be convenient in certain debugging use-cases.
 
 With automatic derivation, the compiler will derive the instances **every time it is needed**.
 This very frequently leads to extremely long compile times which isn't worth the few lines of code it saves you.
+
+To enable auto-derivation add following import:
+
+for scala 2
+```scala
+import difflicious.generic.auto._
+```
+
+for scala 3
+```scala
+import difflicious.generic.auto.given
+```
 
 ## How is difflicious different from other projects that provides diffs?
 
@@ -55,13 +67,9 @@ Feature-wise, difflicious has:
 - Better configurability: Difflicious takes a more "structured" approach to configurability, where Differ of a complex type
   can still have all its underlying Differs tweaked or even replaced (using `replace`). This is handy in some scenarios
   where you can reuse existing Differs by "swapping" them in and out of a larger Differ.
+
+Diffx is no loger actively developed.
   
-On the other hand, diffx has:
-
-- Opt-in fully automatic derivation, if you want to convenience and willing to accept longer compile times.
-
-**Note**: Diffx is an actively maintained library, so some comparison may not be up to date and corrections are welcome :)
-
 ## How can I provide a Differ for my newtypes / opaque types?
 
 Many Scala users like to use a wrapper type around primitive types for additional type-safety.
