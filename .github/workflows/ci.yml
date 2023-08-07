@@ -66,7 +66,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} test makeMicrosite publishLocal
 
       - name: Compress target directories
-        run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target
+        run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/weaver/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v2
