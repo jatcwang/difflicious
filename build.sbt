@@ -6,7 +6,7 @@ val scalatestVersion = "3.2.11"
 val weaverVersion = "0.8.3"
 
 val scala213 = "2.13.8"
-val scala3 = "3.1.1"
+val scala3 = "3.3.0"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
