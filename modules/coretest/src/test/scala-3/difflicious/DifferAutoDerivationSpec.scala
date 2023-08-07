@@ -15,7 +15,7 @@ class DifferAutoDerivationSpec extends ScalaCheckSuite {
     assertNoDiff(
       result,
       """error:
-        |no implicit argument of type difflicious.Differ[P1] was found for parameter differ of method apply in object Differ
+        |No given instance of type difflicious.Differ[P1] was found for parameter differ of method apply in object Differ
         |
         |The following import might fix the problem:
         |
