@@ -3,9 +3,10 @@ import sbtghactions.JavaSpec
 val munitVersion = "0.7.29"
 val catsVersion = "2.7.0"
 val scalatestVersion = "3.2.11"
+val weaverVersion = "0.8.3"
 
 val scala213 = "2.13.8"
-val scala3 = "3.1.1"
+val scala3 = "3.3.0"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -31,7 +32,7 @@ inThisBuild(
 )
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest)
+  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest, weaver)
   .settings(commonSettings, noPublishSettings)
 
 lazy val core = Project("difflicious-core", file("modules/core"))
@@ -72,6 +73,15 @@ lazy val scalatest = Project("difflicious-scalatest", file("modules/scalatest"))
     ),
   )
 
+lazy val weaver = Project("difflicious-weaver", file("modules/weaver"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.disneystreaming" %% "weaver-core" % weaverVersion,
+    ),
+  )
+
 lazy val cats = Project("difflicious-cats", file("modules/cats"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
@@ -99,7 +109,7 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
   )
 
 lazy val docs: Project = project
-  .dependsOn(core, coretest, cats, munit, scalatest)
+  .dependsOn(core, coretest, cats, munit, scalatest, weaver)
   .enablePlugins(MicrositesPlugin)
   .settings(
     commonSettings,
@@ -108,6 +118,7 @@ lazy val docs: Project = project
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
     ),
     makeMicrosite := Def.taskDyn {
       val orig = (ThisProject / makeMicrosite).taskValue

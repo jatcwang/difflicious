@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.8, 3.1.1]
+        scala: [2.13.8, 3.3.0]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -66,7 +66,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} test makeMicrosite publishLocal
 
       - name: Compress target directories
-        run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target
+        run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/weaver/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v2
@@ -119,12 +119,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.1.1)
+      - name: Download target directories (3.3.0)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-3.1.1-${{ matrix.java }}
+          name: target-${{ matrix.os }}-3.3.0-${{ matrix.java }}
 
-      - name: Inflate target directories (3.1.1)
+      - name: Inflate target directories (3.3.0)
         run: |
           tar xf targets.tar
           rm targets.tar
