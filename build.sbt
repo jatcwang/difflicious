@@ -1,11 +1,11 @@
 import sbtghactions.JavaSpec
 
 val munitVersion = "0.7.29"
-val catsVersion = "2.7.0"
-val scalatestVersion = "3.2.11"
+val catsVersion = "2.9.0"
+val scalatestVersion = "3.2.16"
 val weaverVersion = "0.8.3"
 
-val scala213 = "2.13.8"
+val scala213 = "2.13.11"
 val scala3 = "3.3.0"
 
 val isScala3 = Def.setting {
@@ -39,8 +39,8 @@ lazy val core = Project("difflicious-core", file("modules/core"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "2.0.8",
-      "com.lihaoyi" %% "fansi" % "0.3.0",
+      "dev.zio" %% "izumi-reflect" % "2.3.8",
+      "com.lihaoyi" %% "fansi" % "0.4.0",
     ) ++ (if (isScala3.value) {
             Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0")
           } else

@@ -19,7 +19,7 @@ object TypeName {
 
   def fromLightTypeTag[A](t: LightTypeTag): TypeName[A] = {
     TypeName[A](
-      long = t.longName,
+      long = t.longNameWithPrefix,
       short = t.shortName,
       typeArguments = t.typeArgs.map(fromLightTypeTag),
     )
