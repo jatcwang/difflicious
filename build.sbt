@@ -1,4 +1,7 @@
+import sbt.internal.ProjectMatrix
 import sbtghactions.JavaSpec
+import complete.DefaultParsers._
+import sbt.Reference.display
 
 val munitVersion = "0.7.29"
 val catsVersion = "2.9.0"
@@ -33,12 +36,55 @@ inThisBuild(
   ),
 )
 
-lazy val crossModules = List(core, coretest, munit, scalatest, weaver, cats, benchmarks)
+lazy val allModules = List(core, coretest, munit, scalatest, weaver, cats, benchmarks, docs)
+
+// taken from tapir: https://github.com/softwaremill/tapir/blob/08628a89a751f8bace95f1b57288da1f7c0c9dce/build.sbt#L279
+val scopesDescription = "Scala version can be: 2.12, 2.13, 3; platform: JVM, JS, Native"
+val compileScoped =
+  inputKey[Unit](
+    s"Compiles sources in the given scope. Usage: compileScoped [scala version] [platform]. $scopesDescription",
+  )
+val testScoped =
+  inputKey[Unit](s"Run tests in the given scope. Usage: testScoped [scala version] [platform]. $scopesDescription")
+
+val publishLocalScoped =
+  inputKey[Unit](
+    s"Publish artifacts to local ivy repository in the given scope. Usage: publishLocalScoped [scala version] [platform]. $scopesDescription",
+  )
+
+def filterProject(p: String => Boolean) =
+  ScopeFilter(inProjects(allModules.flatMap(_.projectRefs).filter(pr => p(display(pr.project))): _*))
+
+def filterByVersionAndPlatform(scalaVersionFilter: String, platformFilter: String) = filterProject { projectName =>
+  val byPlatform =
+    if (platformFilter == "JVM") !projectName.contains("JS") && !projectName.contains("Native")
+    else projectName.contains(platformFilter)
+  val byVersion = scalaVersionFilter match {
+    case "2.13" => !projectName.contains("2_12") && !projectName.contains("3")
+    case "2.12" => projectName.contains("2_12")
+    case "3"    => projectName.contains("3")
+  }
+
+  byPlatform && byVersion
+}
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(docs)
-  .aggregate(crossModules.flatMap(_.projectRefs): _*)
+  .aggregate(allModules.flatMap(_.projectRefs): _*)
   .settings(commonSettings, noPublishSettings)
+  .settings(
+    compileScoped := Def.inputTaskDyn {
+      val args = spaceDelimited("<arg>").parsed
+      Def.taskDyn((Test / compile).all(filterByVersionAndPlatform(args.head, args(1))))
+    }.evaluated,
+    testScoped := Def.inputTaskDyn {
+      val args = spaceDelimited("<arg>").parsed
+      Def.taskDyn((Test / test).all(filterByVersionAndPlatform(args.head, args(1))))
+    }.evaluated,
+    publishLocalScoped := Def.inputTaskDyn {
+      val args = spaceDelimited("<arg>").parsed
+      Def.taskDyn((Compile / publishLocal).all(filterByVersionAndPlatform(args.head, args(1))))
+    }.evaluated,
+  )
 
 lazy val core = projectMatrix
   .in(file("modules/core"))
@@ -131,17 +177,11 @@ lazy val coretest = projectMatrix
   )
   .jvmPlatform(jvmScalaVersions)
 
-lazy val docs: Project = project
-  .dependsOn(
-    core.jvm(mainScalaVersion),
-    coretest.jvm(mainScalaVersion),
-    cats.jvm(mainScalaVersion),
-    munit.jvm(mainScalaVersion),
-    scalatest.jvm(mainScalaVersion),
-    weaver.jvm(mainScalaVersion),
-  )
+lazy val docs: ProjectMatrix = projectMatrix
+  .dependsOn(core, coretest, cats, munit, scalatest, weaver)
   .enablePlugins(MicrositesPlugin)
   .settings(
+    name := "docs",
     commonSettings,
     publish / skip := true,
   )
@@ -187,6 +227,7 @@ lazy val docs: Project = project
       (opts ++ extraOpts).filterNot(removes)
     },
   )
+  .jvmPlatform(Seq(scala213))
 
 lazy val benchmarks = projectMatrix
   .in(file("modules/benchmarks"))

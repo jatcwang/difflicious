@@ -9,9 +9,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['**']
+    branches: ["**"]
   push:
-    branches: ['**']
+    branches: ["**"]
     tags: [v*]
 
 env:
@@ -23,8 +23,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.11, 3.3.0]
+        scalaVersion: [2_13, 3_0]
+        scalaPlatform: [jvm]
         java: [temurin@11]
+    env:
+      BUILD_KEY: ${{matrix.scalaVersion}}_${{matrix.scalaPlatform}}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -49,18 +52,33 @@ jobs:
         run: gem install jekyll -v 4.1.1
 
       - name: Check that workflows are up to date
-        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
+        if: matrix.scalaVersion == '2_13' && matrix.scalaPlatform == 'jvm'
+        run: sbt githubWorkflowCheck
 
-      - name: Build project
-        run: sbt '++ ${{ matrix.scala }}' test makeMicrosite publishLocal
+      - name: Build project & publish locally
+        run: sbt test publishLocal
+
+      - name: Make microsite
+        if: matrix.scalaVersion == '2_13' && matrix.scalaPlatform == 'jvm'
+        run: sbt makeMicrosite
 
       - name: Compress target directories
-        run: tar cf targets.tar modules/benchmarks/target target modules/munit/target docs/target modules/weaver/target modules/scalatest/target modules/core/target modules/cats/target modules/coretest/target project/target
+        run: |
+          tar cf targets.tar \
+            modules/benchmarks/target \
+            target modules/munit/target \
+            docs/target \
+            modules/weaver/target \
+            modules/scalatest/target \
+            modules/core/target \
+            modules/cats/target \
+            modules/coretest/target \
+            project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v3
         with:
-          name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
+          name: target-${{ matrix.os }}-${{ matrix.scalaVersion }}-${{ matrix.java }}-${{ matrix.scalaPlatform }}
           path: targets.tar
 
   publish:
@@ -70,7 +88,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.11]
+        scalaVersion: [2_13]
+        scalaPlatform: [jvm]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -87,22 +106,22 @@ jobs:
           java-version: 11
           cache: sbt
 
-      - name: Download target directories (2.13.11)
+      - name: Download target directories (2.13 & jvm)
         uses: actions/download-artifact@v3
         with:
-          name: target-${{ matrix.os }}-2.13.11-${{ matrix.java }}
+          name: target-${{ matrix.os }}-2_13-${{ matrix.java }}-jvm
 
-      - name: Inflate target directories (2.13.11)
+      - name: Inflate target directories (2.13 & jvm)
         run: |
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.3.0)
+      - name: Download target directories (3 & jvm)
         uses: actions/download-artifact@v3
         with:
-          name: target-${{ matrix.os }}-3.3.0-${{ matrix.java }}
+          name: target-${{ matrix.os }}-3_0-${{ matrix.java }}-jvm
 
-      - name: Inflate target directories (3.3.0)
+      - name: Inflate target directories (3 & jvm)
         run: |
           tar xf targets.tar
           rm targets.tar
