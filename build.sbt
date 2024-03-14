@@ -13,10 +13,12 @@ val isScala3 = Def.setting {
   scalaVersion.value.startsWith("3")
 }
 
+val mainScalaVersion = scala213
+val jvmScalaVersions = Seq(scala213, scala3)
+
 inThisBuild(
   List(
-    scalaVersion := scala213,
-    crossScalaVersions := Seq(scala213, scala3),
+    scalaVersion := mainScalaVersion,
     organization := "com.github.jatcwang",
     homepage := Some(url("https://github.com/jatcwang/difflicious")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -31,13 +33,18 @@ inThisBuild(
   ),
 )
 
+lazy val crossModules = List(core, coretest, munit, scalatest, weaver, cats, benchmarks)
+
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest, weaver)
+  .aggregate(docs)
+  .aggregate(crossModules.flatMap(_.projectRefs): _*)
   .settings(commonSettings, noPublishSettings)
 
-lazy val core = Project("difflicious-core", file("modules/core"))
+lazy val core = projectMatrix
+  .in(file("modules/core"))
   .settings(commonSettings)
   .settings(
+    name := "difflicious-core",
     libraryDependencies ++= Seq(
       "dev.zio" %% "izumi-reflect" % "2.3.8",
       "com.lihaoyi" %% "fansi" % "0.4.0",
@@ -54,38 +61,50 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       Seq(file)
     }.taskValue,
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val munit = Project("difflicious-munit", file("modules/munit"))
+lazy val munit = projectMatrix
+  .in(file("modules/munit"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-munit",
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val scalatest = Project("difflicious-scalatest", file("modules/scalatest"))
+lazy val scalatest = projectMatrix
+  .in(file("modules/scalatest"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest-core" % scalatestVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val weaver = Project("difflicious-weaver", file("modules/weaver"))
+lazy val weaver = projectMatrix
+  .in(file("modules/weaver"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-weaver",
     libraryDependencies ++= Seq(
       "com.disneystreaming" %% "weaver-core" % weaverVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val cats = Project("difflicious-cats", file("modules/cats"))
+lazy val cats = projectMatrix
+  .in(file("modules/cats"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
   .settings(
+    name := "difflicious-cats",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
     ),
@@ -93,11 +112,14 @@ lazy val cats = Project("difflicious-cats", file("modules/cats"))
       "org.typelevel" %% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val coretest = Project("coretest", file("modules/coretest"))
+lazy val coretest = projectMatrix
+  .in(file("modules/coretest"))
   .dependsOn(core)
   .settings(commonSettings, noPublishSettings)
   .settings(
+    name := "coretest",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
     ),
@@ -107,9 +129,17 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
       "org.scalameta" %% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
+  .jvmPlatform(jvmScalaVersions)
 
 lazy val docs: Project = project
-  .dependsOn(core, coretest, cats, munit, scalatest, weaver)
+  .dependsOn(
+    core.jvm(mainScalaVersion),
+    coretest.jvm(mainScalaVersion),
+    cats.jvm(mainScalaVersion),
+    munit.jvm(mainScalaVersion),
+    scalatest.jvm(mainScalaVersion),
+    weaver.jvm(mainScalaVersion),
+  )
   .enablePlugins(MicrositesPlugin)
   .settings(
     commonSettings,
@@ -158,11 +188,13 @@ lazy val docs: Project = project
     },
   )
 
-lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
+lazy val benchmarks = projectMatrix
+  .in(file("modules/benchmarks"))
   .dependsOn(coretest)
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .jvmPlatform(jvmScalaVersions)
 
 lazy val commonSettings = Seq(
   scalacOptions --= {
