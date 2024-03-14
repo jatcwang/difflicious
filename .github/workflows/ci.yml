@@ -55,15 +55,6 @@ jobs:
       - name: Build project
         run: sbt 'test_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' 'publishLocal_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' makeMicrosite
 
-      - name: Compress target directories
-        run: tar cf targets.tar modules/weaver/target/jvm-2.13 modules/scalatest/target/jvm-2.13 modules/benchmarks/target/jvm-2.13 target docs/target/jvm-2.13 modules/core/target/jvm-3 modules/munit/target/jvm-3 modules/scalatest/target/jvm-3 modules/weaver/target/jvm-3 modules/benchmarks/target/jvm-3 modules/cats/target/jvm-3 modules/munit/target/jvm-2.13 modules/cats/target/jvm-2.13 modules/core/target/jvm-2.13 modules/coretest/target/jvm-3 modules/coretest/target/jvm-2.13 project/target
-
-      - name: Upload target directories
-        uses: actions/upload-artifact@v3
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
-          path: targets.tar
-
   publish:
     name: Publish Artifacts
     needs: [build]
@@ -87,26 +78,6 @@ jobs:
           distribution: temurin
           java-version: 11
           cache: sbt
-
-      - name: Download target directories (2_13)
-        uses: actions/download-artifact@v3
-        with:
-          name: target-${{ matrix.os }}-2_13-${{ matrix.java }}
-
-      - name: Inflate target directories (2_13)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
-
-      - name: Download target directories (3_0)
-        uses: actions/download-artifact@v3
-        with:
-          name: target-${{ matrix.os }}-3_0-${{ matrix.java }}
-
-      - name: Inflate target directories (3_0)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
 
       - name: Setup ruby
         uses: ruby/setup-ruby@v1

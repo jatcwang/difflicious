@@ -250,6 +250,8 @@ ThisBuild / githubWorkflowScalaVersions := Seq("2_13", "3_0")
 
 ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
 
+ThisBuild / githubWorkflowArtifactUpload := false
+
 // Add makeMicrosite to the build step
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.map {
