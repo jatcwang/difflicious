@@ -8,16 +8,13 @@ val catsVersion = "2.9.0"
 val scalatestVersion = "3.2.16"
 val weaverVersion = "0.8.3"
 
-val scala213 = "2.13.11"
-val scala3 = "3.3.0"
-
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
   scalaVersion.value.startsWith("3")
 }
 
-val mainScalaVersion = scala213
-val jvmScalaVersions = Seq(scala213, scala3)
+val mainScalaVersion = Build.Scala213
+val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
 
 inThisBuild(
   List(
@@ -33,58 +30,15 @@ inThisBuild(
         url("https://almostfunctional.com"),
       ),
     ),
+    commands ++= Build.createBuildCommands(allModules),
   ),
 )
 
-lazy val allModules = List(core, coretest, munit, scalatest, weaver, cats, benchmarks, docs)
-
-// taken from tapir: https://github.com/softwaremill/tapir/blob/08628a89a751f8bace95f1b57288da1f7c0c9dce/build.sbt#L279
-val scopesDescription = "Scala version can be: 2.12, 2.13, 3; platform: JVM, JS, Native"
-val compileScoped =
-  inputKey[Unit](
-    s"Compiles sources in the given scope. Usage: compileScoped [scala version] [platform]. $scopesDescription",
-  )
-val testScoped =
-  inputKey[Unit](s"Run tests in the given scope. Usage: testScoped [scala version] [platform]. $scopesDescription")
-
-val publishLocalScoped =
-  inputKey[Unit](
-    s"Publish artifacts to local ivy repository in the given scope. Usage: publishLocalScoped [scala version] [platform]. $scopesDescription",
-  )
-
-def filterProject(p: String => Boolean) =
-  ScopeFilter(inProjects(allModules.flatMap(_.projectRefs).filter(pr => p(display(pr.project))): _*))
-
-def filterByVersionAndPlatform(scalaVersionFilter: String, platformFilter: String) = filterProject { projectName =>
-  val byPlatform =
-    if (platformFilter == "JVM") !projectName.contains("JS") && !projectName.contains("Native")
-    else projectName.contains(platformFilter)
-  val byVersion = scalaVersionFilter match {
-    case "2.13" => !projectName.contains("2_12") && !projectName.contains("3")
-    case "2.12" => projectName.contains("2_12")
-    case "3"    => projectName.contains("3")
-  }
-
-  byPlatform && byVersion
-}
+lazy val allModules = Seq(core, coretest, munit, scalatest, weaver, cats, benchmarks, docs).flatMap(_.projectRefs)
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(allModules.flatMap(_.projectRefs): _*)
+  .aggregate(allModules: _*)
   .settings(commonSettings, noPublishSettings)
-  .settings(
-    compileScoped := Def.inputTaskDyn {
-      val args = spaceDelimited("<arg>").parsed
-      Def.taskDyn((Test / compile).all(filterByVersionAndPlatform(args.head, args(1))))
-    }.evaluated,
-    testScoped := Def.inputTaskDyn {
-      val args = spaceDelimited("<arg>").parsed
-      Def.taskDyn((Test / test).all(filterByVersionAndPlatform(args.head, args(1))))
-    }.evaluated,
-    publishLocalScoped := Def.inputTaskDyn {
-      val args = spaceDelimited("<arg>").parsed
-      Def.taskDyn((Compile / publishLocal).all(filterByVersionAndPlatform(args.head, args(1))))
-    }.evaluated,
-  )
 
 lazy val core = projectMatrix
   .in(file("modules/core"))
@@ -99,7 +53,7 @@ lazy val core = projectMatrix
           } else
             Seq(
               "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0",
-              "org.scala-lang" % "scala-reflect" % scala213,
+              "org.scala-lang" % "scala-reflect" % Build.Scala213,
             )),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
@@ -227,7 +181,7 @@ lazy val docs: ProjectMatrix = projectMatrix
       (opts ++ extraOpts).filterNot(removes)
     },
   )
-  .jvmPlatform(Seq(scala213))
+  .jvmPlatform(Seq(Build.Scala213))
 
 lazy val benchmarks = projectMatrix
   .in(file("modules/benchmarks"))
@@ -286,15 +240,21 @@ val setupJekyllSteps = Seq(
   ),
 )
 
+ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm"))
+
 ThisBuild / githubWorkflowBuildPreamble ++= setupJekyllSteps
 
 ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
+
+ThisBuild / githubWorkflowScalaVersions := Seq("2_13", "3_0")
+
+ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
 
 // Add makeMicrosite to the build step
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.map {
     case w: WorkflowStep.Sbt if w.commands == List("test") =>
-      w.copy(commands = List("test", "makeMicrosite", "publishLocal"))
+      w.copy(commands = List("test", "makeMicrosite", "publishLocal").map(_ + "_${{ matrix.scala }}_${{ matrix.scalaPlatform }}"))
     case w => w
   }
 }
