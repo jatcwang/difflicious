@@ -59,7 +59,6 @@ object Build {
     val desiredCommands: Map[String, (String, Doublet => Boolean)] = Map(
       "test" -> ("test", any),
       "compile" -> ("compile", any),
-      "makeMicrosite" -> ("makeMicrosite", any),
       "publishLocal" -> ("publishLocal", any),
     )
 

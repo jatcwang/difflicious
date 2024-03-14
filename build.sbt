@@ -254,7 +254,9 @@ ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.map {
     case w: WorkflowStep.Sbt if w.commands == List("test") =>
-      w.copy(commands = List("test", "makeMicrosite", "publishLocal").map(_ + "_${{ matrix.scala }}_${{ matrix.scalaPlatform }}"))
+      w.copy(commands =
+        List("test", "publishLocal").map(_ + "_${{ matrix.scala }}_${{ matrix.scalaPlatform }}") :+ "makeMicrosite",
+      )
     case w => w
   }
 }
