@@ -53,7 +53,7 @@ jobs:
         run: sbt githubWorkflowCheck
 
       - name: Build project
-        run: sbt 'test_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' 'makeMicrosite_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' 'publishLocal_${{ matrix.scala }}_${{ matrix.scalaPlatform }}'
+        run: sbt 'test_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' 'publishLocal_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' makeMicrosite
 
       - name: Compress target directories
         run: tar cf targets.tar modules/weaver/target/jvm-2.13 modules/scalatest/target/jvm-2.13 modules/benchmarks/target/jvm-2.13 target docs/target/jvm-2.13 modules/core/target/jvm-3 modules/munit/target/jvm-3 modules/scalatest/target/jvm-3 modules/weaver/target/jvm-3 modules/benchmarks/target/jvm-3 modules/cats/target/jvm-3 modules/munit/target/jvm-2.13 modules/cats/target/jvm-2.13 modules/core/target/jvm-2.13 modules/coretest/target/jvm-3 modules/coretest/target/jvm-2.13 project/target
