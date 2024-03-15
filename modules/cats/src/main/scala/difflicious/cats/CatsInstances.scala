@@ -100,6 +100,22 @@ trait CatsInstances {
     )
   }
 
+  implicit def chainDiffer[A](
+    implicit aDiffer: Differ[A],
+    typeName: TypeName[Chain[A]],
+  ): SeqDiffer[Chain, A] = {
+    SeqDiffer.create(
+      itemDiffer = aDiffer,
+      typeName = typeName.copy(
+        long = "cats.data.Chain",
+        short = "Chain",
+      ),
+      asSeq = chainAsSeq,
+    )
+  }
+
+  implicit def validatedDiffer[E: Differ, A: Differ]: Differ[Validated[E, A]] = Differ.derived
+
 }
 
 object CatsInstances extends CatsInstances
