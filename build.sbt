@@ -1,22 +1,24 @@
+import sbt.internal.ProjectMatrix
 import sbtghactions.JavaSpec
+import complete.DefaultParsers._
+import sbt.Reference.display
 
 val munitVersion = "0.7.29"
 val catsVersion = "2.9.0"
 val scalatestVersion = "3.2.16"
 val weaverVersion = "0.8.3"
 
-val scala213 = "2.13.11"
-val scala3 = "3.3.0"
-
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
   scalaVersion.value.startsWith("3")
 }
 
+val mainScalaVersion = Build.Scala213
+val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
+
 inThisBuild(
   List(
-    scalaVersion := scala213,
-    crossScalaVersions := Seq(scala213, scala3),
+    scalaVersion := mainScalaVersion,
     organization := "com.github.jatcwang",
     homepage := Some(url("https://github.com/jatcwang/difflicious")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -28,16 +30,21 @@ inThisBuild(
         url("https://almostfunctional.com"),
       ),
     ),
+    commands ++= Build.createBuildCommands(allModules),
   ),
 )
 
+lazy val allModules = Seq(core, coretest, munit, scalatest, weaver, cats, benchmarks, docs).flatMap(_.projectRefs)
+
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(core, coretest, benchmarks, cats, docs, munit, scalatest, weaver)
+  .aggregate(allModules: _*)
   .settings(commonSettings, noPublishSettings)
 
-lazy val core = Project("difflicious-core", file("modules/core"))
+lazy val core = projectMatrix
+  .in(file("modules/core"))
   .settings(commonSettings)
   .settings(
+    name := "difflicious-core",
     libraryDependencies ++= Seq(
       "dev.zio" %% "izumi-reflect" % "2.3.8",
       "com.lihaoyi" %% "fansi" % "0.4.0",
@@ -46,7 +53,7 @@ lazy val core = Project("difflicious-core", file("modules/core"))
           } else
             Seq(
               "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0",
-              "org.scala-lang" % "scala-reflect" % scala213,
+              "org.scala-lang" % "scala-reflect" % Build.Scala213,
             )),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
@@ -54,38 +61,50 @@ lazy val core = Project("difflicious-core", file("modules/core"))
       Seq(file)
     }.taskValue,
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val munit = Project("difflicious-munit", file("modules/munit"))
+lazy val munit = projectMatrix
+  .in(file("modules/munit"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-munit",
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val scalatest = Project("difflicious-scalatest", file("modules/scalatest"))
+lazy val scalatest = projectMatrix
+  .in(file("modules/scalatest"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest-core" % scalatestVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val weaver = Project("difflicious-weaver", file("modules/weaver"))
+lazy val weaver = projectMatrix
+  .in(file("modules/weaver"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
+    name := "difflicious-weaver",
     libraryDependencies ++= Seq(
       "com.disneystreaming" %% "weaver-core" % weaverVersion,
     ),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val cats = Project("difflicious-cats", file("modules/cats"))
+lazy val cats = projectMatrix
+  .in(file("modules/cats"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
   .settings(
+    name := "difflicious-cats",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
     ),
@@ -93,11 +112,14 @@ lazy val cats = Project("difflicious-cats", file("modules/cats"))
       "org.typelevel" %% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val coretest = Project("coretest", file("modules/coretest"))
+lazy val coretest = projectMatrix
+  .in(file("modules/coretest"))
   .dependsOn(core)
   .settings(commonSettings, noPublishSettings)
   .settings(
+    name := "coretest",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
     ),
@@ -107,11 +129,13 @@ lazy val coretest = Project("coretest", file("modules/coretest"))
       "org.scalameta" %% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
+  .jvmPlatform(jvmScalaVersions)
 
-lazy val docs: Project = project
+lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, munit, scalatest, weaver)
   .enablePlugins(MicrositesPlugin)
   .settings(
+    name := "docs",
     commonSettings,
     publish / skip := true,
   )
@@ -157,12 +181,15 @@ lazy val docs: Project = project
       (opts ++ extraOpts).filterNot(removes)
     },
   )
+  .jvmPlatform(Seq(Build.Scala213))
 
-lazy val benchmarks = Project("benchmarks", file("modules/benchmarks"))
+lazy val benchmarks = projectMatrix
+  .in(file("modules/benchmarks"))
   .dependsOn(coretest)
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .jvmPlatform(jvmScalaVersions)
 
 lazy val commonSettings = Seq(
   scalacOptions --= {
@@ -213,15 +240,25 @@ val setupJekyllSteps = Seq(
   ),
 )
 
+ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm"))
+
 ThisBuild / githubWorkflowBuildPreamble ++= setupJekyllSteps
 
 ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
+
+ThisBuild / githubWorkflowScalaVersions := Seq("2_13", "3_0")
+
+ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
+
+ThisBuild / githubWorkflowArtifactUpload := false
 
 // Add makeMicrosite to the build step
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.map {
     case w: WorkflowStep.Sbt if w.commands == List("test") =>
-      w.copy(commands = List("test", "makeMicrosite", "publishLocal"))
+      w.copy(commands =
+        List("test", "publishLocal").map(_ + "_${{ matrix.scala }}_${{ matrix.scalaPlatform }}") :+ "makeMicrosite",
+      )
     case w => w
   }
 }
