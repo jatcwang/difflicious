@@ -15,7 +15,7 @@ val isScala3 = Def.setting {
 
 val mainScalaVersion = Build.Scala213
 val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
-val jsScalaVersions  = Seq(Build.Scala213, Build.Scala3)
+val jsScalaVersions = Seq(Build.Scala213, Build.Scala3)
 
 inThisBuild(
   List(
@@ -47,8 +47,8 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "2.3.8",
-      "com.lihaoyi" %% "fansi" % "0.4.0",
+      "dev.zio" %%% "izumi-reflect" % "2.3.8",
+      "com.lihaoyi" %%% "fansi" % "0.4.0",
     ) ++ (if (isScala3.value) {
             Seq("com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0")
           } else
@@ -63,7 +63,7 @@ lazy val core = projectMatrix
     }.taskValue,
   )
   .jvmPlatform(jvmScalaVersions)
-  .jsPlatform(jsScalaVersions)
+  .jsPlatform(jsScalaVersions, libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.5.0")
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
