@@ -81,7 +81,7 @@ object MyTest extends SimpleIOSuite {
 Differ instances for cats data structures like `NonEmptyList` and `Chain` can be found in
 
 ```
-"com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-cats" % "{{ site.version }}" % Test
 ```
 
 ```scala mdoc:nest
