@@ -15,6 +15,7 @@ val isScala3 = Def.setting {
 
 val mainScalaVersion = Build.Scala213
 val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
+val jsScalaVersions = Seq(Build.Scala213, Build.Scala3)
 
 inThisBuild(
   List(
@@ -46,14 +47,14 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "2.3.8",
-      "com.lihaoyi" %% "fansi" % "0.4.0",
+      "dev.zio" %%% "izumi-reflect" % "2.3.8",
+      "com.lihaoyi" %%% "fansi" % "0.4.0",
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0")
+            Seq("com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0")
           } else
             Seq(
-              "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0",
-              "org.scala-lang" % "scala-reflect" % Build.Scala213,
+              "com.softwaremill.magnolia1_2" %%% "magnolia" % "1.0.0",
+              "org.scala-lang" % "scala-reflect" % Build.Scala213 % Provided,
             )),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
@@ -62,6 +63,7 @@ lazy val core = projectMatrix
     }.taskValue,
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions, libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.5.0")
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
@@ -70,10 +72,11 @@ lazy val munit = projectMatrix
   .settings(
     name := "difflicious-munit",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %%% "munit" % munitVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val scalatest = projectMatrix
   .in(file("modules/scalatest"))
@@ -82,10 +85,11 @@ lazy val scalatest = projectMatrix
   .settings(
     name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest-core" % scalatestVersion,
+      "org.scalatest" %%% "scalatest-core" % scalatestVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val weaver = projectMatrix
   .in(file("modules/weaver"))
@@ -94,10 +98,11 @@ lazy val weaver = projectMatrix
   .settings(
     name := "difflicious-weaver",
     libraryDependencies ++= Seq(
-      "com.disneystreaming" %% "weaver-core" % weaverVersion,
+      "com.disneystreaming" %%% "weaver-core" % weaverVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val cats = projectMatrix
   .in(file("modules/cats"))
@@ -106,13 +111,14 @@ lazy val cats = projectMatrix
   .settings(
     name := "difflicious-cats",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %%% "cats-core" % catsVersion,
     ),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-laws" % catsVersion,
+      "org.typelevel" %%% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val coretest = projectMatrix
   .in(file("modules/coretest"))
@@ -121,15 +127,16 @@ lazy val coretest = projectMatrix
   .settings(
     name := "coretest",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %%% "cats-core" % catsVersion,
     ),
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
-      "org.scalameta" %% "munit-scalacheck" % munitVersion,
+      "org.scalameta" %%% "munit" % munitVersion,
+      "org.scalameta" %%% "munit-scalacheck" % munitVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, munit, scalatest, weaver)
@@ -141,8 +148,8 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
+      "org.scalatest" %%% "scalatest" % scalatestVersion,
+      "com.disneystreaming" %%% "weaver-cats" % weaverVersion,
     ),
     makeMicrosite := Def.taskDyn {
       val orig = (ThisProject / makeMicrosite).taskValue
@@ -240,7 +247,7 @@ val setupJekyllSteps = Seq(
   ),
 )
 
-ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm"))
+ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm", "js"))
 
 ThisBuild / githubWorkflowBuildPreamble ++= setupJekyllSteps
 
