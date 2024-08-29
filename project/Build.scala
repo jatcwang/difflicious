@@ -9,8 +9,8 @@ import sbtprojectmatrix.ProjectMatrixPlugin.autoImport.virtualAxes
 
 object Build {
 
-  val Scala213 = "2.13.11"
-  val Scala3 = "3.3.0"
+  val Scala213 = "2.13.14"
+  val Scala3 = "3.3.3"
 
   // copied from: https://github.com/disneystreaming/smithy4s/blob/21a6fb04ab3485c0a4b40fe205a628c6f4750813/project/Smithy4sBuildPlugin.scala#L508
   def createBuildCommands(projects: Seq[ProjectReference]) = {

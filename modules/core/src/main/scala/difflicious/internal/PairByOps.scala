@@ -5,8 +5,6 @@ import difflicious.{ConfigurePath, Differ}
 import difflicious.ConfigureOp.PairBy
 import difflicious.internal.EitherGetSyntax.EitherExtensionOps
 
-import scala.annotation.nowarn
-
 // pairBy has to be defined differently for better type inference.
 final class PairByOps[F[_], A](differ: Differ[F[A]]) {
   def pairBy[B](f: A => B): Differ[F[A]] =
@@ -17,6 +15,5 @@ final class PairByOps[F[_], A](differ: Differ[F[A]]) {
 }
 
 trait ToPairByOps {
-  @nowarn("msg=.*never used.*")
   implicit def toPairByOps[F[_]: Pairable, A](differ: Differ[F[A]]): PairByOps[F, A] = new PairByOps(differ)
 }

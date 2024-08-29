@@ -3,10 +3,11 @@ import sbtghactions.JavaSpec
 import complete.DefaultParsers._
 import sbt.Reference.display
 
-val munitVersion = "0.7.29"
-val catsVersion = "2.9.0"
-val scalatestVersion = "3.2.16"
-val weaverVersion = "0.8.3"
+val munitVersion = "0.7.29" // Upgrading to 1.0.1 seems to break Scala 3 DifferAutoDerivationSpec.scala..
+val munitScalacheckVersion = "0.7.29"
+val catsVersion = "2.12.0"
+val scalatestVersion = "3.2.19"
+val weaverVersion = "0.8.4"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -46,13 +47,13 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "2.3.8",
-      "com.lihaoyi" %% "fansi" % "0.4.0",
+      "dev.zio" %% "izumi-reflect" % "2.3.10",
+      "com.lihaoyi" %% "fansi" % "0.5.0",
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0")
+            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.7")
           } else
             Seq(
-              "com.softwaremill.magnolia1_2" %% "magnolia" % "1.0.0",
+              "com.softwaremill.magnolia1_2" %% "magnolia" % "1.1.10",
               "org.scala-lang" % "scala-reflect" % Build.Scala213,
             )),
     Compile / sourceGenerators += Def.task {
@@ -126,7 +127,7 @@ lazy val coretest = projectMatrix
     // Test deps
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion,
-      "org.scalameta" %% "munit-scalacheck" % munitVersion,
+      "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(jvmScalaVersions)
@@ -202,7 +203,7 @@ lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
   scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => isScala3.value),
 )
@@ -232,10 +233,10 @@ val setupJekyllSteps = Seq(
   WorkflowStep.Use(
     UseRef.Public("ruby", "setup-ruby", "v1"),
     name = Some("Setup ruby"),
-    params = Map("ruby-version" -> "2.7"),
+    params = Map("ruby-version" -> "3.3"),
   ),
   WorkflowStep.Run(
-    List("gem install jekyll -v 4.1.1"),
+    List("gem install jekyll -v 4.3.3"),
     name = Some("Install Jekyll (to build microsite)"),
   ),
 )
