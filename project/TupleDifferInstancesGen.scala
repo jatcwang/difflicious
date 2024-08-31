@@ -9,18 +9,18 @@ object TupleDifferInstancesGen {
         s"""
          |implicit def tuple$tupleSize[$typeList](
          |  implicit ${(1 to tupleSize)
-             .map { t =>
-               s"a${t}Diff: Differ[A$t]"
-             }
-             .mkString(",\n  ")},
+          .map { t =>
+            s"a${t}Diff: Differ[A$t]"
+          }
+          .mkString(",\n  ")},
          |  typeName: TypeName[${typeName}]
          |): RecordDiffer[$typeName] = new RecordDiffer[$typeName](
          |  ListMap(
          |    ${(1 to tupleSize)
-             .map { t =>
-               s""""_$t" -> Tuple2(_._$t, a${t}Diff.asInstanceOf[Differ[Any]])"""
-             }
-             .mkString(",\n    ")}
+          .map { t =>
+            s""""_$t" -> Tuple2(_._$t, a${t}Diff.asInstanceOf[Differ[Any]])"""
+          }
+          .mkString(",\n    ")}
          |  ),
          |  isIgnored = false,
          |  typeName = typeName,
@@ -45,7 +45,6 @@ object TupleDifferInstancesGen {
       |}
       |// $$COVERAGE-ON$$
       |""".stripMargin
-
 
   }
 }

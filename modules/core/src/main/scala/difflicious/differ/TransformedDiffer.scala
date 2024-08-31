@@ -2,9 +2,8 @@ package difflicious.differ
 
 import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult}
 
-/**
-  * A Differ that transforms any input of diff method and pass it to its underlying Differ.
-  * See [[ValueDiffer.contramap]]
+/** A Differ that transforms any input of diff method and pass it to its underlying Differ. See
+  * [[ValueDiffer.contramap]]
   */
 class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T => U) extends ValueDiffer[T] {
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = underlyingDiffer.diff(inputs.map(transformFunc))

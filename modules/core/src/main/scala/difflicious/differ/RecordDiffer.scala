@@ -4,8 +4,7 @@ import scala.collection.immutable.ListMap
 import difflicious._
 import difflicious.utils.TypeName.SomeTypeName
 
-/**
-  * A differ for a record-like data structure such as tuple or case classes.
+/** A differ for a record-like data structure such as tuple or case classes.
   */
 final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
@@ -17,11 +16,10 @@ final class RecordDiffer[T](
   override def diff(inputs: DiffInput[T]): R = inputs match {
     case DiffInput.Both(obtained, expected) => {
       val diffResults = fieldDiffers
-        .map {
-          case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(getter(obtained), getter(expected))
+        .map { case (fieldName, (getter, differ)) =>
+          val diffResult = differ.diff(getter(obtained), getter(expected))
 
-            fieldName -> diffResult
+          fieldName -> diffResult
         }
         .to(ListMap)
       DiffResult
@@ -35,11 +33,10 @@ final class RecordDiffer[T](
     }
     case DiffInput.ObtainedOnly(value) => {
       val diffResults = fieldDiffers
-        .map {
-          case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(DiffInput.ObtainedOnly(getter(value)))
+        .map { case (fieldName, (getter, differ)) =>
+          val diffResult = differ.diff(DiffInput.ObtainedOnly(getter(value)))
 
-            fieldName -> diffResult
+          fieldName -> diffResult
         }
         .to(ListMap)
       DiffResult
@@ -53,11 +50,10 @@ final class RecordDiffer[T](
     }
     case DiffInput.ExpectedOnly(expected) => {
       val diffResults = fieldDiffers
-        .map {
-          case (fieldName, (getter, differ)) =>
-            val diffResult = differ.diff(DiffInput.ExpectedOnly(getter(expected)))
+        .map { case (fieldName, (getter, differ)) =>
+          val diffResult = differ.diff(DiffInput.ExpectedOnly(getter(expected)))
 
-            fieldName -> diffResult
+          fieldName -> diffResult
         }
         .to(ListMap)
       DiffResult
@@ -82,15 +78,14 @@ final class RecordDiffer[T](
     fieldDiffers
       .get(step)
       .toRight(ConfigureError.NonExistentField(nextPath, "RecordDiffer"))
-      .flatMap {
-        case (getter, fieldDiffer) =>
-          fieldDiffer.configureRaw(nextPath, op).map { newFieldDiffer =>
-            new RecordDiffer[T](
-              fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
-              isIgnored = isIgnored,
-              typeName = typeName,
-            )
-          }
+      .flatMap { case (getter, fieldDiffer) =>
+        fieldDiffer.configureRaw(nextPath, op).map { newFieldDiffer =>
+          new RecordDiffer[T](
+            fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
+            isIgnored = isIgnored,
+            typeName = typeName,
+          )
+        }
       }
   override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "RecordDiffer"))

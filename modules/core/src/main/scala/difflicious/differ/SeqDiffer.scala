@@ -160,17 +160,16 @@ object SeqDiffer {
     var allIsOk = true
     obtained.foreach { a =>
       val aMatchVal = func(a)
-      val found = expWithIdx.find {
-        case (e, idx) =>
-          if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
-            val res = itemDiffer.diff(a, e)
-            results += res
-            matchedIndexes += idx
-            allIsOk &= res.isOk
-            true
-          } else {
-            false
-          }
+      val found = expWithIdx.find { case (e, idx) =>
+        if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
+          val res = itemDiffer.diff(a, e)
+          results += res
+          matchedIndexes += idx
+          allIsOk &= res.isOk
+          true
+        } else {
+          false
+        }
       }
 
       if (found.isEmpty) {
@@ -179,12 +178,11 @@ object SeqDiffer {
       }
     }
 
-    expWithIdx.foreach {
-      case (e, idx) =>
-        if (!matchedIndexes.contains(idx)) {
-          results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
-          allIsOk = false
-        }
+    expWithIdx.foreach { case (e, idx) =>
+      if (!matchedIndexes.contains(idx)) {
+        results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
+        allIsOk = false
+      }
     }
 
     (results.toVector, allIsOk)
