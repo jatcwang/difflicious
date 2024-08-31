@@ -3,8 +3,8 @@ import sbtghactions.JavaSpec
 import complete.DefaultParsers._
 import sbt.Reference.display
 
-val munitVersion = "0.7.29" // Upgrading to 1.0.1 seems to break Scala 3 DifferAutoDerivationSpec.scala..
-val munitScalacheckVersion = "0.7.29"
+val munitVersion = "1.0.1"
+val munitScalacheckVersion = "1.0.0"
 val catsVersion = "2.12.0"
 val scalatestVersion = "3.2.19"
 val weaverVersion = "0.8.4"
