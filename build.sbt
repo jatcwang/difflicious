@@ -2,6 +2,7 @@ import sbt.internal.ProjectMatrix
 import sbtghactions.JavaSpec
 import complete.DefaultParsers._
 import sbt.Reference.display
+import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 
 val munitVersion = "1.0.1"
 val munitScalacheckVersion = "1.0.0"
@@ -32,6 +33,7 @@ inThisBuild(
       ),
     ),
     commands ++= Build.createBuildCommands(allModules),
+    tpolecatDefaultOptionsMode := (if (sys.env.contains("CI")) CiMode else DevMode),
   ),
 )
 
@@ -178,7 +180,7 @@ lazy val docs: ProjectMatrix = projectMatrix
           "-Wconf:msg=\".*method get in class RightProjection.*\":s",
           "-Wconf:msg=\".*local (object|class).+?is never used\":s",
         )
-      val removes = Set("-Wdead-code", "-Ywarn-dead-code") // we use ??? in various places
+      val removes = Set("-Wdead-code", "-Ywarn-dead-code", "-Wnonunit-statement") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)
     },
   )
@@ -193,15 +195,21 @@ lazy val benchmarks = projectMatrix
   .jvmPlatform(jvmScalaVersions)
 
 lazy val commonSettings = Seq(
-  scalacOptions --= {
-    if (sys.env.get("CI").isDefined && !isScala3.value) { // TODO: Reenable Scala 3 fatal warnings once nowarn is supported
-      Seq.empty
-    } else {
-      Seq("-Xfatal-warnings")
-    }
-  },
   versionScheme := Some("early-semver"),
   scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
+  // TODO: Not sure why but having these scalac options seems to crash the compiler complaining about
+  // magnoalia class files having duplicate top level definitions..
+  // Maybe related to https://github.com/scala/scala3/issues/18674
+  scalacOptions --= (if (isScala3.value)
+                       Seq(
+                         "-Wunused:implicits",
+                         "-Wunused:explicits",
+                         "-Wunused:imports",
+                         "-Wunused:locals",
+                         "-Wunused:params",
+                         "-Wunused:privates",
+                       )
+                     else Seq.empty),
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),

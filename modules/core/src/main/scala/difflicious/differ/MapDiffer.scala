@@ -49,7 +49,6 @@ class MapDiffer[M[_, _], K, V](
             )
           }
       }
-      (obtainedOnly ++ both ++ expectedOnly).toVector
       MapResult(
         typeName = typeName,
         (obtainedOnly ++ both ++ expectedOnly).toVector,

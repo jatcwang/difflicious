@@ -69,7 +69,7 @@ trait DifferGen {
 
     override def configureIgnored(newIgnored: Boolean): Typeclass[T] = {
       val newSubTypes = mutable.ArrayBuffer.empty[Subtype[Differ, T]]
-      ctx.subtypes.map { sub =>
+      ctx.subtypes.foreach { sub =>
         newSubTypes += Subtype(
           name = sub.typeName,
           idx = sub.index,

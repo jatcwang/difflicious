@@ -1,7 +1,6 @@
 package difflicious.internal
 import difflicious.{ConfigurePath, Differ, ConfigureOp}
 
-import scala.annotation.nowarn
 import scala.quoted.*
 import scala.annotation.tailrec
 import difflicious.internal.ConfigureMethodImpls.*
