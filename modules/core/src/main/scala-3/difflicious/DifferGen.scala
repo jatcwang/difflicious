@@ -3,7 +3,6 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.utils.TypeName
 import difflicious.utils.TypeName.SomeTypeName
-import difflicious.DiffResult
 import difflicious.internal.EitherGetSyntax._
 
 import scala.collection.immutable.ListMap
@@ -52,7 +51,7 @@ trait DifferGen extends Derivation[Differ]:
 
     override def configureIgnored(newIgnored: Boolean): Differ[T] =
       val newSubtypes = mutable.ArrayBuffer.empty[SealedTrait.Subtype[Differ, T, Any]]
-      ctx.subtypes.map { sub =>
+      ctx.subtypes.foreach { sub =>
         newSubtypes += SealedTrait.Subtype[Differ, T, Any](
           typeInfo = sub.typeInfo,
           annotations = sub.annotations,

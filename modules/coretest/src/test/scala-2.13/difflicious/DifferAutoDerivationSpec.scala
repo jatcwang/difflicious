@@ -12,15 +12,9 @@ class DifferAutoDerivationSpec extends FunSuite {
 
         Differ[P1].diff(P1("a"), P1("b"))
         """)
-    assertNoDiff(
-      result,
-      """error:
-implicit error;
-!I differ: difflicious.Differ[P1]
-        Differ[P1].diff(P1("a"), P1("b"))
-              ^""",
-    )
+    assert(result.contains("could not find implicit"))
   }
+  
   test("should find auto derived instance for product") {
     val result = compileErrors("""
         import difflicious._
