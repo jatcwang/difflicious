@@ -3,7 +3,7 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType, PairingFn}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType, PairingFunction}
 import SeqDiffer.diffPairByFunc
 import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
@@ -51,7 +51,7 @@ final class SeqDiffer[F[_], A](
           )
         }
         case PairBy.ByFunc(func) => {
-          val (results, allIsOk) = diffPairByFunc(actual, expected, PairingFn.lift(func), itemDiffer)
+          val (results, allIsOk) = diffPairByFunc(actual, expected, PairingFunction.lift(func), itemDiffer)
           ListResult(
             typeName = typeName,
             items = results,
@@ -158,10 +158,10 @@ object SeqDiffer {
   // (where "matching" means ==). For example we might want to items by
   // person name.
   private[difflicious] def diffPairByFunc[A, B](
-    obtained: Seq[A],
-    expected: Seq[A],
-    func: PairingFn[A, B],
-    itemDiffer: Differ[A],
+                                                 obtained: Seq[A],
+                                                 expected: Seq[A],
+                                                 func: PairingFunction[A, B],
+                                                 itemDiffer: Differ[A],
   ): (Vector[DiffResult], Boolean) = {
     val matchedIndexes = mutable.BitSet.empty
     val results = mutable.ArrayBuffer.empty[DiffResult]
@@ -169,8 +169,8 @@ object SeqDiffer {
     var allIsOk = true
     obtained.foreach { a =>
       val found = expWithIdx.find { case (e, idx) =>
-        if (!matchedIndexes.contains(idx) && func.matching(a, e)(itemDiffer)) {
-          val res = itemDiffer.diff(a, e)
+        val res = itemDiffer.diff(a, e)
+        if (!matchedIndexes.contains(idx) && func.matching(a, e)(res)) {
           results += res
           matchedIndexes += idx
           allIsOk &= res.isOk

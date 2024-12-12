@@ -6,12 +6,12 @@ import difflicious.differ.SeqDiffer.diffPairByFunc
 import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
 import difflicious.utils.SetLike
-import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, Differ, PairType, PairingFn}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, Differ, PairType, PairingFunction}
 
 final class SetDiffer[F[_], A](
   isIgnored: Boolean,
   itemDiffer: Differ[A],
-  matchFunc: PairingFn[A, Any],
+  matchFunc: PairingFunction[A, Any],
   typeName: SomeTypeName,
   asSet: SetLike[F],
 ) extends Differ[F[A]] {
@@ -89,7 +89,7 @@ final class SetDiffer[F[_], A](
           new SetDiffer[F, A](
             isIgnored = isIgnored,
             itemDiffer = itemDiffer,
-            matchFunc = PairingFn.lift(m.func.asInstanceOf[A => Any]),
+            matchFunc = PairingFunction.lift(m.func.asInstanceOf[A => Any]),
             typeName = typeName,
             asSet = asSet,
           ),
@@ -105,7 +105,7 @@ object SetDiffer {
   ): SetDiffer[F, A] = new SetDiffer[F, A](
     isIgnored = false,
     itemDiffer,
-    matchFunc = PairingFn.approximate(threshold = 1).asInstanceOf[PairingFn[A, Any]],
+    matchFunc = PairingFunction.approximate(threshold = 1).asInstanceOf[PairingFunction[A, Any]],
     typeName = typeName,
     asSet = asSet,
   )
