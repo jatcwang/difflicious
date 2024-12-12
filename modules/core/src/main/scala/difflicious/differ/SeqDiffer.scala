@@ -3,7 +3,7 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType, PairingFn}
 import SeqDiffer.diffPairByFunc
 import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
@@ -51,7 +51,7 @@ final class SeqDiffer[F[_], A](
           )
         }
         case PairBy.ByFunc(func) => {
-          val (results, allIsOk) = diffPairByFunc(actual, expected, func, itemDiffer)
+          val (results, allIsOk) = diffPairByFunc(actual, expected, PairingFn.lift(func), itemDiffer)
           ListResult(
             typeName = typeName,
             items = results,
@@ -157,10 +157,10 @@ object SeqDiffer {
   // Given two lists of item, find "matching" items using te provided function
   // (where "matching" means ==). For example we might want to items by
   // person name.
-  private[difflicious] def diffPairByFunc[A](
+  private[difflicious] def diffPairByFunc[A, B](
     obtained: Seq[A],
     expected: Seq[A],
-    func: A => Any,
+    func: PairingFn[A, B],
     itemDiffer: Differ[A],
   ): (Vector[DiffResult], Boolean) = {
     val matchedIndexes = mutable.BitSet.empty
@@ -168,18 +168,16 @@ object SeqDiffer {
     val expWithIdx = expected.zipWithIndex
     var allIsOk = true
     obtained.foreach { a =>
-      val aMatchVal = func(a)
-      val found = expWithIdx.find {
-        case (e, idx) =>
-          if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
-            val res = itemDiffer.diff(a, e)
-            results += res
-            matchedIndexes += idx
-            allIsOk &= res.isOk
-            true
-          } else {
-            false
-          }
+      val found = expWithIdx.find { case (e, idx) =>
+        if (!matchedIndexes.contains(idx) && func.matching(a, e)(itemDiffer)) {
+          val res = itemDiffer.diff(a, e)
+          results += res
+          matchedIndexes += idx
+          allIsOk &= res.isOk
+          true
+        } else {
+          false
+        }
       }
 
       if (found.isEmpty) {
@@ -188,12 +186,11 @@ object SeqDiffer {
       }
     }
 
-    expWithIdx.foreach {
-      case (e, idx) =>
-        if (!matchedIndexes.contains(idx)) {
-          results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
-          allIsOk = false
-        }
+    expWithIdx.foreach { case (e, idx) =>
+      if (!matchedIndexes.contains(idx)) {
+        results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
+        allIsOk = false
+      }
     }
 
     (results.toVector, allIsOk)
