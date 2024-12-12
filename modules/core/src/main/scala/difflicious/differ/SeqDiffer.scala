@@ -3,8 +3,9 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType}
 import SeqDiffer.diffPairByFunc
+import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
 
 import scala.collection.mutable
@@ -45,6 +46,8 @@ final class SeqDiffer[F[_], A](
             pairType = PairType.Both,
             isIgnored = isIgnored,
             isOk = isIgnored || diffResults.forall(_.isOk),
+            differenceCount = diffResults.differenceCount,
+            ignoredCount = diffResults.ignoredCount,
           )
         }
         case PairBy.ByFunc(func) => {
@@ -55,6 +58,8 @@ final class SeqDiffer[F[_], A](
             pairType = PairType.Both,
             isIgnored = isIgnored,
             isOk = isIgnored || allIsOk,
+            differenceCount = results.differenceCount,
+            ignoredCount = results.ignoredCount,
           )
         }
       }
@@ -68,6 +73,8 @@ final class SeqDiffer[F[_], A](
         pairType = PairType.ObtainedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = actual.size,
+        ignoredCount = if (isIgnored) actual.size else 0,
       )
     case DiffInput.ExpectedOnly(expected) =>
       ListResult(
@@ -78,6 +85,8 @@ final class SeqDiffer[F[_], A](
         pairType = PairType.ExpectedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = expected.size,
+        ignoredCount = if (isIgnored) expected.size else 0,
       )
   }
 
