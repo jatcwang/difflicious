@@ -3,7 +3,16 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType, PairingFunction}
+import difflicious.{
+  ConfigureError,
+  ConfigureOp,
+  ConfigurePath,
+  DiffInput,
+  DiffResult,
+  Differ,
+  PairType,
+  PairingFunction,
+}
 import SeqDiffer.diffPairByFunc
 import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
@@ -158,10 +167,10 @@ object SeqDiffer {
   // (where "matching" means ==). For example we might want to items by
   // person name.
   private[difflicious] def diffPairByFunc[A, B](
-                                                 obtained: Seq[A],
-                                                 expected: Seq[A],
-                                                 func: PairingFunction[A, B],
-                                                 itemDiffer: Differ[A],
+    obtained: Seq[A],
+    expected: Seq[A],
+    func: PairingFunction[A, B],
+    itemDiffer: Differ[A],
   ): (Vector[DiffResult], Boolean) = {
     val matchedIndexes = mutable.BitSet.empty
     val results = mutable.ArrayBuffer.empty[DiffResult]
