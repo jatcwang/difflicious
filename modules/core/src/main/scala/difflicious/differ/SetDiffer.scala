@@ -105,7 +105,7 @@ object SetDiffer {
   ): SetDiffer[F, A] = new SetDiffer[F, A](
     isIgnored = false,
     itemDiffer,
-    matchFunc = PairingFunction.approximate(threshold = 1).asInstanceOf[PairingFunction[A, Any]],
+    matchFunc = PairingFunction.approximative(threshold = 1).asInstanceOf[PairingFunction[A, Any]],
     typeName = typeName,
     asSet = asSet,
   )

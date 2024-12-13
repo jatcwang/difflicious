@@ -14,6 +14,7 @@ import difflicious.{
   PairingFunction,
 }
 import SeqDiffer.diffPairByFunc
+import difflicious.PairingFunction.{Approximative, Custom}
 import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
 
@@ -178,14 +179,23 @@ object SeqDiffer {
     var allIsOk = true
     obtained.foreach { a =>
       val found = expWithIdx.find { case (e, idx) =>
-        val res = itemDiffer.diff(a, e)
-        if (!matchedIndexes.contains(idx) && func.matching(a, e)(res)) {
-          results += res
+        def pushResult(res: => itemDiffer.R): Boolean = {
+          val memoizedRes = res
+          results += memoizedRes
           matchedIndexes += idx
-          allIsOk &= res.isOk
+          allIsOk &= memoizedRes.isOk
+
           true
-        } else {
-          false
+        }
+
+        func match {
+          case fn: PairingFunction.UsingEquals[_, _] =>
+            !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
+          case fn: Approximative[A] =>
+            val diffRes = itemDiffer.diff(a, e)
+            !matchedIndexes.contains(idx) && fn.matching(a, e)(diffRes) && pushResult(diffRes)
+          case fn: Custom[A, B] =>
+            !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
         }
       }
 
