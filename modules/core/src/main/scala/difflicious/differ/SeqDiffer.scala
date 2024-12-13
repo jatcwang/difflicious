@@ -193,7 +193,7 @@ object SeqDiffer {
             !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
           case fn: Approximative[A] =>
             val diffRes = itemDiffer.diff(a, e)
-            !matchedIndexes.contains(idx) && fn.matching(a, e)(diffRes) && pushResult(diffRes)
+            !matchedIndexes.contains(idx) && fn.matching(diffRes) && pushResult(diffRes)
           case fn: Custom[A, B] =>
             !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
         }

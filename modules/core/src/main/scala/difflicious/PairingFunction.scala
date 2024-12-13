@@ -17,7 +17,7 @@ object PairingFunction {
   }
 
   case class Approximative[A](differenceCountThreshold: Int) extends DifferBased[A, A] {
-    def matching(a1: A, a2: A)(diffResult: Differ[A]#R): Boolean =
+    def matching(diffResult: Differ[A]#R): Boolean =
       diffResult.differenceCount - diffResult.ignoredCount <= differenceCountThreshold
 
   }
