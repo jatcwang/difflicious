@@ -41,19 +41,14 @@ jobs:
           java-version: 11
           cache: sbt
 
-      - name: Setup ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.3
-
-      - name: Install Jekyll (to build microsite)
-        run: gem install jekyll -v 4.3.3
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
 
       - name: Check that workflows are up to date
         run: sbt githubWorkflowCheck
 
       - name: Build project
-        run: sbt 'test_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' 'publishLocal_${{ matrix.scala }}_${{ matrix.scalaPlatform }}' makeMicrosite
+        run: sbt test
 
   publish:
     name: Publish Artifacts
@@ -62,7 +57,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.15]
+        scala: [2.13.16]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -79,17 +74,12 @@ jobs:
           java-version: 11
           cache: sbt
 
-      - name: Setup ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.3
-
-      - name: Install Jekyll (to build microsite)
-        run: gem install jekyll -v 4.3.3
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
 
       - env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ci-release publishMicrosite
+        run: sbt ci-release
