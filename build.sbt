@@ -4,9 +4,9 @@ import complete.DefaultParsers._
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 
-val munitVersion = "1.0.4"
-val munitScalacheckVersion = "1.0.0"
-val catsVersion = "2.12.0"
+val munitVersion = "1.1.0"
+val munitScalacheckVersion = "1.1.0"
+val catsVersion = "2.13.0"
 val scalatestVersion = "3.2.19"
 val weaverVersion = "0.8.4"
 
@@ -52,7 +52,7 @@ lazy val core = projectMatrix
       "dev.zio" %% "izumi-reflect" % "2.3.10",
       "com.lihaoyi" %% "fansi" % "0.5.0",
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.8")
+            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.9")
           } else
             Seq(
               "com.softwaremill.magnolia1_2" %% "magnolia" % "1.1.10",
@@ -136,7 +136,7 @@ lazy val coretest = projectMatrix
 
 lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, munit, scalatest, weaver)
-  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(MdocPlugin)
   .settings(
     name := "docs",
     commonSettings,
@@ -147,26 +147,10 @@ lazy val docs: ProjectMatrix = projectMatrix
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "com.disneystreaming" %% "weaver-cats" % weaverVersion,
     ),
-    makeMicrosite := Def.taskDyn {
-      val orig = (ThisProject / makeMicrosite).taskValue
-      if (isScala3.value) Def.task({})
-      else Def.task(orig.value)
-    }.value,
   )
   .settings(
     mdocIn := file("docs/docs"),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
-    micrositeName := "Difflicious",
-    micrositeDescription := "Diffs for human consumption",
-    micrositeUrl := "https://jatcwang.github.io",
-    micrositeBaseUrl := "/difflicious",
-    micrositeDocumentationUrl := s"${micrositeBaseUrl.value}/docs/introduction",
-    micrositeAuthor := "Jacob Wang",
-    micrositeGithubOwner := "jatcwang",
-    micrositeGithubRepo := "difflicious",
-    micrositeHighlightTheme := "a11y-light",
-    micrositePushSiteWith := GitHub4s,
-    micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
   )
   .settings(
     // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
@@ -227,7 +211,7 @@ ThisBuild / githubWorkflowPublishTargetBranches :=
 
 ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Sbt(
-    List("ci-release", "publishMicrosite"),
+    List("ci-release"),
     env = Map(
       "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
       "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
@@ -237,23 +221,7 @@ ThisBuild / githubWorkflowPublish := Seq(
   ),
 )
 
-val setupJekyllSteps = Seq(
-  WorkflowStep.Use(
-    UseRef.Public("ruby", "setup-ruby", "v1"),
-    name = Some("Setup ruby"),
-    params = Map("ruby-version" -> "3.3"),
-  ),
-  WorkflowStep.Run(
-    List("gem install jekyll -v 4.3.3"),
-    name = Some("Install Jekyll (to build microsite)"),
-  ),
-)
-
 ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm"))
-
-ThisBuild / githubWorkflowBuildPreamble ++= setupJekyllSteps
-
-ThisBuild / githubWorkflowPublishPreamble ++= setupJekyllSteps
 
 ThisBuild / githubWorkflowScalaVersions := Seq("2_13", "3_0")
 
@@ -261,16 +229,6 @@ ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
 
 ThisBuild / githubWorkflowArtifactUpload := false
 
-// Add makeMicrosite to the build step
-ThisBuild / githubWorkflowBuild ~= { steps =>
-  steps.map {
-    case w: WorkflowStep.Sbt if w.commands == List("test") =>
-      w.copy(commands =
-        List("test", "publishLocal").map(_ + "_${{ matrix.scala }}_${{ matrix.scalaPlatform }}") :+ "makeMicrosite",
-      )
-    case w => w
-  }
-}
 // Filter out MacOS and Windows cache steps to make yaml less noisy
 ThisBuild / githubWorkflowGeneratedCacheSteps ~= { currentSteps =>
   currentSteps.filterNot(wf => wf.cond.exists(str => str.contains("macos") || str.contains("windows")))
