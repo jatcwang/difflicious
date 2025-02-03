@@ -4,7 +4,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.4")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.3.0")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.24.0")
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.6.2") // override mdoc version from microsite
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.6.3") // override mdoc version from microsite
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.10.1")
 // addSbtPlugin("com.47deg" % "sbt-microsites" % "1.4.4")
 
