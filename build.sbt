@@ -52,7 +52,7 @@ lazy val core = projectMatrix
       "dev.zio" %% "izumi-reflect" % "3.0.1",
       "com.lihaoyi" %% "fansi" % "0.5.0",
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.9")
+            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.11")
           } else
             Seq(
               "com.softwaremill.magnolia1_2" %% "magnolia" % "1.1.10",
