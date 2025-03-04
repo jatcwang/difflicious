@@ -3,14 +3,15 @@ package difflicious.differ
 import difflicious.ConfigureOp.PairBy
 import difflicious.DiffResult.ListResult
 import difflicious.differ.SeqDiffer.diffPairByFunc
+import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
 import difflicious.utils.SetLike
-import difflicious.{Differ, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, Differ, PairType, PairingFunction}
 
 final class SetDiffer[F[_], A](
   isIgnored: Boolean,
   itemDiffer: Differ[A],
-  matchFunc: A => Any,
+  matchFunc: PairingFunction[A, Any],
   typeName: SomeTypeName,
   asSet: SetLike[F],
 ) extends Differ[F[A]] {
@@ -26,6 +27,8 @@ final class SetDiffer[F[_], A](
         PairType.ObtainedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = actual.size,
+        ignoredCount = if (isIgnored) actual.size else 0,
       )
     case DiffInput.ExpectedOnly(expected) =>
       ListResult(
@@ -36,8 +39,10 @@ final class SetDiffer[F[_], A](
         pairType = PairType.ExpectedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = expected.size,
+        ignoredCount = if (isIgnored) expected.size else 0,
       )
-    case DiffInput.Both(obtained, expected) => {
+    case DiffInput.Both(obtained, expected) =>
       val (results, overallIsSame) = diffPairByFunc(obtained.toSeq, expected.toSeq, matchFunc, itemDiffer)
       ListResult(
         typeName = typeName,
@@ -45,8 +50,9 @@ final class SetDiffer[F[_], A](
         pairType = PairType.Both,
         isIgnored = isIgnored,
         isOk = isIgnored || overallIsSame,
+        differenceCount = results.differenceCount,
+        ignoredCount = results.ignoredCount,
       )
-    }
   }
 
   override def configureIgnored(newIgnored: Boolean): Differ[F[A]] =
@@ -83,7 +89,7 @@ final class SetDiffer[F[_], A](
           new SetDiffer[F, A](
             isIgnored = isIgnored,
             itemDiffer = itemDiffer,
-            matchFunc = m.func.asInstanceOf[A => Any],
+            matchFunc = PairingFunction.lift(m.func.asInstanceOf[A => Any]),
             typeName = typeName,
             asSet = asSet,
           ),
@@ -99,7 +105,7 @@ object SetDiffer {
   ): SetDiffer[F, A] = new SetDiffer[F, A](
     isIgnored = false,
     itemDiffer,
-    matchFunc = identity,
+    matchFunc = PairingFunction.approximative(threshold = 1).asInstanceOf[PairingFunction[A, Any]],
     typeName = typeName,
     asSet = asSet,
   )
