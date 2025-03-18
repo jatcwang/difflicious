@@ -6,7 +6,7 @@ permalink: docs/types-of-differs
 
 # Types of Differs
 
-Here we list the kinds of Differs and how you can use them.
+Difflicious provides various types of differs to handle different kinds of data structures. This page explains each type of differ and how to use them effectively.
 
 The examples below assume the following imports:
 
@@ -15,258 +15,345 @@ import difflicious._
 import difflicious.implicits._
 ```
 
-# Value Differs
+## Value Differs
 
-For basic types like `Int`, `Double` and `String` we typically can compare them directly e.g. using `equals` method.
+Value differs are used for basic types like `Int`, `Double`, and `String` that can be compared directly using their `equals` method.
 
-If you have a simple type where you don't need any advanced diffing, then you can use `Differ.useEquals` to make a 
-Differ instance for it.
+### Numeric Differs
 
-```scala mdoc:silent
-case class MyInt(i: Int)
-
-object MyInt {
-  implicit val differ: Differ[MyInt] = Differ.useEquals[MyInt](valueToString = _.toString)
-}
-```
+For numeric types (`Int`, `Long`, `Double`, etc.), Difflicious uses a `NumericDiffer` that compares values using the appropriate numeric equality.
 
 ```scala mdoc:silent
-MyInt.differ.diff(MyInt(1), MyInt(2))
+val intDiffer: Differ[Int] = Differ[Int]
+val doubleDiffer: Differ[Double] = Differ[Double]
+
+// Example usage
+val intResult = intDiffer.diff(5, 10)
+val doubleResult = doubleDiffer.diff(5.5, 5.5)
 ```
+
+Output for the integer comparison:
 
 <pre class="diff-render">
-<span style="color: red;">MyInt(1)</span> -> <span style="color: green;">MyInt(2)</span>
+<span style="color: red;">5</span> -> <span style="color: green;">10</span>
 </pre>
 
-# Differs for Algebraic Data Types (enums, sealed traits and case classes)
+### String Differ
 
-You can derive `Differ` for a case class provided that there is a `Differ` instance for all your fields.
-
-Similarly, you can derive a `Differ` for a sealed trait (Also called **Enums** in Scala 3) provided that we're able to 
-derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)
-
-
-### Case class
+Strings are compared character by character:
 
 ```scala mdoc:silent
-final case class Person(name: String, age: Int)
+val stringDiffer: Differ[String] = Differ[String]
 
-object Person {
-  implicit val differ: Differ[Person] = Differ.derived[Person]
-}
+// Example usage
+val stringResult = stringDiffer.diff("hello", "world")
 ```
 
-```scala mdoc:silent
-Person.differ.diff(
-  Person("Alice", 40),
-  Person("Alice", 35)
-)
-```
+Output:
 
 <pre class="diff-render">
-Person(
-  name: "Alice",
-  age: <span style="color: red;">40</span> -> <span style="color: green;">35</span>,
-)
+<span style="color: red;">"hello"</span> -> <span style="color: green;">"world"</span>
 </pre>
 
-### Sealed trait / Scala 3 Enum
+### Custom Value Differs
+
+You can create custom value differs for your own types using `Differ.useEquals`:
 
 ```scala mdoc:silent
-// Deriving Differ instance for sealed trait
-sealed trait HousePet
-final case class Dog(name: String, age: Int) extends HousePet
-final case class Cat(name: String, livesLeft: Int) extends HousePet
+case class UserId(value: String)
 
-object HousePet {
-  implicit val differ: Differ[HousePet] = Differ.derived[HousePet]
-}
+val userIdDiffer: Differ[UserId] = Differ.useEquals[UserId](_.toString)
 ```
+
+## Collection Differs
+
+Difflicious provides specialized differs for collections like lists, sets, and maps.
+
+### Sequence Differs (List, Vector, etc.)
+
+By default, sequences are compared by matching elements at the same index:
 
 ```scala mdoc:silent
-HousePet.differ.diff(
-  Dog("Lucky", 1),
-  Cat("Lucky", 1)
-)
+val listDiffer: Differ[List[Int]] = Differ[List[Int]]
+
+// Example usage
+val listResult = listDiffer.diff(List(1, 2, 3), List(1, 4, 3))
 ```
+
+Output:
 
 <pre class="diff-render">
-<span style="color: red;">Dog</span> != <span style="color: green;">Cat</span>
-<span style="color: red;">=== Obtained ===
-Dog(
-  name: "Lucky",
-  age: 1,
-)</span>
-<span style="color: green;">=== Expected ===
-Cat(
-  name: "Lucky",
-  livesLeft: 1,
-)</span>
+List(
+  1,
+  <span style="color: red;">2</span> -> <span style="color: green;">4</span>,
+  3
+)
 </pre>
 
-# Seq Differ
-
-Differ for sequences allow diffing immutable sequences like `Seq`, `List`, and `Vector`.
-
-By default, Seq Differs will match elements by their index in the sequence.
-
-In the example below
-
-- **Bob**'s age
-- **Alice** isn't expected to be in list
-- **Charles** is expected but missing
+You can customize how elements are paired using `.pairBy` or `.pairByIndex`:
 
 ```scala mdoc:silent
-val alice = Person("Alice", 30)
-val bob = Person("Bob", 25)
-val bob50 = Person("Bob", 50)
-val charles = Person("Charles", 80)
+case class Person(name: String, age: Int)
+implicit val personDiffer: Differ[Person] = Differ.derived[Person]
 
-Differ.seqDiffer[List, Person].diff(
-  List(alice, bob50),
-  List(alice, bob, charles)
+// Pair by name instead of index
+val personListDiffer = Differ[List[Person]].pairBy(_.name)
+
+// Example usage
+val personListResult = personListDiffer.diff(
+  List(Person("Alice", 30), Person("Bob", 25)),
+  List(Person("Bob", 40), Person("Alice", 35))
 )
 ```
+
+Output:
 
 <pre class="diff-render">
 List(
   Person(
     name: "Alice",
-    age: 30,
+    age: <span style="color: red;">30</span> -> <span style="color: green;">35</span>
   ),
   Person(
     name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
-  ),
-  <span style="color: green;">Person(
-    name: "Charles",
-    age: 80,
-  )</span>,
+    age: <span style="color: red;">25</span> -> <span style="color: green;">40</span>
+  )
 )
 </pre>
 
-## Pair by field
+### Set Differs
 
-In many test scenarios we actually don't care about order of elements, as long as the two sequences 
-contains the same elements. One example of this is inserting multiple records into a database and then retrieving them
-, where you expect the same records to be returned by not necessarily in the original order.
-
-In this case, you can configure a `Differ` to pair by a field instead.
+Sets are compared by matching elements with the same value:
 
 ```scala mdoc:silent
-val differByName = Differ[List[Person]].pairBy(_.name)
+val setDiffer: Differ[Set[Int]] = Differ[Set[Int]]
 
-differByName.diff(
-  List(bob50, charles, alice),
-  List(alice, bob, charles)
-)
+// Example usage
+val setResult = setDiffer.diff(Set(1, 2, 3), Set(1, 3, 4))
 ```
 
-When we match by a person's name instead of index, we can now easily spot that Bob has the wrong age.
-
-<pre class="diff-render">
-List(
-  Person(
-    name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
-  ),
-  Person(
-    name: "Charles",
-    age: 80,
-  ),
-  Person(
-    name: "Alice",
-    age: 30,
-  ),
-)
-</pre>
-
-# Map differ
-
-Map differ pair entries with the same keys and compare the values. Missing key-values will also be reported in the result.
-
-It requires 
-
-- a `ValueDiffer` instance for the map key type (for display purposes)
-- a `Differ` instance for the map value type
-
-```scala mdoc:silent
-Differ[Map[String, Person]].diff(
-  Map(
-    "a" -> alice,
-    "b" -> bob
-  ),
-  Map(
-    "b" -> bob50,
-    "c" -> charles
-  ),
-)
-```
-
-<pre class="diff-render">
-Map(
-  <span style="color: red;">"a"</span> -> <span style="color: red;">Person(
-      name: "Alice",
-      age: 30,
-    )</span>,
-  "b" -> Person(
-      name: "Bob",
-      age: <span style="color: red;">25</span> -> <span style="color: green;">50</span>,
-    ),
-  <span style="color: green;">"c"</span> -> <span style="color: green;">Person(
-      name: "Charles",
-      age: 80,
-    )</span>,
-)
-</pre>
-
-# Set differ
-
-Set differ can diff two Sets by pairing the set elements and diffing them. 
-By default, the pairing is based on matching elements that are equal to each other (using `equals`). 
-
-However, you most likely want to pair elements using a field on an element instead for better diffs reports 
-(See next section).
-
-## Pair by field
-
-For the best error reporting, you want to configure `SetDiffer` to pair by a field.
-
-```scala mdoc:nest:silent
-val differByName: Differ[Set[Person]] = Differ[Set[Person]].pairBy(_.name)
-
-differByName.diff(
-  Set(bob50, charles, alice),
-  Set(alice, bob, charles)
-)
-```
+Output:
 
 <pre class="diff-render">
 Set(
-  Person(
-    name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
-  ),
-  Person(
-    name: "Charles",
-    age: 80,
-  ),
-  Person(
-    name: "Alice",
-    age: 30,
-  ),
+  1,
+  3,
+  <span style="color: red;">2</span>,
+  <span style="color: green;">4</span>
 )
 </pre>
 
-# Always ignored Differ
+### Map Differs
 
-Sometimes for certain types you can't really compare them (e.g. Something that's not a plain data structure).
+Maps are compared by matching entries with the same key and then comparing their values:
 
-In that case you can use `Differ.alwaysIgnore`
+```scala mdoc:silent
+val mapDiffer: Differ[Map[String, Int]] = Differ[Map[String, Int]]
+
+// Example usage
+val mapResult = mapDiffer.diff(
+  Map("a" -> 1, "b" -> 2, "c" -> 3),
+  Map("a" -> 1, "b" -> 5, "d" -> 4)
+)
+```
+
+Output:
+
+<pre class="diff-render">
+Map(
+  "a" -> 1,
+  "b" -> <span style="color: red;">2</span> -> <span style="color: green;">5</span>,
+  <span style="color: red;">"c" -> 3</span>,
+  <span style="color: green;">"d" -> 4</span>
+)
+</pre>
+
+## Product Differs (Case Classes)
+
+For case classes and other product types, Difflicious derives a differ that compares each field:
+
+```scala mdoc:silent
+case class Address(street: String, city: String, zipCode: String)
+case class User(name: String, age: Int, address: Address)
+
+implicit val addressDiffer: Differ[Address] = Differ.derived[Address]
+implicit val userDiffer: Differ[User] = Differ.derived[User]
+
+// Example usage
+val userResult = userDiffer.diff(
+  User("Alice", 30, Address("123 Main St", "New York", "10001")),
+  User("Alice", 35, Address("123 Main St", "Boston", "02108"))
+)
+```
+
+Output:
+
+<pre class="diff-render">
+User(
+  name: "Alice",
+  age: <span style="color: red;">30</span> -> <span style="color: green;">35</span>,
+  address: Address(
+    street: "123 Main St",
+    city: <span style="color: red;">"New York"</span> -> <span style="color: green;">"Boston"</span>,
+    zipCode: <span style="color: red;">"10001"</span> -> <span style="color: green;">"02108"</span>
+  )
+)
+</pre>
+
+## Sum Type Differs (Sealed Traits/Enums)
+
+For sealed traits, enums, and other sum types, Difflicious compares the concrete type first, then the fields:
+
+```scala mdoc:silent
+sealed trait Shape
+object Shape {
+  case class Circle(radius: Double) extends Shape
+  case class Rectangle(width: Double, height: Double) extends Shape
+  
+  implicit val differ: Differ[Shape] = Differ.derived[Shape]
+}
+
+import Shape._
+
+// Example usage
+val shapeResult = Shape.differ.diff(
+  Circle(5.0),
+  Rectangle(10.0, 5.0)
+)
+```
+
+Output:
+
+<pre class="diff-render">
+<span style="color: red;">Circle</span> != <span style="color: green;">Rectangle</span>
+<span style="color: red;">=== Obtained ===
+Circle(
+  radius: 5.0
+)</span>
+<span style="color: green;">=== Expected ===
+Rectangle(
+  width: 10.0,
+  height: 5.0
+)</span>
+</pre>
+
+If the concrete types match, it will compare their fields:
+
+```scala mdoc:silent
+val circleResult = Shape.differ.diff(
+  Circle(5.0),
+  Circle(7.5)
+)
+```
+
+Output:
+
+<pre class="diff-render">
+Circle(
+  radius: <span style="color: red;">5.0</span> -> <span style="color: green;">7.5</span>
+)
+</pre>
+
+## Nested Collection Differs
+
+Difflicious handles nested collections gracefully:
+
+```scala mdoc:silent
+val nestedDiffer: Differ[Map[String, List[Person]]] = Differ[Map[String, List[Person]]]
+
+// Example usage
+val nestedResult = nestedDiffer.diff(
+  Map(
+    "team1" -> List(Person("Alice", 30), Person("Bob", 25)),
+    "team2" -> List(Person("Charlie", 40))
+  ),
+  Map(
+    "team1" -> List(Person("Alice", 35), Person("Bob", 25)),
+    "team3" -> List(Person("Dave", 50))
+  )
+)
+```
+
+Output:
+
+<pre class="diff-render">
+Map(
+  "team1" -> List(
+    Person(
+      name: "Alice",
+      age: <span style="color: red;">30</span> -> <span style="color: green;">35</span>
+    ),
+    Person(
+      name: "Bob",
+      age: 25
+    )
+  ),
+  <span style="color: red;">"team2" -> List(
+    Person(
+      name: "Charlie",
+      age: 40
+    )
+  )</span>,
+  <span style="color: green;">"team3" -> List(
+    Person(
+      name: "Dave",
+      age: 50
+    )
+  )</span>
+)
+</pre>
+
+## Always Ignored Differ
+
+Sometimes for certain types you can't really compare them (e.g., something that's not a plain data structure).
+
+In that case you can use `Differ.alwaysIgnore`:
 
 ```scala mdoc:silent
 class CantCompare()
 
 val alwaysIgnoredDiffer: Differ[CantCompare] = Differ.alwaysIgnore[CantCompare]
 ```
+
+When using this differ, the comparison will always be treated as successful, regardless of the actual values.
+
+## Java Time Differs
+
+Difflicious provides built-in differs for Java Time types like `Instant`, `LocalDate`, and `ZonedDateTime`:
+
+```scala mdoc:silent
+import java.time.{Instant, LocalDate}
+
+val instantDiffer: Differ[Instant] = Differ[Instant]
+val localDateDiffer: Differ[LocalDate] = Differ[LocalDate]
+
+// Example usage
+val instantResult = instantDiffer.diff(
+  Instant.parse("2023-01-01T00:00:00Z"),
+  Instant.parse("2023-01-02T00:00:00Z")
+)
+```
+
+Output:
+
+<pre class="diff-render">
+<span style="color: red;">"2023-01-01T00:00:00Z"</span> -> <span style="color: green;">"2023-01-02T00:00:00Z"</span>
+</pre>
+
+## Integration with Other Libraries
+
+Difflicious provides integrations with popular libraries like Cats. For example, with the `difflicious-cats` module, you can diff Cats data structures like `NonEmptyList` and `Chain`:
+
+```scala
+import difflicious.cats.implicits._
+import cats.data.NonEmptyList
+
+val nelDiffer: Differ[NonEmptyList[Int]] = Differ[NonEmptyList[Int]]
+```
+
+## Summary
+
+Difflicious provides a rich set of differs for various types of data structures. By understanding the different types of differs and how they work, you can effectively use Difflicious to compare complex data structures in your tests.
+
+For more information on how to customize these differs, see the [Configuring Differs](docs/configuring-differs) page.
 
