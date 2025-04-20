@@ -5,7 +5,7 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.3.1")
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.9.3")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.25.0")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.7.1") // override mdoc version from microsite
-addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.10.1")
+addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
 // addSbtPlugin("com.47deg" % "sbt-microsites" % "1.4.4")
 
 // There are conflicts with scala-xml 1.0 vs 2.0 with microsites enabled
