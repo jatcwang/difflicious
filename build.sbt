@@ -8,7 +8,7 @@ val munitVersion = "1.1.1"
 val munitScalacheckVersion = "1.1.0"
 val catsVersion = "2.13.0"
 val scalatestVersion = "3.2.19"
-val weaverVersion = "0.8.4"
+val weaverVersion = "0.9.0"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -97,7 +97,7 @@ lazy val weaver = projectMatrix
   .settings(
     name := "difflicious-weaver",
     libraryDependencies ++= Seq(
-      "com.disneystreaming" %% "weaver-core" % weaverVersion,
+      "org.typelevel" %% "weaver-core" % weaverVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
@@ -145,7 +145,7 @@ lazy val docs: ProjectMatrix = projectMatrix
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
+      "org.typelevel" %% "weaver-cats" % weaverVersion,
     ),
   )
   .settings(
