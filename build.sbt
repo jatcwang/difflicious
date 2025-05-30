@@ -49,7 +49,7 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "3.0.2",
+      "dev.zio" %% "izumi-reflect" % "3.0.3",
       "com.lihaoyi" %% "fansi" % "0.5.0",
     ) ++ (if (isScala3.value) {
             Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.18")
