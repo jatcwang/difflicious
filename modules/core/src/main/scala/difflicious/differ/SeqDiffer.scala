@@ -3,8 +3,19 @@ package difflicious.differ
 import difflicious.DiffResult.ListResult
 import difflicious.utils.SeqLike
 import difflicious.ConfigureOp.PairBy
-import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
+import difflicious.{
+  ConfigureError,
+  ConfigureOp,
+  ConfigurePath,
+  DiffInput,
+  DiffResult,
+  Differ,
+  PairType,
+  PairingFunction,
+}
 import SeqDiffer.diffPairByFunc
+import difflicious.PairingFunction.{Approximative, Custom}
+import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
 
 import scala.collection.mutable
@@ -45,16 +56,20 @@ final class SeqDiffer[F[_], A](
             pairType = PairType.Both,
             isIgnored = isIgnored,
             isOk = isIgnored || diffResults.forall(_.isOk),
+            differenceCount = diffResults.differenceCount,
+            ignoredCount = diffResults.ignoredCount,
           )
         }
         case PairBy.ByFunc(func) => {
-          val (results, allIsOk) = diffPairByFunc(actual, expected, func, itemDiffer)
+          val (results, allIsOk) = diffPairByFunc(actual, expected, PairingFunction.lift(func), itemDiffer)
           ListResult(
             typeName = typeName,
             items = results,
             pairType = PairType.Both,
             isIgnored = isIgnored,
             isOk = isIgnored || allIsOk,
+            differenceCount = results.differenceCount,
+            ignoredCount = results.ignoredCount,
           )
         }
       }
@@ -68,6 +83,8 @@ final class SeqDiffer[F[_], A](
         pairType = PairType.ObtainedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = actual.size,
+        ignoredCount = if (isIgnored) actual.size else 0,
       )
     case DiffInput.ExpectedOnly(expected) =>
       ListResult(
@@ -78,6 +95,8 @@ final class SeqDiffer[F[_], A](
         pairType = PairType.ExpectedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = expected.size,
+        ignoredCount = if (isIgnored) expected.size else 0,
       )
   }
 
@@ -148,10 +167,10 @@ object SeqDiffer {
   // Given two lists of item, find "matching" items using te provided function
   // (where "matching" means ==). For example we might want to items by
   // person name.
-  private[difflicious] def diffPairByFunc[A](
+  private[difflicious] def diffPairByFunc[A, B](
     obtained: Seq[A],
     expected: Seq[A],
-    func: A => Any,
+    func: PairingFunction[A, B],
     itemDiffer: Differ[A],
   ): (Vector[DiffResult], Boolean) = {
     val matchedIndexes = mutable.BitSet.empty
@@ -159,18 +178,25 @@ object SeqDiffer {
     val expWithIdx = expected.zipWithIndex
     var allIsOk = true
     obtained.foreach { a =>
-      val aMatchVal = func(a)
-      val found = expWithIdx.find {
-        case (e, idx) =>
-          if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
-            val res = itemDiffer.diff(a, e)
-            results += res
-            matchedIndexes += idx
-            allIsOk &= res.isOk
-            true
-          } else {
-            false
-          }
+      val found = expWithIdx.find { case (e, idx) =>
+        def pushResult(res: => itemDiffer.R): Boolean = {
+          val memoizedRes = res
+          results += memoizedRes
+          matchedIndexes += idx
+          allIsOk &= memoizedRes.isOk
+
+          true
+        }
+
+        func match {
+          case fn: PairingFunction.UsingEquals[_, _] =>
+            !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
+          case fn: Approximative[A] =>
+            val diffRes = itemDiffer.diff(a, e)
+            !matchedIndexes.contains(idx) && fn.matching(diffRes) && pushResult(diffRes)
+          case fn: Custom[A, B] =>
+            !matchedIndexes.contains(idx) && fn.matching(a, e) && pushResult(itemDiffer.diff(a, e))
+        }
       }
 
       if (found.isEmpty) {
@@ -179,12 +205,11 @@ object SeqDiffer {
       }
     }
 
-    expWithIdx.foreach {
-      case (e, idx) =>
-        if (!matchedIndexes.contains(idx)) {
-          results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
-          allIsOk = false
-        }
+    expWithIdx.foreach { case (e, idx) =>
+      if (!matchedIndexes.contains(idx)) {
+        results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
+        allIsOk = false
+      }
     }
 
     (results.toVector, allIsOk)
