@@ -195,7 +195,7 @@ lazy val commonSettings = Seq(
                        )
                      else Seq.empty),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => isScala3.value),
 )
