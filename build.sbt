@@ -8,7 +8,7 @@ val munitVersion = "1.2.1"
 val munitScalacheckVersion = "1.2.0"
 val catsVersion = "2.13.0"
 val scalatestVersion = "3.2.19"
-val weaverVersion = "0.11.2"
+val weaverVersion = "0.11.3"
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
