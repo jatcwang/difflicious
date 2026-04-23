@@ -544,6 +544,54 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     )
   }
 
+  test("Set: intelligently match minimally-different entries") {
+    assertConsoleDiffOutput(
+      Differ
+        .setDiffer[Set, CC]
+        .configureRaw(ConfigurePath.of("each", "dd"), ConfigureOp.ignore)
+        .unsafeGet,
+      Set(
+        CC(1, "s1", 3),
+        CC(2, "s2", 2),
+        CC(4, "s2", 2),
+        CC(5, "s8", 2),
+      ),
+      Set(
+        CC(1, "s1", 1),
+        CC(2, "s2", 2),
+        CC(3, "s2", 2),
+        CC(3, "s3", 8),
+      ),
+      s"""Set(
+         |  CC(
+         |    i: 1,
+         |    s: "s1",
+         |    dd: $grayIgnoredStr
+         |  ),
+         |  CC(
+         |    i: 2,
+         |    s: "s2",
+         |    dd: $grayIgnoredStr
+         |  ),
+         |  CC(
+         |    i: ${R}4$X -> ${G}3$X,
+         |    s: "s2",
+         |    dd: $grayIgnoredStr
+         |  ),
+         |  ${R}CC(
+         |    i: 5,
+         |    s: "s8",
+         |    dd: $justIgnoredStr
+         |  )$X,
+         |  ${G}CC(
+         |    i: 3,
+         |    s: "s3",
+         |    dd: $justIgnoredStr
+         |  )$X
+         |)""".stripMargin,
+    )
+  }
+
   test("Set: When only 'obtained' is provided when diffing") {
     assertConsoleDiffOutput(
       Differ[List[Set[Int]]],

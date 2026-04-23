@@ -1,12 +1,13 @@
 package difflicious.differ
 
-import difflicious.DiffResult.{ValueResult, MapResult}
+import difflicious.DiffResult.{MapResult, ValueResult}
 
 import scala.collection.mutable
 import difflicious.ConfigureOp.PairBy
 import difflicious.differ.MapDiffer.mapKeyToString
+import difflicious.internal.SumCountsSyntax.DiffResultIterableOps
 import difflicious.utils.TypeName.SomeTypeName
-import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput, PairType}
+import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult, Differ, PairType}
 import difflicious.utils.MapLike
 
 class MapDiffer[M[_, _], K, V](
@@ -23,60 +24,64 @@ class MapDiffer[M[_, _], K, V](
       val obtainedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
       val both = mutable.ArrayBuffer.empty[MapResult.Entry]
       val expectedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
-      obtained.foreach {
-        case (k, actualV) =>
-          expected.get(k) match {
-            case Some(expectedV) =>
-              both += MapResult.Entry(
-                mapKeyToString(k, keyDiffer),
-                valueDiffer.diff(actualV, expectedV),
-              )
-            case None =>
-              obtainedOnly += MapResult.Entry(
-                mapKeyToString(k, keyDiffer),
-                valueDiffer.diff(DiffInput.ObtainedOnly(actualV)),
-              )
-          }
-      }
-      expected.foreach {
-        case (k, expectedV) =>
-          if (obtained.contains(k)) {
-            // Do nothing, already compared when iterating through obtained
-          } else {
-            expectedOnly += MapResult.Entry(
+      obtained.foreach { case (k, actualV) =>
+        expected.get(k) match {
+          case Some(expectedV) =>
+            both += MapResult.Entry(
               mapKeyToString(k, keyDiffer),
-              valueDiffer.diff(DiffInput.ExpectedOnly(expectedV)),
+              valueDiffer.diff(actualV, expectedV),
             )
-          }
+          case None =>
+            obtainedOnly += MapResult.Entry(
+              mapKeyToString(k, keyDiffer),
+              valueDiffer.diff(DiffInput.ObtainedOnly(actualV)),
+            )
+        }
       }
+      expected.foreach { case (k, expectedV) =>
+        if (obtained.contains(k)) {
+          // Do nothing, already compared when iterating through obtained
+        } else {
+          expectedOnly += MapResult.Entry(
+            mapKeyToString(k, keyDiffer),
+            valueDiffer.diff(DiffInput.ExpectedOnly(expectedV)),
+          )
+        }
+      }
+
+      val bothValues = both.map(_.value)
       MapResult(
         typeName = typeName,
         (obtainedOnly ++ both ++ expectedOnly).toVector,
         PairType.Both,
         isIgnored = isIgnored,
-        isOk = isIgnored || obtainedOnly.isEmpty && expectedOnly.isEmpty && both.forall(_.value.isOk),
+        isOk = isIgnored || obtainedOnly.isEmpty && expectedOnly.isEmpty && bothValues.forall(_.isOk),
+        differenceCount = bothValues.differenceCount,
+        ignoredCount = bothValues.ignoredCount,
       )
     case DiffInput.ObtainedOnly(obtained) =>
       DiffResult.MapResult(
         typeName = typeName,
-        entries = obtained.map {
-          case (k, v) =>
-            MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ObtainedOnly(v)))
+        entries = obtained.map { case (k, v) =>
+          MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ObtainedOnly(v)))
         }.toVector,
         pairType = PairType.ObtainedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = obtained.size,
+        ignoredCount = if (isIgnored) obtained.size else 0,
       )
     case DiffInput.ExpectedOnly(expected) =>
       DiffResult.MapResult(
         typeName = typeName,
-        entries = expected.map {
-          case (k, v) =>
-            MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ExpectedOnly(v)))
+        entries = expected.map { case (k, v) =>
+          MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ExpectedOnly(v)))
         }.toVector,
         pairType = PairType.ExpectedOnly,
         isIgnored = isIgnored,
         isOk = isIgnored,
+        differenceCount = expected.size,
+        ignoredCount = if (isIgnored) expected.size else 0,
       )
   }
 
