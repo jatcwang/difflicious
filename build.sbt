@@ -17,6 +17,7 @@ val isScala3 = Def.setting {
 
 val mainScalaVersion = Build.Scala213
 val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
+val jsScalaVersions = Seq(Build.Scala213, Build.Scala3)
 
 inThisBuild(
   List(
@@ -49,13 +50,13 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "izumi-reflect" % "3.0.9",
-      "com.lihaoyi" %% "fansi" % "0.5.1",
+      "dev.zio" %%% "izumi-reflect" % "3.0.9",
+      "com.lihaoyi" %%% "fansi" % "0.5.1",
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %% "magnolia" % "1.3.18")
+            Seq("com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.18")
           } else
             Seq(
-              "com.softwaremill.magnolia1_2" %% "magnolia" % "1.1.10",
+              "com.softwaremill.magnolia1_2" %%% "magnolia" % "1.1.10",
               "org.scala-lang" % "scala-reflect" % Build.Scala213,
             )),
     Compile / sourceGenerators += Def.task {
@@ -65,6 +66,14 @@ lazy val core = projectMatrix
     }.taskValue,
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(
+    jsScalaVersions,
+    settings = Seq(
+      libraryDependencies ++= Seq(
+        "org.scala-js" %%% "scalajs-dom" % "2.8.1", // We need dom.intl.NumberFormat
+      ),
+    ),
+  )
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
@@ -73,10 +82,11 @@ lazy val munit = projectMatrix
   .settings(
     name := "difflicious-munit",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %%% "munit" % munitVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val scalatest = projectMatrix
   .in(file("modules/scalatest"))
@@ -85,7 +95,7 @@ lazy val scalatest = projectMatrix
   .settings(
     name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest-core" % scalatestVersion,
+      "org.scalatest" %%% "scalatest-core" % scalatestVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
@@ -97,10 +107,11 @@ lazy val weaver = projectMatrix
   .settings(
     name := "difflicious-weaver",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "weaver-core" % weaverVersion,
+      "org.typelevel" %%% "weaver-core" % weaverVersion,
     ),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val cats = projectMatrix
   .in(file("modules/cats"))
@@ -109,13 +120,14 @@ lazy val cats = projectMatrix
   .settings(
     name := "difflicious-cats",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %%% "cats-core" % catsVersion,
     ),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-laws" % catsVersion,
+      "org.typelevel" %%% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val coretest = projectMatrix
   .in(file("modules/coretest"))
@@ -124,15 +136,16 @@ lazy val coretest = projectMatrix
   .settings(
     name := "coretest",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %%% "cats-core" % catsVersion,
     ),
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion,
-      "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion,
+      "org.scalameta" %%% "munit" % munitVersion,
+      "org.scalameta" %%% "munit-scalacheck" % munitScalacheckVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(jvmScalaVersions)
+  .jsPlatform(jsScalaVersions)
 
 lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, munit, scalatest, weaver)
@@ -144,8 +157,8 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % scalatestVersion,
-      "org.typelevel" %% "weaver-cats" % weaverVersion,
+      "org.scalatest" %%% "scalatest" % scalatestVersion,
+      "org.typelevel" %%% "weaver-cats" % weaverVersion,
     ),
   )
   .settings(

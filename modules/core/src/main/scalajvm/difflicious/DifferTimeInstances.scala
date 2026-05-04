@@ -2,7 +2,7 @@ package difflicious
 import java.time._
 import difflicious.differ.EqualsDiffer
 
-trait DifferTimeInstances {
+trait DifferTimeInstancesPlatform {
 
   implicit val dayOfWeekDiffer: EqualsDiffer[DayOfWeek] = {
     Differ.useEquals(_.toString)

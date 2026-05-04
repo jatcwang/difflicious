@@ -48,7 +48,7 @@ trait Differ[T] extends ConfigureMethods[T] {
   }
 }
 
-object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstances {
+object Differ extends DifferTupleInstances with DifferGen with DifferPlatform with  DifferTimeInstancesPlatform {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
@@ -62,13 +62,12 @@ object Differ extends DifferTupleInstances with DifferGen with DifferTimeInstanc
   implicit val charDiffer: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
   implicit val booleanDiffer: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
 
-  implicit val intDiffer: NumericDiffer[Int] = NumericDiffer.make[Int]
-  implicit val doubleDiffer: NumericDiffer[Double] = NumericDiffer.make[Double]
-  implicit val shortDiffer: NumericDiffer[Short] = NumericDiffer.make[Short]
-  implicit val byteDiffer: NumericDiffer[Byte] = NumericDiffer.make[Byte]
-  implicit val longDiffer: NumericDiffer[Long] = NumericDiffer.make[Long]
-  implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal]
-  implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt]
+  implicit val intDiffer: NumericDiffer[Int] = NumericDiffer.make[Int](_.toString)
+  implicit val shortDiffer: NumericDiffer[Short] = NumericDiffer.make[Short](_.toString)
+  implicit val byteDiffer: NumericDiffer[Byte] = NumericDiffer.make[Byte](_.toString)
+  implicit val longDiffer: NumericDiffer[Long] = NumericDiffer.make[Long](_.toString)
+  implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal](_.toString)
+  implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt](_.toString)
 
   implicit def optionDiffer[T: Differ]: Differ[Option[T]] = derived[Option[T]]
   implicit def eitherDiffer[A: Differ, B: Differ]: Differ[Either[A, B]] = derived[Either[A, B]]
