@@ -1,6 +1,6 @@
-import sbt._
-import sbt.Keys._
-import com.jsuereth.sbtpgp.PgpKeys._
+import sbt.*
+import sbt.Keys.*
+import com.jsuereth.sbtpgp.PgpKeys.*
 import sbt.internal.LogManager
 import sbt.internal.util.BufferedAppender
 import java.io.PrintStream

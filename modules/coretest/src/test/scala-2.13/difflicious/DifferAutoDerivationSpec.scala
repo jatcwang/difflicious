@@ -5,7 +5,7 @@ import munit.FunSuite
 class DifferAutoDerivationSpec extends FunSuite {
   test("should not compile without instance in scope") {
     val result = compileErrors("""
-        import difflicious._
+        import difflicious.*
         final case class P1(f1: String)
         
         val p1: Differ[P1] = Differ.derived[P1]
@@ -14,11 +14,11 @@ class DifferAutoDerivationSpec extends FunSuite {
         """)
     assert(result.contains("could not find implicit"))
   }
-  
+
   test("should find auto derived instance for product") {
     val result = compileErrors("""
-        import difflicious._
-        import difflicious.generic.auto._
+        import difflicious.*
+        import difflicious.generic.auto.*
 
         final case class P1(f1: String)
         
@@ -28,8 +28,8 @@ class DifferAutoDerivationSpec extends FunSuite {
   }
   test("should put auto derived instance back into scope") {
     val result = compileErrors("""
-        import difflicious._
-        import difflicious.generic.auto._
+        import difflicious.*
+        import difflicious.generic.auto.*
 
         final case class P1(f1: String)
         implicit val d: Differ[P1] = implicitly[Derived[P1]].differ
@@ -39,8 +39,8 @@ class DifferAutoDerivationSpec extends FunSuite {
     assertNoDiff(result, "")
   }
   test("should use manually defined instance for an element") {
-    import difflicious._
-    import difflicious.generic.auto._
+    import difflicious.*
+    import difflicious.generic.auto.*
 
     final case class P1(f1: String, f2: String)
     final case class P2(p1: P1)

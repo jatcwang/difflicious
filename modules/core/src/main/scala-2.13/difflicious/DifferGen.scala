@@ -1,9 +1,9 @@
 package difflicious
 import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
-import difflicious.internal.EitherGetSyntax._
+import difflicious.internal.EitherGetSyntax.*
 import difflicious.utils.TypeName.SomeTypeName
-import magnolia1._
+import magnolia1.*
 
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
@@ -124,7 +124,7 @@ trait DifferGen {
           Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeName.short).toVector))
       }
 
-    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Typeclass[T]] =
+    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[?]): Either[ConfigureError, Typeclass[T]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "SealedTraitDiffer"))
 
   }

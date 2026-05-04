@@ -3,22 +3,24 @@ import difflicious.DiffResult.MismatchTypeResult
 import difflicious.differ.RecordDiffer
 import difflicious.utils.TypeName
 import difflicious.utils.TypeName.SomeTypeName
-import difflicious.internal.EitherGetSyntax._
+import difflicious.internal.EitherGetSyntax.*
 
 import scala.collection.immutable.ListMap
-import magnolia1._
+import magnolia1.*
 
 import scala.collection.mutable
 
 trait DifferGen extends Derivation[Differ]:
   override def join[T](ctx: CaseClass[Differ, T]): Differ[T] =
     new RecordDiffer[T](
-    ctx.params.map { p =>
-        val getter = p.deref
-        p.label -> Tuple2(getter.asInstanceOf[(T => Any)], p.typeclass.asInstanceOf[Differ[Any]])
-      }.to(ListMap),
+      ctx.params
+        .map { p =>
+          val getter = p.deref
+          p.label -> Tuple2(getter.asInstanceOf[(T => Any)], p.typeclass.asInstanceOf[Differ[Any]])
+        }
+        .to(ListMap),
       isIgnored = false,
-      typeName = toDiffliciousTypeName(ctx.typeInfo)
+      typeName = toDiffliciousTypeName(ctx.typeInfo),
     )
 
   override def split[T](ctx: SealedTrait[Differ, T]): Differ[T] =
@@ -37,17 +39,17 @@ trait DifferGen extends Derivation[Differ]:
           ctx.choose(expected) { expectedSubtype =>
             if obtainedSubtype.typeInfo.short == expectedSubtype.typeInfo.short then
               obtainedSubtype.typeclass.asInstanceOf[Differ[T]].diff(obtainedSubtype.value, expectedSubtype.value)
-            else MismatchTypeResult(
-              obtained = obtainedSubtype.typeclass.diff(DiffInput.ObtainedOnly(obtainedSubtype.cast(obtained))),
-              obtainedTypeName = toDiffliciousTypeName(obtainedSubtype.typeInfo),
-              expected = expectedSubtype.typeclass.diff(DiffInput.ExpectedOnly(expectedSubtype.cast(expected))),
-              expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeInfo),
-              pairType = PairType.Both,
-              isIgnored = isIgnored,
-            )
+            else
+              MismatchTypeResult(
+                obtained = obtainedSubtype.typeclass.diff(DiffInput.ObtainedOnly(obtainedSubtype.cast(obtained))),
+                obtainedTypeName = toDiffliciousTypeName(obtainedSubtype.typeInfo),
+                expected = expectedSubtype.typeclass.diff(DiffInput.ExpectedOnly(expectedSubtype.cast(expected))),
+                expectedTypeName = toDiffliciousTypeName(expectedSubtype.typeInfo),
+                pairType = PairType.Both,
+                isIgnored = isIgnored,
+              )
           }
         }
-
 
     override def configureIgnored(newIgnored: Boolean): Differ[T] =
       val newSubtypes = mutable.ArrayBuffer.empty[SealedTrait.Subtype[Differ, T, Any]]
@@ -58,8 +60,12 @@ trait DifferGen extends Derivation[Differ]:
           typeAnnotations = sub.typeAnnotations,
           isObject = sub.isObject,
           index = sub.index,
-          callByNeed =
-            CallByNeed(sub.typeclass.configureRaw(ConfigurePath.current, ConfigureOp.SetIgnored(newIgnored)).unsafeGet.asInstanceOf[Differ[Any]]),
+          callByNeed = CallByNeed(
+            sub.typeclass
+              .configureRaw(ConfigurePath.current, ConfigureOp.SetIgnored(newIgnored))
+              .unsafeGet
+              .asInstanceOf[Differ[Any]],
+          ),
           isType = sub.cast.isDefinedAt,
           asType = sub.cast.apply,
         )
@@ -76,9 +82,9 @@ trait DifferGen extends Derivation[Differ]:
     protected def configurePath(
       step: String,
       nextPath: ConfigurePath,
-      op: ConfigureOp
+      op: ConfigureOp,
     ): Either[ConfigureError, Differ[T]] =
-      ctx.subtypes.zipWithIndex.find{ (sub, _) => sub.typeInfo.short == step} match {
+      ctx.subtypes.zipWithIndex.find { (sub, _) => sub.typeInfo.short == step } match {
         case Some((sub, idx)) =>
           sub.typeclass
             .configureRaw(nextPath, op)
@@ -107,7 +113,7 @@ trait DifferGen extends Derivation[Differ]:
           Left(ConfigureError.UnrecognizedSubType(nextPath, ctx.subtypes.map(_.typeInfo.short).toVector))
       }
 
-    protected def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+    protected def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[?]): Either[ConfigureError, Differ[T]] =
       Left(ConfigureError.InvalidConfigureOp(path, op, "SealedTraitDiffer"))
 
   end SealedTraitDiffer
@@ -116,6 +122,6 @@ trait DifferGen extends Derivation[Differ]:
     TypeName(
       long = s"${typeInfo.owner}.${typeInfo.short}",
       short = typeInfo.short,
-      typeArguments = typeInfo.typeParams.map(toDiffliciousTypeName).toList
+      typeArguments = typeInfo.typeParams.map(toDiffliciousTypeName).toList,
     )
   }

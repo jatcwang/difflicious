@@ -4,7 +4,7 @@ import difflicious.DiffResultPrinter.consoleOutput
 import munit.Assertions.assertEquals
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Arbitrary, Prop}
-import difflicious.internal.EitherGetSyntax._
+import difflicious.internal.EitherGetSyntax.*
 
 package object testutils {
 

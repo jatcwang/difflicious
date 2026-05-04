@@ -1,11 +1,9 @@
 package difflicious
 
-/**
-  * The configuration change operation we want to perform on a differ.
-  * For example we might want to:
+/** The configuration change operation we want to perform on a differ. For example we might want to:
   *
-  * - Mark the current differ as ignored so its comparison never fails
-  * - Change a Differ for Seq to pair by a field instead of index
+  *   - Mark the current differ as ignored so its comparison never fails
+  *   - Change a Differ for Seq to pair by a field instead of index
   */
 sealed trait ConfigureOp
 

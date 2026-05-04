@@ -1,9 +1,9 @@
 package difflicious.cats
 
-import _root_.cats.data._
+import _root_.cats.data.*
 import difflicious.Differ
 import difflicious.differ.{ValueDiffer, SeqDiffer, MapDiffer, SetDiffer}
-import difflicious.utils._
+import difflicious.utils.*
 
 trait CatsInstances {
   implicit val nonEmptyMapAsMap: MapLike[NonEmptyMap] = new MapLike[NonEmptyMap] {
@@ -32,8 +32,8 @@ trait CatsInstances {
     override def asSet[A](f: NonEmptySet[A]): Set[A] = f.toSortedSet
   }
 
-  implicit def nonEmptyMapDiffer[K, V](
-    implicit keyDiffer: ValueDiffer[K],
+  implicit def nonEmptyMapDiffer[K, V](implicit
+    keyDiffer: ValueDiffer[K],
     valueDiffer: Differ[V],
     typeName: TypeName[NonEmptyMap[K, V]],
   ): MapDiffer[NonEmptyMap, K, V] = new MapDiffer[NonEmptyMap, K, V](
@@ -44,8 +44,8 @@ trait CatsInstances {
     asMap = nonEmptyMapAsMap,
   )
 
-  implicit def nonEmptyListDiffer[A](
-    implicit aDiffer: Differ[A],
+  implicit def nonEmptyListDiffer[A](implicit
+    aDiffer: Differ[A],
     typeName: TypeName[NonEmptyList[A]],
   ): SeqDiffer[NonEmptyList, A] = {
     SeqDiffer.create(
@@ -58,8 +58,8 @@ trait CatsInstances {
     )
   }
 
-  implicit def nonEmptyVectorDiffer[A](
-    implicit aDiffer: Differ[A],
+  implicit def nonEmptyVectorDiffer[A](implicit
+    aDiffer: Differ[A],
     typeName: TypeName[NonEmptyVector[A]],
   ): SeqDiffer[NonEmptyVector, A] = {
     SeqDiffer.create(
@@ -72,8 +72,8 @@ trait CatsInstances {
     )
   }
 
-  implicit def nonEmptyChainDiffer[A](
-    implicit aDiffer: Differ[A],
+  implicit def nonEmptyChainDiffer[A](implicit
+    aDiffer: Differ[A],
     typeName: TypeName[NonEmptyChain[A]],
   ): SeqDiffer[NonEmptyChain, A] = {
     SeqDiffer.create(
@@ -86,8 +86,8 @@ trait CatsInstances {
     )
   }
 
-  implicit def nonEmptySetDiffer[A](
-    implicit aDiffer: Differ[A],
+  implicit def nonEmptySetDiffer[A](implicit
+    aDiffer: Differ[A],
     typeName: TypeName[NonEmptySet[A]],
   ): SetDiffer[NonEmptySet, A] = {
     SetDiffer.create(
@@ -100,8 +100,8 @@ trait CatsInstances {
     )
   }
 
-  implicit def chainDiffer[A](
-    implicit aDiffer: Differ[A],
+  implicit def chainDiffer[A](implicit
+    aDiffer: Differ[A],
     typeName: TypeName[Chain[A]],
   ): SeqDiffer[Chain, A] = {
     SeqDiffer.create(

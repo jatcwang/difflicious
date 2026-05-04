@@ -44,7 +44,7 @@ To enable auto-derivation add following import:
 
 for scala 2
 ```scala
-import difflicious.generic.auto._
+import difflicious.generic.auto.*
 ```
 
 for scala 3
@@ -77,7 +77,7 @@ Many Scala users like to use a wrapper type around primitive types for additiona
 All `ValueDiffer` has a `contramap` method you can use.
 
 ```scala mdoc:invisible
-import difflicious._
+import difflicious.*
 ```
 
 ```scala mdoc:silent

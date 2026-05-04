@@ -16,13 +16,13 @@ with an intuitive API similar to the ones found in libraries like [diffx](https:
 Differs are **immutable** - if you configure it it'll return a new Differ.
 
 ```scala mdoc:invisible
-import difflicious.Example._
+import difflicious.Example.*
 ```
 
 Code examples in this page assumes the following import:
 ```scala mdoc:silent
-import difflicious._
-import difflicious.implicits._
+import difflicious.*
+import difflicious.implicits.*
 ```
 
 ## Basic Configuration

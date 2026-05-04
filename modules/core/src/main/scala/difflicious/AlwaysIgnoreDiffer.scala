@@ -2,8 +2,8 @@ package difflicious
 
 import difflicious.DiffResult.ValueResult
 
-/** A Differ that always return an Ignored result.
-  * Useful when you can't really diff a type */
+/** A Differ that always return an Ignored result. Useful when you can't really diff a type
+  */
 final class AlwaysIgnoreDiffer[T] extends Differ[T] {
   override type R = ValueResult
 
@@ -20,7 +20,7 @@ final class AlwaysIgnoreDiffer[T] extends Differ[T] {
 
   override protected def configurePairBy(
     path: ConfigurePath,
-    op: ConfigureOp.PairBy[_],
+    op: ConfigureOp.PairBy[?],
   ): Either[ConfigureError, Differ[T]] = {
     Left(ConfigureError.InvalidConfigureOp(path, op, "AlwaysIgnoreDiffer"))
   }

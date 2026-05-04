@@ -2,8 +2,7 @@ package difflicious.utils
 
 import scala.annotation.nowarn
 
-/**
-  * A marker typeclass for some container that we can use pairBy when diffing
+/** A marker typeclass for some container that we can use pairBy when diffing
   */
 // $COVERAGE-OFF$
 trait Pairable[F[_]]

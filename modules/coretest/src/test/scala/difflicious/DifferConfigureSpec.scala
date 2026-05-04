@@ -1,9 +1,9 @@
 package difflicious
 
 import difflicious.ConfigureError.NonExistentField
-import difflicious.testutils._
-import difflicious.testtypes._
-import difflicious.implicits._
+import difflicious.testutils.*
+import difflicious.testtypes.*
+import difflicious.implicits.*
 
 // Tests for configuring a Differ
 class DifferConfigureSpec extends munit.FunSuite {

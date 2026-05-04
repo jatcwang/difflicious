@@ -23,31 +23,29 @@ class MapDiffer[M[_, _], K, V](
       val obtainedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
       val both = mutable.ArrayBuffer.empty[MapResult.Entry]
       val expectedOnly = mutable.ArrayBuffer.empty[MapResult.Entry]
-      obtained.foreach {
-        case (k, actualV) =>
-          expected.get(k) match {
-            case Some(expectedV) =>
-              both += MapResult.Entry(
-                mapKeyToString(k, keyDiffer),
-                valueDiffer.diff(actualV, expectedV),
-              )
-            case None =>
-              obtainedOnly += MapResult.Entry(
-                mapKeyToString(k, keyDiffer),
-                valueDiffer.diff(DiffInput.ObtainedOnly(actualV)),
-              )
-          }
-      }
-      expected.foreach {
-        case (k, expectedV) =>
-          if (obtained.contains(k)) {
-            // Do nothing, already compared when iterating through obtained
-          } else {
-            expectedOnly += MapResult.Entry(
+      obtained.foreach { case (k, actualV) =>
+        expected.get(k) match {
+          case Some(expectedV) =>
+            both += MapResult.Entry(
               mapKeyToString(k, keyDiffer),
-              valueDiffer.diff(DiffInput.ExpectedOnly(expectedV)),
+              valueDiffer.diff(actualV, expectedV),
             )
-          }
+          case None =>
+            obtainedOnly += MapResult.Entry(
+              mapKeyToString(k, keyDiffer),
+              valueDiffer.diff(DiffInput.ObtainedOnly(actualV)),
+            )
+        }
+      }
+      expected.foreach { case (k, expectedV) =>
+        if (obtained.contains(k)) {
+          // Do nothing, already compared when iterating through obtained
+        } else {
+          expectedOnly += MapResult.Entry(
+            mapKeyToString(k, keyDiffer),
+            valueDiffer.diff(DiffInput.ExpectedOnly(expectedV)),
+          )
+        }
       }
       MapResult(
         typeName = typeName,
@@ -59,9 +57,8 @@ class MapDiffer[M[_, _], K, V](
     case DiffInput.ObtainedOnly(obtained) =>
       DiffResult.MapResult(
         typeName = typeName,
-        entries = obtained.map {
-          case (k, v) =>
-            MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ObtainedOnly(v)))
+        entries = obtained.map { case (k, v) =>
+          MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ObtainedOnly(v)))
         }.toVector,
         pairType = PairType.ObtainedOnly,
         isIgnored = isIgnored,
@@ -70,9 +67,8 @@ class MapDiffer[M[_, _], K, V](
     case DiffInput.ExpectedOnly(expected) =>
       DiffResult.MapResult(
         typeName = typeName,
-        entries = expected.map {
-          case (k, v) =>
-            MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ExpectedOnly(v)))
+        entries = expected.map { case (k, v) =>
+          MapResult.Entry(mapKeyToString(k, keyDiffer), valueDiffer.diff(DiffInput.ExpectedOnly(v)))
         }.toVector,
         pairType = PairType.ExpectedOnly,
         isIgnored = isIgnored,
@@ -109,7 +105,7 @@ class MapDiffer[M[_, _], K, V](
       Left(ConfigureError.NonExistentField(path = nextPath, "MapDiffer"))
   }
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[M[K, V]]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, Differ[M[K, V]]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "MapDiffer"))
 
 }
@@ -120,7 +116,7 @@ object MapDiffer {
     keyDiffer.diff(DiffInput.ObtainedOnly(k)) match {
       case r: ValueResult.ObtainedOnly => r.obtained
       // $COVERAGE-OFF$
-      case r: ValueResult.Both         => r.obtained
+      case r: ValueResult.Both => r.obtained
       case r: ValueResult.ExpectedOnly => r.expected
       // $COVERAGE-ON$
     }

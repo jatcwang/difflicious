@@ -2,7 +2,7 @@ package difflicious.utils
 
 import izumi.reflect.macrortti.{LightTypeTag, LTag}
 
-final case class TypeName[A](long: String, short: String, typeArguments: List[TypeName[_]]) {
+final case class TypeName[A](long: String, short: String, typeArguments: List[TypeName[?]]) {
   def withTypeParamsLong: String = {
     s"$long${typeArguments.map(_.withTypeParamsLong).mkString("[", ",", "]")}"
   }
@@ -11,7 +11,7 @@ final case class TypeName[A](long: String, short: String, typeArguments: List[Ty
 object TypeName {
 
   // A type name without a compile time type known.
-  type SomeTypeName = TypeName[_]
+  type SomeTypeName = TypeName[?]
 
   implicit def apply[A](implicit tag: LTag[A]): TypeName[A] = {
     fromLightTypeTag(tag.tag)

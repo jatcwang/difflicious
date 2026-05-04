@@ -31,7 +31,7 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToStr
 
   override def configurePairBy(
     path: ConfigurePath,
-    op: ConfigureOp.PairBy[_],
+    op: ConfigureOp.PairBy[?],
   ): Either[ConfigureError, NumericDiffer[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "NumericDiffer"))
 

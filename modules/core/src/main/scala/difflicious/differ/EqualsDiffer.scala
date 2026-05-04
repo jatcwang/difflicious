@@ -3,10 +3,8 @@ package difflicious.differ
 import difflicious.ConfigureOp.PairBy
 import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult}
 
-/**
-  * Differ where the two values are compared by using the equals method.
-  * If the two values aren't equal, then we use the provided valueToString function
-  * to output the diagnostic output.
+/** Differ where the two values are compared by using the equals method. If the two values aren't equal, then we use the
+  * provided valueToString function to output the diagnostic output.
   */
 final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) extends ValueDiffer[T] {
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
@@ -33,7 +31,7 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) exte
     op: ConfigureOp,
   ): Either[ConfigureError, EqualsDiffer[T]] = Left(ConfigureError.PathTooLong(nextPath))
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, EqualsDiffer[T]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, EqualsDiffer[T]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "EqualsDiffer"))
 
 }

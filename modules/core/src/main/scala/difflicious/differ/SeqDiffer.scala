@@ -27,9 +27,9 @@ final class SeqDiffer[F[_], A](
             .zipAll(expected.map(Some(_)), None, None)
             .map {
               case (Some(ob), Some(exp)) => itemDiffer.diff(DiffInput.Both(ob, exp))
-              case (Some(ob), None)      => itemDiffer.diff(DiffInput.ObtainedOnly(ob))
-              case (None, Some(exp))     => itemDiffer.diff(DiffInput.ExpectedOnly(exp))
-              case (None, None)          =>
+              case (Some(ob), None) => itemDiffer.diff(DiffInput.ObtainedOnly(ob))
+              case (None, Some(exp)) => itemDiffer.diff(DiffInput.ExpectedOnly(exp))
+              case (None, None) =>
                 // $COVERAGE-OFF$
                 throw new RuntimeException(
                   "Unexpected: Both obtained and expected side is None in SeqDiffer. " +
@@ -107,7 +107,7 @@ final class SeqDiffer[F[_], A](
       }
     } else Left(ConfigureError.NonExistentField(nextPath, "SeqDiffer"))
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, Differ[F[A]]] =
     op match {
       case PairBy.Index =>
         Right(
@@ -119,7 +119,7 @@ final class SeqDiffer[F[_], A](
             asSeq = asSeq,
           ),
         )
-      case m: PairBy.ByFunc[_, _] =>
+      case m: PairBy.ByFunc[?, ?] =>
         Right(
           new SeqDiffer[F, A](
             isIgnored = isIgnored,
@@ -160,17 +160,16 @@ object SeqDiffer {
     var allIsOk = true
     obtained.foreach { a =>
       val aMatchVal = func(a)
-      val found = expWithIdx.find {
-        case (e, idx) =>
-          if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
-            val res = itemDiffer.diff(a, e)
-            results += res
-            matchedIndexes += idx
-            allIsOk &= res.isOk
-            true
-          } else {
-            false
-          }
+      val found = expWithIdx.find { case (e, idx) =>
+        if (!matchedIndexes.contains(idx) && aMatchVal == func(e)) {
+          val res = itemDiffer.diff(a, e)
+          results += res
+          matchedIndexes += idx
+          allIsOk &= res.isOk
+          true
+        } else {
+          false
+        }
       }
 
       if (found.isEmpty) {
@@ -179,12 +178,11 @@ object SeqDiffer {
       }
     }
 
-    expWithIdx.foreach {
-      case (e, idx) =>
-        if (!matchedIndexes.contains(idx)) {
-          results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
-          allIsOk = false
-        }
+    expWithIdx.foreach { case (e, idx) =>
+      if (!matchedIndexes.contains(idx)) {
+        results += itemDiffer.diff(DiffInput.ExpectedOnly(e))
+        allIsOk = false
+      }
     }
 
     (results.toVector, allIsOk)

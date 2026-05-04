@@ -15,7 +15,7 @@ trait ScalaVersionDependentTestTypes {
       case class SubSub2(s: String) extends SubSealed
     }
 
-    import SubSealed._
+    import SubSealed.*
     implicit val arb: Arbitrary[SealedNested] = {
       val subFoo = Gen.posNum[Int].map(SubFoo.apply)
       val subsub1 = Gen.posNum[Double].map(SubSub1.apply)
