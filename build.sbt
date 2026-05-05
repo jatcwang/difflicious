@@ -16,8 +16,7 @@ val isScala3 = Def.setting {
 }
 
 val mainScalaVersion = Build.Scala213
-val jvmScalaVersions = Seq(Build.Scala213, Build.Scala3)
-val jsScalaVersions = Seq(Build.Scala213, Build.Scala3)
+val scalaCrossVersions = Seq(Build.Scala213, Build.Scala3)
 
 inThisBuild(
   List(
@@ -65,15 +64,16 @@ lazy val core = projectMatrix
       Seq(file)
     }.taskValue,
   )
-  .jvmPlatform(jvmScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
   .jsPlatform(
-    jsScalaVersions,
+    scalaCrossVersions,
     settings = Seq(
       libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % "2.8.1", // We need dom.intl.NumberFormat
+        "org.scala-js" %%% "scalajs-dom" % "2.8.1",
       ),
     ),
   )
+  .nativePlatform(scalaCrossVersions)
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
@@ -85,8 +85,9 @@ lazy val munit = projectMatrix
       "org.scalameta" %%% "munit" % munitVersion,
     ),
   )
-  .jvmPlatform(jvmScalaVersions)
-  .jsPlatform(jsScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
 
 lazy val scalatest = projectMatrix
   .in(file("modules/scalatest"))
@@ -98,7 +99,9 @@ lazy val scalatest = projectMatrix
       "org.scalatest" %%% "scalatest-core" % scalatestVersion,
     ),
   )
-  .jvmPlatform(jvmScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
 
 lazy val weaver = projectMatrix
   .in(file("modules/weaver"))
@@ -110,8 +113,9 @@ lazy val weaver = projectMatrix
       "org.typelevel" %%% "weaver-core" % weaverVersion,
     ),
   )
-  .jvmPlatform(jvmScalaVersions)
-  .jsPlatform(jsScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
 
 lazy val cats = projectMatrix
   .in(file("modules/cats"))
@@ -126,8 +130,9 @@ lazy val cats = projectMatrix
       "org.typelevel" %%% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
-  .jvmPlatform(jvmScalaVersions)
-  .jsPlatform(jsScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
 
 lazy val coretest = projectMatrix
   .in(file("modules/coretest"))
@@ -144,8 +149,9 @@ lazy val coretest = projectMatrix
       "org.scalameta" %%% "munit-scalacheck" % munitScalacheckVersion,
     ).map(_ % Test),
   )
-  .jvmPlatform(jvmScalaVersions)
-  .jsPlatform(jsScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
 
 lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, munit, scalatest, weaver)
@@ -189,7 +195,7 @@ lazy val benchmarks = projectMatrix
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
   .settings(noPublishSettings)
-  .jvmPlatform(jvmScalaVersions)
+  .jvmPlatform(scalaCrossVersions)
 
 lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
@@ -241,9 +247,7 @@ ThisBuild / githubWorkflowPublish := Seq(
   ),
 )
 
-ThisBuild / githubWorkflowBuildMatrixAdditions += ("scalaPlatform", List("jvm"))
-
-ThisBuild / githubWorkflowScalaVersions := Seq("2_13", "3_0")
+ThisBuild / githubWorkflowScalaVersions := Seq("all")
 
 ThisBuild / githubWorkflowBuildSbtStepPreamble := Seq.empty
 
