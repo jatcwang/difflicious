@@ -19,7 +19,7 @@ object testtypes extends ScalaVersionDependentTestTypes {
       op: ConfigureOp,
     ): Either[ConfigureError, Differ[T]] = sys.error("dummyDiffer methods should not be called")
 
-    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[_]): Either[ConfigureError, Differ[T]] =
+    override def configurePairBy(path: ConfigurePath, op: ConfigureOp.PairBy[?]): Either[ConfigureError, Differ[T]] =
       sys.error("dummyDiffer methods should not be called")
 
   }

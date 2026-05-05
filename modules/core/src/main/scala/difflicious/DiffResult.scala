@@ -6,21 +6,18 @@ import scala.collection.immutable.ListMap
 
 sealed trait DiffResult {
 
-  /**
-    * Whether this DiffResult was produced from an ignored Differ
+  /** Whether this DiffResult was produced from an ignored Differ
     * @return
     */
   def isIgnored: Boolean
 
-  /**
-    * Whether this DiffResult is consider "successful".
-    * If there are any non-ignored differences found, then this should be false
+  /** Whether this DiffResult is consider "successful". If there are any non-ignored differences found, then this should
+    * be false
     * @return
     */
   def isOk: Boolean
 
-  /**
-    * Whether the input leading to this DiffResult has both sides or just one.
+  /** Whether the input leading to this DiffResult has both sides or just one.
     * @return
     */
   def pairType: PairType

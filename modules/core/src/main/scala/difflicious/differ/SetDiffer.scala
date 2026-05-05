@@ -75,10 +75,10 @@ final class SetDiffer[F[_], A](
       }
     } else Left(ConfigureError.NonExistentField(nextPath, "SetDiffer"))
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[F[A]]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, Differ[F[A]]] =
     op match {
       case PairBy.Index => Left(ConfigureError.InvalidConfigureOp(path, op, "SetDiffer"))
-      case m: PairBy.ByFunc[_, _] =>
+      case m: PairBy.ByFunc[?, ?] =>
         Right(
           new SetDiffer[F, A](
             isIgnored = isIgnored,

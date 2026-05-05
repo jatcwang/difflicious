@@ -3,7 +3,7 @@ package difflicious.generic
 import difflicious.Derived
 import difflicious.DifferGen
 import difflicious.Differ
-import magnolia1._
+import magnolia1.*
 import scala.deriving.Mirror
 
 package object auto extends DerivedAutoDerivation

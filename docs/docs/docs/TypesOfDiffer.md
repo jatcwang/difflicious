@@ -11,8 +11,8 @@ Here we list the kinds of Differs and how you can use them.
 The examples below assume the following imports:
 
 ```scala mdoc:silent
-import difflicious._
-import difflicious.implicits._
+import difflicious.*
+import difflicious.implicits.*
 ```
 
 # Value Differs

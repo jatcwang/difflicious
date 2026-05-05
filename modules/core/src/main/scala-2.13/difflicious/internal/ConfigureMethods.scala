@@ -10,11 +10,12 @@ trait ConfigureMethods[T] { this: Differ[T] =>
 
   def ignoreAt[U](path: T => U): Differ[T] = macro ConfigureMacro.ignoreAt_impl[T, U]
 
+  // format: off
   def configure[U](path: T => U)(configFunc: Differ[U] => Differ[U]): Differ[T] =
     macro ConfigureMacro.configure_impl[T, U]
+  // format: on
 
-  def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] =
-    macro ConfigureMacro.replace_impl[T, U]
+  def replace[U](path: T => U)(newDiffer: Differ[U]): Differ[T] = macro ConfigureMacro.replace_impl[T, U]
 }
 
 // Implementation inspired by quicklen's path macro.
@@ -28,7 +29,7 @@ object ConfigureMacro {
   )(
     configFunc: c.Expr[Differ[U] => Differ[U]],
   ): c.Tree = {
-    import c.universe._
+    import c.universe.*
     val opTree = q"_root_.difflicious.ConfigureOp.TransformDiffer($configFunc)"
     toConfigureRawCall(c)(path, opTree)
   }
@@ -38,7 +39,7 @@ object ConfigureMacro {
   )(
     newDiffer: c.Expr[Differ[U]],
   )(implicit uTypeTag: c.WeakTypeTag[U]): c.Tree = {
-    import c.universe._
+    import c.universe.*
     val opTree =
       q"_root_.difflicious.ConfigureOp.TransformDiffer[${uTypeTag.tpe}](unused => { val _ = unused; $newDiffer })"
     toConfigureRawCall(c)(path, opTree)
@@ -47,7 +48,7 @@ object ConfigureMacro {
   def ignoreAt_impl[T: c.WeakTypeTag, U: c.WeakTypeTag](
     c: blackbox.Context,
   )(path: c.Expr[T => U]): c.Tree = {
-    import c.universe._
+    import c.universe.*
     val configureOpTree = q"_root_.difflicious.ConfigureOp.ignore"
     toConfigureRawCall(c)(path, configureOpTree)
   }
@@ -56,7 +57,7 @@ object ConfigureMacro {
   def toConfigureRawCall[T: c.WeakTypeTag, U: c.WeakTypeTag](
     c: blackbox.Context,
   )(path: c.Expr[T => U], op: c.Tree): c.Tree = {
-    import c.universe._
+    import c.universe.*
 
     // When deriving, Magnolia derives for all subtypes in the hierarchy
     // (including subclasses of sub-sealed traits) therefore when checking

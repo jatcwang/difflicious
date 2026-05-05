@@ -1,5 +1,5 @@
 package difflicious.testutils
-import munit.Assertions._
+import munit.Assertions.*
 
 object Inside {
 

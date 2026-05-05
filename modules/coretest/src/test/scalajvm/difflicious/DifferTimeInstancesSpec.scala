@@ -1,9 +1,9 @@
 package difflicious
 
-import difflicious.testutils._
+import difflicious.testutils.*
 import munit.ScalaCheckSuite
 
-import java.time._
+import java.time.*
 import org.scalacheck.{Gen, Arbitrary}
 
 class DifferTimeInstancesSpec extends ScalaCheckSuite {

@@ -1,13 +1,13 @@
 package difflicious.cats
 
 import munit.FunSuite
-import cats.data._
-import cats.laws.discipline.arbitrary._
+import cats.data.*
+import cats.laws.discipline.arbitrary.*
 import difflicious.Differ
 import difflicious.testtypes.{CC, MapKey}
-import difflicious.testutils._
-import difflicious.implicits._
-import difflicious.cats.implicits._
+import difflicious.testutils.*
+import difflicious.implicits.*
+import difflicious.cats.implicits.*
 
 class CatsDataDiffSpec extends FunSuite {
   test("NonEmptyMap: Has map-like diff result") {

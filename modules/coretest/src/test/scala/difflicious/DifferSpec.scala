@@ -2,10 +2,10 @@ package difflicious
 
 import difflicious.ConfigureError.InvalidConfigureOp
 import munit.ScalaCheckSuite
-import difflicious.testutils._
-import difflicious.testtypes._
-import difflicious.implicits._
-import difflicious.internal.EitherGetSyntax._
+import difflicious.testutils.*
+import difflicious.testtypes.*
+import difflicious.implicits.*
+import difflicious.internal.EitherGetSyntax.*
 
 import scala.collection.immutable.HashSet
 

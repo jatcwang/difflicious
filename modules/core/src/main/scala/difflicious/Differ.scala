@@ -1,6 +1,6 @@
 package difflicious
 import difflicious.ConfigureOp.PairBy
-import difflicious.differ._
+import difflicious.differ.*
 import difflicious.internal.ConfigureMethods
 import difflicious.utils.{TypeName, MapLike, SetLike, SeqLike}
 
@@ -11,24 +11,25 @@ trait Differ[T] extends ConfigureMethods[T] {
 
   final def diff(obtained: T, expected: T): R = diff(DiffInput.Both(obtained, expected))
 
-  /**
-    * Attempt to change the configuration of this Differ.
-    * If successful, a new differ with the updated configuration will be returned.
+  /** Attempt to change the configuration of this Differ. If successful, a new differ with the updated configuration
+    * will be returned.
     *
     * The configuration change can fail due to
-    * - bad "path" that does not match the internal structure of the Differ
-    * - The path resolved correctly, but the configuration update operation cannot be applied for that part of the Differ
-    *   (e.g. wrong type or wrong operation)
+    *   - bad "path" that does not match the internal structure of the Differ
+    *   - The path resolved correctly, but the configuration update operation cannot be applied for that part of the
+    *     Differ (e.g. wrong type or wrong operation)
     *
-    * @param path The path to traverse to the sub-Differ
-    * @param operation The configuration change operation you want to perform on the target sub-Differ
+    * @param path
+    *   The path to traverse to the sub-Differ
+    * @param operation
+    *   The configuration change operation you want to perform on the target sub-Differ
     */
   final def configureRaw(path: ConfigurePath, operation: ConfigureOp): Either[ConfigureError, Differ[T]] = {
     (path.unresolvedSteps, operation) match {
-      case (step :: tail, op)                        => configurePath(step, ConfigurePath(path.resolvedSteps :+ step, tail), op)
+      case (step :: tail, op) => configurePath(step, ConfigurePath(path.resolvedSteps :+ step, tail), op)
       case (Nil, ConfigureOp.SetIgnored(newIgnored)) => Right(configureIgnored(newIgnored))
-      case (Nil, pairByOp: ConfigureOp.PairBy[_])    => configurePairBy(path, pairByOp)
-      case (Nil, op: ConfigureOp.TransformDiffer[_]) => Right(configureTransform(op))
+      case (Nil, pairByOp: ConfigureOp.PairBy[?]) => configurePairBy(path, pairByOp)
+      case (Nil, op: ConfigureOp.TransformDiffer[?]) => Right(configureTransform(op))
     }
   }
 
@@ -39,16 +40,16 @@ trait Differ[T] extends ConfigureMethods[T] {
 
   protected def configurePath(step: String, nextPath: ConfigurePath, op: ConfigureOp): Either[ConfigureError, Differ[T]]
 
-  protected def configurePairBy(path: ConfigurePath, op: PairBy[_]): Either[ConfigureError, Differ[T]]
+  protected def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, Differ[T]]
 
   final private def configureTransform(
-    op: ConfigureOp.TransformDiffer[_],
+    op: ConfigureOp.TransformDiffer[?],
   ): Differ[T] = {
     op.unsafeCastFunc[T].apply(this)
   }
 }
 
-object Differ extends DifferTupleInstances with DifferGen with DifferPlatform with  DifferTimeInstancesPlatform {
+object Differ extends DifferTupleInstances with DifferGen with DifferPlatform with DifferTimeInstancesPlatform {
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
@@ -72,8 +73,8 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
   implicit def optionDiffer[T: Differ]: Differ[Option[T]] = derived[Option[T]]
   implicit def eitherDiffer[A: Differ, B: Differ]: Differ[Either[A, B]] = derived[Either[A, B]]
 
-  implicit def mapDiffer[M[_, _], K, V](
-    implicit keyDiffer: ValueDiffer[K],
+  implicit def mapDiffer[M[_, _], K, V](implicit
+    keyDiffer: ValueDiffer[K],
     valueDiffer: Differ[V],
     typeName: TypeName[M[K, V]],
     asMap: MapLike[M],
@@ -87,8 +88,8 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
     )
   }
 
-  implicit def seqDiffer[F[_], A](
-    implicit itemDiffer: Differ[A],
+  implicit def seqDiffer[F[_], A](implicit
+    itemDiffer: Differ[A],
     typeName: TypeName[F[A]],
     asSeq: SeqLike[F],
   ): SeqDiffer[F, A] = {
@@ -99,8 +100,8 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
     )
   }
 
-  implicit def setDiffer[F[_], A](
-    implicit itemDiffer: Differ[A],
+  implicit def setDiffer[F[_], A](implicit
+    itemDiffer: Differ[A],
     typeName: TypeName[F[A]],
     asSet: SetLike[F],
   ): SetDiffer[F, A] = {

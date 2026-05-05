@@ -1,5 +1,5 @@
 package difflicious
-import java.time._
+import java.time.*
 import difflicious.differ.EqualsDiffer
 
 trait DifferTimeInstancesPlatform {

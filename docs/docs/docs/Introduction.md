@@ -14,8 +14,8 @@ permalink: docs/introduction
 Here's a motivational example!
 
 ```scala mdoc:silent
-import difflicious._
-import difflicious.implicits._
+import difflicious.*
+import difflicious.implicits.*
 
 sealed trait HousePet {
   def name: String

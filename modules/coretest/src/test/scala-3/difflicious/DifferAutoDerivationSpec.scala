@@ -5,9 +5,8 @@ import DifferAutoDerivationSpec.P1
 
 class DifferAutoDerivationSpec extends ScalaCheckSuite {
   test("should not compile without instance in scope") {
-    val result = compileErrors(
-      """
-        import difflicious._
+    val result = compileErrors("""
+        import difflicious.*
         final case class P1(f1: String)
         
         val p1: Differ[P1] = Differ.derived[P1]
@@ -19,13 +18,12 @@ class DifferAutoDerivationSpec extends ScalaCheckSuite {
       """error: No given instance of type difflicious.Differ[P1] was found for parameter differ of method apply in object Differ
         |        Differ[P1].diff(P1("a"), P1("b"))
         |                 ^
-        |""".stripMargin
+        |""".stripMargin,
     )
   }
   test("should find auto derived instance for product") {
-    val result = compileErrors(
-      """
-        import difflicious._
+    val result = compileErrors("""
+        import difflicious.*
         import difflicious.generic.auto.given
         
         Differ[P1].diff(P1("a"), P1("b"))
@@ -33,9 +31,8 @@ class DifferAutoDerivationSpec extends ScalaCheckSuite {
     assertNoDiff(result, "")
   }
   test("should put auto derived instance back into scope") {
-    val result = compileErrors(
-      """
-        import difflicious._
+    val result = compileErrors("""
+        import difflicious.*
         import difflicious.generic.auto.given
 
         implicit val d: Differ[P1] = implicitly[Derived[P1]].differ
@@ -45,8 +42,8 @@ class DifferAutoDerivationSpec extends ScalaCheckSuite {
     assertNoDiff(result, "")
   }
   test("should use manually defined instance for an element") {
-    import difflicious._
-    import difflicious.generic.auto._
+    import difflicious.*
+    import difflicious.generic.auto.*
     import difflicious.generic.auto.given
 
     final case class Pi(f1: String, f2: String)
@@ -57,7 +54,7 @@ class DifferAutoDerivationSpec extends ScalaCheckSuite {
     assertEquals(r.isOk, true)
   }
 }
-  
+
 object DifferAutoDerivationSpec {
   final case class P1(f1: String)
 }

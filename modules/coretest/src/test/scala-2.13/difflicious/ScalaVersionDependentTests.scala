@@ -1,9 +1,9 @@
 package difflicious
 
-import difflicious.testtypes._
+import difflicious.testtypes.*
 import difflicious.testtypes.SealedNested.SubSealed
-import difflicious.testutils._
-import difflicious.implicits._
+import difflicious.testutils.*
+import difflicious.implicits.*
 import munit.FunSuite
 
 trait ScalaVersionDependentTests { this: FunSuite =>

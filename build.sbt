@@ -1,6 +1,6 @@
 import sbt.internal.ProjectMatrix
 import sbtghactions.JavaSpec
-import complete.DefaultParsers._
+import complete.DefaultParsers.*
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 
@@ -193,7 +193,14 @@ lazy val benchmarks = projectMatrix
 
 lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
-  scalacOptions ++= (if (isScala3.value) Seq.empty[String] else Seq("-Wmacros:after")),
+  scalacOptions ++= (if (isScala3.value)
+                       Seq.empty
+                     else
+                       Seq(
+                         "-Wmacros:after",
+                         "-Xsource:3",
+                         "-Wconf:msg=.*access modifiers for.*:s", // silence warnings about coyp method on case class with private constructors
+                       )),
   // TODO: Not sure why but having these scalac options seems to crash the compiler complaining about
   // magnoalia class files having duplicate top level definitions..
   // Maybe related to https://github.com/scala/scala3/issues/18674

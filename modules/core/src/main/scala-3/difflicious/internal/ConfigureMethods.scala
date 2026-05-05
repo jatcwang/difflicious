@@ -26,7 +26,7 @@ private[difflicious] object ConfigureMethodImpls:
       (${ differ }
         .configureRaw(ConfigurePath.fromPath(${ collectPathElements(path) }), ConfigureOp.ignore)) match {
         case Right(d) => d
-        case Left(e)  => throw e
+        case Left(e) => throw e
       }
     }
   }
@@ -45,7 +45,7 @@ private[difflicious] object ConfigureMethodImpls:
           ConfigureOp.TransformDiffer(${ configFunc }),
         )) match {
         case Right(d) => d
-        case Left(e)  => throw e
+        case Left(e) => throw e
       }
     }
 
@@ -63,14 +63,14 @@ private[difflicious] object ConfigureMethodImpls:
           ConfigureOp.TransformDiffer[U](_ => ${ newDiffer }),
         ) match {
         case Right(d) => d
-        case Left(e)  => throw e
+        case Left(e) => throw e
       }
     }
 
   def collectPathElements[T, U](pathExpr: Expr[T => U])(using Quotes): Expr[List[String]] = {
     import quotes.reflect.*
 
-//    import dotty.tools.dotc.ast.Trees._
+//    import dotty.tools.dotc.ast.Trees.*
     @tailrec
     def collectPathElementsLoop(pathAccum: List[String], cur: Term): List[String] =
       cur match {

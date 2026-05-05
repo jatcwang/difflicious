@@ -17,7 +17,7 @@ and then in your test suites you can call `assertNoDiff` on any `Differ`.
 
 ```scala mdoc:nest
 import munit.FunSuite
-import difflicious.munit.MUnitDiff._
+import difflicious.munit.MUnitDiff.*
 import difflicious.Differ
 
 class MyTest extends FunSuite {
@@ -45,7 +45,7 @@ Here's an example of what a test using difflicious looks like:
 
 ```scala mdoc:nest
 import org.scalatest.funsuite.AnyFunSuite
-import difflicious.scalatest.ScalatestDiff._
+import difflicious.scalatest.ScalatestDiff.*
 import difflicious.Differ
 
 class MyTest extends AnyFunSuite {
@@ -66,7 +66,7 @@ and then in your test suites you can call `assertNoDiff` on any `Differ`.
 
 ```scala mdoc:nest
 import weaver.SimpleIOSuite
-import difflicious.weaver.WeaverDiff._
+import difflicious.weaver.WeaverDiff.*
 import difflicious.Differ
 
 object MyTest extends SimpleIOSuite {
@@ -86,7 +86,7 @@ Differ instances for cats data structures like `NonEmptyList` and `Chain` can be
 
 ```scala mdoc:nest
 import difflicious.Differ
-import difflicious.cats.implicits._
+import difflicious.cats.implicits.*
 import cats.data.{NonEmptyMap, NonEmptyList}
 
 val differ: Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]] = Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]]

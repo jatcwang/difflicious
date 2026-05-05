@@ -7,12 +7,12 @@ permalink: docs/cheatsheet
 ### Basic imports
 
 ```scala mdoc:invisible
-import difflicious.Example._
+import difflicious.Example.*
 ```
 
 ```scala mdoc:silent
-import difflicious._
-import difflicious.implicits._
+import difflicious.*
+import difflicious.implicits.*
 ```
 
 ### Summoning Differ instances

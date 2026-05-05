@@ -1,7 +1,7 @@
 package difflicious.munit
 
 import difflicious.{Differ, DiffResultPrinter}
-import munit.Assertions._
+import munit.Assertions.*
 import munit.Location
 
 trait MUnitDiff {
