@@ -1,0 +1,4 @@
+package difflicious
+
+trait DifferTimeInstancesPlatform {
+}
