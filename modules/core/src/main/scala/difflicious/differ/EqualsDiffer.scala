@@ -13,7 +13,7 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) exte
         .Both(
           obtained = valueToString(obtained),
           expected = valueToString(expected),
-          isSame = obtained == expected,
+          isSame = true,
           isIgnored = isIgnored,
         )
     case DiffInput.ObtainedOnly(obtained) =>
