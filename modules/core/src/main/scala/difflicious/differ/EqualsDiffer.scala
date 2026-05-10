@@ -13,7 +13,7 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String) exte
         .Both(
           obtained = valueToString(obtained),
           expected = valueToString(expected),
-          isSame = true,
+          isSame = scala.util.Random.nextBoolean(),
           isIgnored = isIgnored,
         )
     case DiffInput.ObtainedOnly(obtained) =>
