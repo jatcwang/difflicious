@@ -1,4 +1,3 @@
 package difflicious
 
-trait DifferTimeInstancesPlatform {
-}
+trait DifferTimeInstancesPlatform {}
