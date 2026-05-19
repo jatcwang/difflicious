@@ -55,7 +55,7 @@ lazy val core = projectMatrix
             Seq("com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.20")
           } else
             Seq(
-              "com.softwaremill.magnolia1_2" %%% "magnolia" % "1.1.10",
+              "com.softwaremill.magnolia1_2" %%% "magnolia" % "1.1.13",
               "org.scala-lang" % "scala-reflect" % Build.Scala213,
             )),
     Compile / sourceGenerators += Def.task {
