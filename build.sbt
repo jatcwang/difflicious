@@ -4,7 +4,7 @@ import complete.DefaultParsers.*
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 
-val munitVersion = "1.3.0"
+val munitVersion = "1.3.1"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val scalatestVersion = "3.2.20"
