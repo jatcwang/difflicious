@@ -76,7 +76,7 @@ class MapDiffer[M[_, _], K, V](
       )
   }
 
-  override def configureIgnored(newIgnored: Boolean): Differ[M[K, V]] = {
+  override def configureIgnored(newIgnored: Boolean): MapDiffer[M, K, V] = {
     new MapDiffer[M, K, V](
       isIgnored = newIgnored,
       keyDiffer = keyDiffer,
@@ -90,7 +90,7 @@ class MapDiffer[M[_, _], K, V](
     step: String,
     nextPath: ConfigurePath,
     op: ConfigureOp,
-  ): Either[ConfigureError, Differ[M[K, V]]] = {
+  ): Either[ConfigureError, MapDiffer[M, K, V]] = {
     if (step == "each") {
       valueDiffer.configureRaw(nextPath, op).map { newValueDiffer =>
         new MapDiffer[M, K, V](
@@ -105,7 +105,7 @@ class MapDiffer[M[_, _], K, V](
       Left(ConfigureError.NonExistentField(path = nextPath, "MapDiffer"))
   }
 
-  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, Differ[M[K, V]]] =
+  override def configurePairBy(path: ConfigurePath, op: PairBy[?]): Either[ConfigureError, MapDiffer[M, K, V]] =
     Left(ConfigureError.InvalidConfigureOp(path, op, "MapDiffer"))
 
 }

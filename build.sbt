@@ -7,6 +7,7 @@ import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 val munitVersion = "1.3.1"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
+val circeVersion = "0.14.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.12.0"
 
@@ -37,7 +38,8 @@ inThisBuild(
   ),
 )
 
-lazy val allModules = Seq(core, coretest, munit, scalatest, weaver, cats, benchmarks, docs).flatMap(_.projectRefs)
+lazy val allModules =
+  Seq(core, coretest, munit, scalatest, weaver, cats, circe, benchmarks, docs).flatMap(_.projectRefs)
 
 lazy val difflicious = Project("difflicious", file("."))
   .aggregate(allModules: _*)
@@ -134,6 +136,20 @@ lazy val cats = projectMatrix
   .jsPlatform(scalaCrossVersions)
   .nativePlatform(scalaCrossVersions)
 
+lazy val circe = projectMatrix
+  .in(file("modules/circe"))
+  .dependsOn(core, coretest % "test->test")
+  .settings(commonSettings)
+  .settings(
+    name := "difflicious-circe",
+    libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-core" % circeVersion,
+    ),
+  )
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
+
 lazy val coretest = projectMatrix
   .in(file("modules/coretest"))
   .dependsOn(core)
@@ -154,7 +170,7 @@ lazy val coretest = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val docs: ProjectMatrix = projectMatrix
-  .dependsOn(core, coretest, cats, munit, scalatest, weaver)
+  .dependsOn(core, coretest, cats, circe, munit, scalatest, weaver)
   .enablePlugins(MdocPlugin)
   .settings(
     name := "docs",

@@ -83,7 +83,7 @@ final class OneOfDiffer[A](
       }
 
   private def applyCaseToDiffInput(caseDef: Case[A, ?], inputs: DiffInput[A]): DiffResult =
-    caseDef.differ.asInstanceOf[Differ[Any]].diff(inputs.map(_.asInstanceOf[Any]))
+    caseDef.diff(inputs)
 }
 
 object OneOfDiffer {
@@ -99,6 +99,15 @@ object OneOfDiffer {
     differ: Differ[B],
   ) {
     def id: String = typeName.short
+
+    private[difflicious] def diff(inputs: DiffInput[A]): DiffResult =
+      differ.diff(
+        inputs.map { value =>
+          extract(value).getOrElse {
+            throw new IllegalStateException(s"Value does not match selected OneOfDiffer case $id")
+          }
+        },
+      )
 
     private[difflicious] def configureRaw(
       path: ConfigurePath,
