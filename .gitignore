@@ -26,3 +26,4 @@ metals.sbt
 TempGo.scala
 metals.sbt
 .bloop
+/wt
