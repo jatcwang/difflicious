@@ -709,6 +709,49 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     )
   }
 
+  test("OneOfDiffer: supports custom alternatives selected by extractors") {
+    final case class CustomOneOf(raw: String)
+
+    val differ = Differ.oneOf[CustomOneOf](
+      difflicious.differ.OneOfDiffer.caseOf[CustomOneOf, CustomOneOf](
+        typeName = difflicious.utils.TypeName[Any](
+          long = "difflicious.CustomOneOf.IntValue",
+          short = "IntValue",
+          typeArguments = Nil,
+        ),
+        extract = value => value.raw.toIntOption.map(_ => value),
+        differ = Differ.intDiffer.contramap[CustomOneOf](_.raw.toInt),
+      ),
+      difflicious.differ.OneOfDiffer.caseOf[CustomOneOf, CustomOneOf](
+        typeName = difflicious.utils.TypeName[Any](
+          long = "difflicious.CustomOneOf.StringValue",
+          short = "StringValue",
+          typeArguments = Nil,
+        ),
+        extract = Some(_),
+        differ = Differ.stringDiffer.contramap[CustomOneOf](_.raw),
+      ),
+    )
+
+    assertConsoleDiffOutput(
+      differ,
+      CustomOneOf("1"),
+      CustomOneOf("abc"),
+      s"""${R}IntValue$X != ${G}StringValue${X}
+         |${R}=== Obtained ===
+         |1$X
+         |${G}=== Expected ===
+         |"abc"$X""".stripMargin,
+    )
+
+    assertConsoleDiffOutput(
+      differ.configureRaw(ConfigurePath.of("IntValue"), ConfigureOp.ignore).unsafeGet,
+      CustomOneOf("1"),
+      CustomOneOf("2"),
+      grayIgnoredStr,
+    )
+  }
+
   test("Sealed trait: should display obtained and expected types when mismatch") {
     assertConsoleDiffOutput(
       Sealed.differ,
@@ -877,7 +920,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
         ConfigureError.InvalidConfigureOp(
           ConfigurePath.current,
           ConfigureOp.PairBy.Index,
-          "SealedTraitDiffer",
+          "OneOfDiffer",
         ),
       ),
     )

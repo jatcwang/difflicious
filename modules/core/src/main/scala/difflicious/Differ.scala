@@ -53,6 +53,9 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
+  def oneOf[A](case0: OneOfDiffer.Case[A, ?], otherCases: OneOfDiffer.Case[A, ?]*): OneOfDiffer[A] =
+    new OneOfDiffer[A]((case0 +: otherCases).toVector, isIgnored = false, differTypeName = "OneOfDiffer")
+
   def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
     new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
 
