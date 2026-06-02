@@ -1,5 +1,6 @@
 package difflicious
 
+import difflicious.differ.LazyDiffer
 import difflicious.ConfigureError.InvalidConfigureOp
 import munit.ScalaCheckSuite
 import difflicious.testutils.*
@@ -24,6 +25,36 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
         ConfigureError
           .InvalidConfigureOp(ConfigurePath(Vector.empty, List.empty), ConfigureOp.PairBy.Index, "NumericDiffer"),
       ),
+    )
+  }
+
+  test("LazyDiffer: defers and caches underlying differ construction") {
+    var constructionCount = 0
+
+    val lazyDiffer = new LazyDiffer[Int]({
+      constructionCount += 1
+      Differ.intDiffer
+    })
+
+    assertEquals(constructionCount, 0)
+    assert(lazyDiffer.diff(1, 1).isOk)
+    assert(lazyDiffer.diff(2, 2).isOk)
+    assert(lazyDiffer.ignore.diff(1, 2).isOk)
+    assertEquals(constructionCount, 1)
+  }
+
+  test("LazyDiffer: delegates configuration to the underlying differ") {
+    val lazyDiffer = new LazyDiffer[CC](CC.differ)
+
+    assertConsoleDiffOutput(
+      lazyDiffer.ignoreAt(_.dd),
+      CC(1, "s", 1.0),
+      CC(1, "s", 2.0),
+      s"""CC(
+         |  i: 1,
+         |  s: "s",
+         |  dd: $I[IGNORED]$X
+         |)""".stripMargin,
     )
   }
 
