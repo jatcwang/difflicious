@@ -11,6 +11,8 @@ val circeVersion = "0.14.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 
+val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
+
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
   scalaVersion.value.startsWith("3")
@@ -35,8 +37,12 @@ inThisBuild(
     ),
     commands ++= Build.createBuildCommands(allModules),
     tpolecatDefaultOptionsMode := (if (sys.env.contains("CI")) CiMode else DevMode),
+    useReadableConsoleGit,
   ),
 )
+
+addCommandAlias("runBenchCompile2", "benchmarkCompile / clean ; benchmarkCompile / Compile / compile")
+addCommandAlias("runBenchCompile3", "benchmarkCompile3 / clean ; benchmarkCompile3 / Compile / compile")
 
 lazy val allModules =
   Seq(core, coretest, munit, scalatest, weaver, cats, circe, benchmarks, docs).flatMap(_.projectRefs)
@@ -211,6 +217,25 @@ lazy val benchmarks = projectMatrix
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .jvmPlatform(scalaCrossVersions)
+
+lazy val benchmarkCompile = projectMatrix
+  .in(file("modules/compile-benchmarks"))
+  .dependsOn(core)
+  .settings(commonSettings, noPublishSettings)
+  .settings(
+    name := "difflicious-compile-benchmarks",
+    generateCompileBenchmarkSources := {
+      val directory = (Compile / scalaSource).value / "difflicious" / "derivation"
+      IO.createDirectory(directory)
+      DerivationBenchmarkInputsGen.files(layerCount = 25).map { case (fileName, content) =>
+        val file = directory / fileName
+        IO.write(file, content)
+        file
+      }
+    },
+    Compile / sourceGenerators += generateCompileBenchmarkSources.taskValue,
+  )
   .jvmPlatform(scalaCrossVersions)
 
 lazy val commonSettings = Seq(
