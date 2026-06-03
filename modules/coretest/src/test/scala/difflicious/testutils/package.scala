@@ -1,7 +1,7 @@
 package difflicious
 
 import difflicious.DiffResultPrinter.consoleOutput
-import munit.Assertions.assertEquals
+import munit.Assertions.{assertEquals, assertNoDiff}
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Arbitrary, Prop}
 import difflicious.internal.EitherGetSyntax.*
@@ -81,5 +81,10 @@ package object testutils {
     val res = differ.diff(obtained, expected)
     assertDiffResultRender(res, expectedOutputStr)
   }
+
+  def assertStartsWith(obtained: String, expectedPrefix: String)(implicit loc: munit.Location): Unit =
+    if (!obtained.startsWith(expectedPrefix)) {
+      assertNoDiff(obtained.take(expectedPrefix.length), expectedPrefix)
+    }
 
 }
