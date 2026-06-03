@@ -2,8 +2,7 @@
 
 > Diffs for human consumption
 
-[![Release](https://img.shields.io/nexus/r/com.github.jatcwang/difflicious-munit_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/releases/com/github/jatcwang/difflicious-munit_2.13/)
-[![(https://badges.gitter.im/gitterHQ/gitter.png)](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jatcwang/difflicious)
+[![Release](https://img.shields.io/maven-central/v/com.github.jatcwang/difflicious-munit_3)](https://repo1.maven.org/maven2/com/github/jatcwang/difflicious-munit_3/)
 
 **Difflicious** is a library that produces nice readable diffs in your tests.
 

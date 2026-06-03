@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Configuring Differs"
-permalink: docs/configuring-differs
+id: configuring-differs
+title: Configuring Differs
 ---
 
 # Configuring Differs
@@ -147,7 +146,7 @@ differPairByName.diff(
 )
 ```
 
-<pre class="diff-render">
+<pre className="diff-render">
 Map(
   "Germany" -> List(
       Person(
@@ -156,10 +155,10 @@ Map(
       ),
       Person(
         name: "Alice",
-        age: <span style="color: red;">55</span> -> <span style="color: green;">56</span>,
+        age: <span className="diff-red">55</span> -> <span className="diff-green">56</span>,
       ),
     ),
-  <span style="color: green;">"France"</span> -> <span style="color: green;">List(
+  <span className="diff-green">"France"</span> -> <span className="diff-green">List(
     )</span>,
 )
 </pre>
@@ -192,16 +191,16 @@ differPersonAgeIgnored.diff(
 )
 ```
 
-<pre class="diff-render">
+<pre className="diff-render">
 Map(
   "Germany" -> List(
       Person(
         name: "Alice",
-        age: <span style="color: gray;">[IGNORED]</span>,
+        age: <span className="diff-gray">[IGNORED]</span>,
       ),
       Person(
         name: "Bob",
-        age: <span style="color: gray;">[IGNORED]</span>,
+        age: <span className="diff-gray">[IGNORED]</span>,
       ),
     ),
 )

@@ -19,9 +19,9 @@ object Example {
     difflicious.DiffResultPrinter
       .consoleOutput(diffResult, 0)
       .render
-      .replace(RED, """<span style="color: red;">""")
-      .replace(GREEN, """<span style="color: green;">""")
-      .replace(GRAY, """<span style="color: gray;">""")
+      .replace(RED, """<span className="diff-red">""")
+      .replace(GREEN, """<span className="diff-green">""")
+      .replace(GRAY, """<span className="diff-gray">""")
       .replace(RESET, "</span>")
   }
 }

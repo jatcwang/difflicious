@@ -1,0 +1,4 @@
+[tools]
+java = "temurin-17.0.19"
+node = "26.3.0"
+npm = "11.16.0"

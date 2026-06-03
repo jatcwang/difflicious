@@ -1,7 +1,7 @@
 ---
-layout: docs
-title:  "Best Practices and Frequently Asked Questions"
-permalink: docs/best-practices-and-faq
+id: best-practices-and-faq
+title: Best Practices and Frequently Asked Questions
+sidebar_label: Best Practices / FAQ
 ---
 
 # Best Practices
@@ -84,7 +84,7 @@ import difflicious.*
 ```
 
 ```scala mdoc:silent
-final case class UserId(value: String)
+case class UserId(value: String)
 
 val userIdDiffer: Differ[UserId] = Differ.stringDiffer.contramap(_.value)
 ```

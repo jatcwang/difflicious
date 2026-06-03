@@ -1,0 +1,38 @@
+:root {
+  --ifm-color-primary: #205060;
+  --ifm-color-primary-dark: #1d4856;
+  --ifm-color-primary-darker: #1b4451;
+  --ifm-color-primary-darkest: #163843;
+  --ifm-color-primary-light: #23586a;
+  --ifm-color-primary-lighter: #255c6f;
+  --ifm-color-primary-lightest: #2a687e;
+  --ifm-code-font-size: 95%;
+}
+
+.diff-render {
+  background: #eef8fb;
+  border: 1px solid #d5e8ee;
+  border-radius: 5px;
+  color: #17252b;
+  line-height: 1.45;
+  overflow-x: auto;
+  padding: 15px;
+}
+
+.diff-red {
+  color: #c62828;
+}
+
+.diff-green {
+  color: #1b7f3a;
+}
+
+.diff-gray {
+  color: #6b7280;
+}
+
+.markdown :not(pre) > code {
+  background: rgba(45, 128, 96, 0.12);
+  border-radius: 4px;
+  padding: 1px 4px;
+}

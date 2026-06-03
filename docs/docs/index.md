@@ -1,8 +1,7 @@
 ---
-layout: home
-title:  "Home"
-section: "home"
-position: 1
+id: index
+title: Difflicious
+sidebar_label: Overview
 ---
 
 Difflicious helps you find and compare the differences between values.
@@ -22,15 +21,15 @@ Difflicious helps you find and compare the differences between values.
 If you're using the [MUnit](https://scalameta.org/munit/) test framework:
 ```
 // == SBT ==
-"com.github.jatcwang" %% "difflicious-munit" % "{{ site.version }}" 
+"com.github.jatcwang" %% "difflicious-munit" % "@VERSION@"
 // == Mill == 
-ivy"com.github.jatcwang::difflicious-munit:{{ site.version }}"
+ivy"com.github.jatcwang::difflicious-munit:@VERSION@"
 ```
 
 If you're using [ScalaTest](https://www.scalatest.org/) test framework:
 ```
 // == SBT ==
-"com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" 
+"com.github.jatcwang" %% "difflicious-scalatest" % "@VERSION@"
 // == Mill == 
-ivy"com.github.jatcwang::difflicious-scalatest:{{ site.version }}"
+ivy"com.github.jatcwang::difflicious-scalatest:@VERSION@"
 ```

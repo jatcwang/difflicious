@@ -3,6 +3,7 @@ import sbtghactions.JavaSpec
 import complete.DefaultParsers.*
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
+import scala.sys.process.Process
 
 val munitVersion = "1.3.2"
 val munitScalacheckVersion = "1.3.0"
@@ -13,6 +14,11 @@ val weaverVersion = "0.13.0"
 val hearthVersion = "0.3.0"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
+
+def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String)*): Unit = {
+  val exit = Process(command, cwd, extraEnv: _*).!
+  assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
+}
 
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
@@ -176,9 +182,10 @@ lazy val coretest = projectMatrix
 
 lazy val docs: ProjectMatrix = projectMatrix
   .dependsOn(core, coretest, cats, circe, munit, scalatest, weaver)
-  .enablePlugins(MdocPlugin)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin)
   .settings(
     name := "docs",
+    moduleName := "difflicious-docs",
     commonSettings,
     publish / skip := true,
   )
@@ -190,7 +197,30 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     mdocIn := file("docs/docs"),
+    mdocVariables := Map("VERSION" -> version.value),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
+    docusaurusCreateSite := {
+      (Compile / mdoc).toTask(" ").value
+      val website = (ThisBuild / baseDirectory).value / "website"
+      runWebsiteCommand(Seq("npm", "ci"), website)
+      runWebsiteCommand(Seq("npm", "run", "build"), website)
+      website / "build"
+    },
+    docusaurusPublishGhpages := {
+      (Compile / mdoc).toTask(" ").value
+      val website = (ThisBuild / baseDirectory).value / "website"
+      val publishEnv = Seq(
+        "GIT_USER" -> sys.env.getOrElse("GIT_USER", "jatcwang"),
+        "GIT_PASS" -> sys.env.getOrElse("GIT_PASS", sys.env.getOrElse("GITHUB_TOKEN", "")),
+        "GIT_USER_NAME" -> sys.env.getOrElse("GIT_USER_NAME", "jatcwang"),
+        "GIT_USER_EMAIL" -> sys.env.getOrElse(
+          "GIT_USER_EMAIL",
+          "jatcwang@gmail.com",
+        ),
+      ).filter(_._2.nonEmpty)
+      runWebsiteCommand(Seq("npm", "ci"), website)
+      runWebsiteCommand(Seq("npm", "run", "publish-gh-pages"), website, publishEnv: _*)
+    },
   )
   .settings(
     // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
@@ -198,11 +228,11 @@ lazy val docs: ProjectMatrix = projectMatrix
     scalacOptions ~= { opts =>
       val extraOpts =
         Seq(
-          "-Wconf:msg=\".*method any2stringadd.*\":i",
-          "-Wconf:msg=\".*The outer reference in this type test.*\":s", // This warning shows up if we use *final* case class in code blocks
-          "-Wconf:msg=\".*method right in class Either.*\":s",
-          "-Wconf:msg=\".*method get in class RightProjection.*\":s",
-          "-Wconf:msg=\".*local (object|class).+?is never used\":s",
+          "-Wconf:msg=.*method any2stringadd.*:i",
+          "-Wconf:msg=.*The outer reference in this type test.*:s",
+          "-Wconf:msg=.*method right in class Either.*:s",
+          "-Wconf:msg=.*method get in class RightProjection.*:s",
+          "-Wconf:msg=.*local (object|class).+?is never used:s",
         )
       val removes = Set("-Wdead-code", "-Ywarn-dead-code", "-Wnonunit-statement") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)
@@ -277,14 +307,35 @@ lazy val noPublishSettings = Seq(
   publish / skip := true,
 )
 
+lazy val setupMise = Seq(
+  WorkflowStep.Use(
+    UseRef.Public("jdx", "mise-action", "v4"),
+    name = Some("Setup mise"),
+  ),
+)
+
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
 
+ThisBuild / githubWorkflowJobSetup :=
+  Seq(WorkflowStep.CheckoutFull) ++
+    setupMise ++
+    Seq(WorkflowStep.SetupSbt()) ++
+    githubWorkflowGeneratedCacheSteps.value
+
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(
+    List("test", "docs/docusaurusCreateSite"),
+    name = Some("Build project and docs"),
+  ),
+)
+
 ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Sbt(
     List("ci-release"),
+    name = Some("Publish artifacts"),
     env = Map(
       "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
       "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
@@ -292,7 +343,34 @@ ThisBuild / githubWorkflowPublish := Seq(
       "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}",
     ),
   ),
+  WorkflowStep.Sbt(
+    List("docs/docusaurusPublishGhpages"),
+    name = Some("Publish docs"),
+    env = Map(
+      "CURRENT_BRANCH" -> "${{ github.ref_name }}",
+      "GIT_PASS" -> "${{ secrets.GITHUB_TOKEN }}",
+      "GIT_USER" -> "github-actions[bot]",
+      "GIT_USER_EMAIL" -> "41898282+github-actions[bot]@users.noreply.github.com",
+      "GIT_USER_NAME" -> "github-actions[bot]",
+    ),
+  ),
 )
+
+ThisBuild / githubWorkflowGeneratedCI ~= { jobs =>
+  jobs.map {
+    case job if job.id == "publish" =>
+      job.copy(
+        permissions = Some(
+          Permissions.Specify(
+            Map(
+              PermissionScope.Contents -> PermissionValue.Write,
+            ),
+          ),
+        ),
+      )
+    case job => job
+  }
+}
 
 ThisBuild / githubWorkflowScalaVersions := Seq("all")
 
