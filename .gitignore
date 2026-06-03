@@ -23,6 +23,7 @@ RUNNING_PID
 .metals
 metals.sbt
 .bsp
+.scala-build
 TempGo.scala
 metals.sbt
 .bloop
