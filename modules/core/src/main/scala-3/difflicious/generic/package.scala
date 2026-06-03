@@ -1,18 +1,12 @@
 package difflicious.generic
 
-import difflicious.Derived
-import difflicious.DifferGen
-import difflicious.Differ
-import magnolia1.*
-import scala.deriving.Mirror
+import difflicious.{Differ, DifferGen, DifferMacros}
 
-package object auto extends DerivedAutoDerivation
+package object auto extends AutoDerivation
 
-trait DerivedAutoDerivation extends AutoDerivation[Differ] with DifferGen {
+trait AutoDerivation extends DifferGen {
 
-  given derivedDiff[T]: Conversion[Differ[T], Derived[T]] = d => Derived(d)
-
-  inline given diffForCaseClass[T](using m: Mirror.Of[T]): Derived[T] = Derived(derived[T])
+  inline given autoDerivedDiffer[T]: Differ[T] = ${ DifferMacros.deriveAutoImpl[T] }
 
   def fallback[T]: Differ[T] = Differ.useEquals[T](_.toString)
 }

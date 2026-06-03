@@ -1,12 +1,13 @@
 ---
 layout: docs
-title:  "Types of Differ"
-permalink: docs/types-of-differs
+title:  "Basic Differs"
+permalink: docs/basic-differs
 ---
 
-# Types of Differs
+# Basic Differs
 
-Here we list the kinds of Differs and how you can use them.
+This page covers basic `Differ` instances, including value Differs, collection Differs, and Differs for types that
+should always be ignored.
 
 The examples below assume the following imports:
 
@@ -15,12 +16,13 @@ import difflicious.*
 import difflicious.implicits.*
 ```
 
-# Value Differs
+# Value Differs / `Differ.useEquals`
 
-For basic types like `Int`, `Double` and `String` we typically can compare them directly e.g. using `equals` method.
+For basic types like `Int`, `Double` and `String` we typically can compare them directly, for example by using the
+`equals` method.
 
-If you have a simple type where you don't need any advanced diffing, then you can use `Differ.useEquals` to make a 
-Differ instance for it.
+If you have a type where you don't want any advanced diffing, then you can use `Differ.useEquals` to make a
+`Differ` instance for it.
 
 ```scala mdoc:silent
 case class MyInt(i: Int)
@@ -38,15 +40,9 @@ MyInt.differ.diff(MyInt(1), MyInt(2))
 <span style="color: red;">MyInt(1)</span> -> <span style="color: green;">MyInt(2)</span>
 </pre>
 
-# Differs for Algebraic Data Types (enums, sealed traits and case classes)
+# Collection Differs
 
-You can derive `Differ` for a case class provided that there is a `Differ` instance for all your fields.
-
-Similarly, you can derive a `Differ` for a sealed trait (Also called **Enums** in Scala 3) provided that we're able to 
-derive a Differ for subclass of the sealed trait (or a Differ instance is already in scope for that subclass)
-
-
-### Case class
+Difflicious provides `Differ` instances for common collection shapes such as sequences, maps, and sets.
 
 ```scala mdoc:silent
 final case class Person(name: String, age: Int)
@@ -56,65 +52,17 @@ object Person {
 }
 ```
 
-```scala mdoc:silent
-Person.differ.diff(
-  Person("Alice", 40),
-  Person("Alice", 35)
-)
-```
-
-<pre class="diff-render">
-Person(
-  name: "Alice",
-  age: <span style="color: red;">40</span> -> <span style="color: green;">35</span>,
-)
-</pre>
-
-### Sealed trait / Scala 3 Enum
-
-```scala mdoc:silent
-// Deriving Differ instance for sealed trait
-sealed trait HousePet
-final case class Dog(name: String, age: Int) extends HousePet
-final case class Cat(name: String, livesLeft: Int) extends HousePet
-
-object HousePet {
-  implicit val differ: Differ[HousePet] = Differ.derived[HousePet]
-}
-```
-
-```scala mdoc:silent
-HousePet.differ.diff(
-  Dog("Lucky", 1),
-  Cat("Lucky", 1)
-)
-```
-
-<pre class="diff-render">
-<span style="color: red;">Dog</span> != <span style="color: green;">Cat</span>
-<span style="color: red;">=== Obtained ===
-Dog(
-  name: "Lucky",
-  age: 1,
-)</span>
-<span style="color: green;">=== Expected ===
-Cat(
-  name: "Lucky",
-  livesLeft: 1,
-)</span>
-</pre>
-
 # Seq Differ
 
-Differ for sequences allow diffing immutable sequences like `Seq`, `List`, and `Vector`.
+Differs for sequences allow diffing immutable sequences like `Seq`, `List`, and `Vector`.
 
 By default, Seq Differs will match elements by their index in the sequence.
 
-In the example below
+In the example below:
 
-- **Bob**'s age
-- **Alice** isn't expected to be in list
-- **Charles** is expected but missing
+- Bob's age is different
+- Alice isn't expected to be in the list
+- Charles is expected but missing
 
 ```scala mdoc:silent
 val alice = Person("Alice", 30)
@@ -147,9 +95,9 @@ List(
 
 ## Pair by field
 
-In many test scenarios we actually don't care about order of elements, as long as the two sequences 
-contains the same elements. One example of this is inserting multiple records into a database and then retrieving them
-, where you expect the same records to be returned by not necessarily in the original order.
+In many test scenarios we actually don't care about order of elements, as long as the two sequences contain the same
+elements. One example of this is inserting multiple records into a database and then retrieving them, where you expect
+the same records to be returned but not necessarily in the original order.
 
 In this case, you can configure a `Differ` to pair by a field instead.
 
@@ -181,13 +129,14 @@ List(
 )
 </pre>
 
-# Map differ
+# Map Differ
 
-Map differ pair entries with the same keys and compare the values. Missing key-values will also be reported in the result.
+Map Differs pair entries with the same keys and compare the values. Missing key-values will also be reported in the
+result.
 
-It requires 
+It requires:
 
-- a `ValueDiffer` instance for the map key type (for display purposes)
+- a `ValueDiffer` instance for the map key type, for display purposes
 - a `Differ` instance for the map value type
 
 ```scala mdoc:silent
@@ -220,13 +169,12 @@ Map(
 )
 </pre>
 
-# Set differ
+# Set Differ
 
-Set differ can diff two Sets by pairing the set elements and diffing them. 
-By default, the pairing is based on matching elements that are equal to each other (using `equals`). 
+Set Differs can diff two Sets by pairing the set elements and diffing them.
+By default, the pairing is based on matching elements that are equal to each other using `equals`.
 
-However, you most likely want to pair elements using a field on an element instead for better diffs reports 
-(See next section).
+However, you most likely want to pair elements using a field on an element instead for better diff reports.
 
 ## Pair by field
 
@@ -258,15 +206,14 @@ Set(
 )
 </pre>
 
-# Always ignored Differ
+# Always Ignored Differ
 
-Sometimes for certain types you can't really compare them (e.g. Something that's not a plain data structure).
+Sometimes for certain types you can't really compare them, for example when the type is not a plain data structure.
 
-In that case you can use `Differ.alwaysIgnore`
+In that case you can use `Differ.alwaysIgnore`.
 
 ```scala mdoc:silent
 class CantCompare()
 
 val alwaysIgnoredDiffer: Differ[CantCompare] = Differ.alwaysIgnore[CantCompare]
 ```
-

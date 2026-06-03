@@ -59,9 +59,8 @@ object ConfigureMacro {
   )(path: c.Expr[T => U], op: c.Tree): c.Tree = {
     import c.universe.*
 
-    // When deriving, Magnolia derives for all subtypes in the hierarchy
-    // (including subclasses of sub-sealed traits) therefore when checking
-    // We need to resolve all subclasses in the hierarchy
+    // Derivation includes all leaf subtypes in the hierarchy, including
+    // subclasses of sub-sealed traits, so path checking resolves them too.
     @tailrec
     def resolveAllSubtypesInHierarchy(toCheck: Vector[Symbol], accum: Vector[Symbol]): Vector[Symbol] = {
       if (toCheck.isEmpty) accum

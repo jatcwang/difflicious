@@ -4,6 +4,8 @@ import difflicious.differ.*
 import difflicious.internal.ConfigureMethods
 import difflicious.utils.{TypeName, MapLike, SetLike, SeqLike}
 
+import scala.collection.immutable.ListMap
+
 trait Differ[T] extends ConfigureMethods[T] {
   type R <: DiffResult
 
@@ -62,6 +64,75 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
   /** A Differ that always return an Ignored result. Useful when you can't really diff something */
   def alwaysIgnore[T]: AlwaysIgnoreDiffer[T] = new AlwaysIgnoreDiffer[T]
 
+  implicit def optionDiffer[T](implicit valueDiffer: Differ[T]): Differ[Option[T]] =
+    new OneOfDiffer[Option[T]](
+      cases = Vector(
+        OneOfDiffer.caseOf[Option[T], Some[T]](
+          typeName = recordCaseTypeName("scala.Some", "Some"),
+          extract = {
+            case value @ Some(_) => Some(value)
+            case None => None
+          },
+          differ = recordDiffer[Some[T]](
+            typeName = recordCaseTypeName("scala.Some", "Some"),
+            fields = ListMap(
+              "value" -> (((value: Some[T]) => value.value), valueDiffer.asInstanceOf[Differ[Any]]),
+            ),
+          ),
+        ),
+        OneOfDiffer.caseOf[Option[T], None.type](
+          typeName = recordCaseTypeName("scala.None", "None"),
+          extract = {
+            case None => Some(None)
+            case Some(_) => None
+          },
+          differ = recordDiffer[None.type](
+            typeName = recordCaseTypeName("scala.None", "None"),
+            fields = ListMap.empty,
+          ),
+        ),
+      ),
+      isIgnored = false,
+      differTypeName = "OneOfDiffer",
+    )
+
+  implicit def eitherDiffer[A, B](implicit
+    leftDiffer: Differ[A],
+    rightDiffer: Differ[B],
+  ): Differ[Either[A, B]] =
+    new OneOfDiffer[Either[A, B]](
+      cases = Vector(
+        OneOfDiffer.caseOf[Either[A, B], Left[A, B]](
+          typeName = recordCaseTypeName("scala.util.Left", "Left"),
+          extract = {
+            case value @ Left(_) => Some(value)
+            case Right(_) => None
+          },
+          differ = recordDiffer[Left[A, B]](
+            typeName = recordCaseTypeName("scala.util.Left", "Left"),
+            fields = ListMap(
+              "value" -> (((value: Left[A, B]) => value.value), leftDiffer.asInstanceOf[Differ[Any]]),
+            ),
+          ),
+        ),
+        OneOfDiffer.caseOf[Either[A, B], Right[A, B]](
+          typeName = recordCaseTypeName("scala.util.Right", "Right"),
+          extract = {
+            case value @ Right(_) => Some(value)
+            case Left(_) => None
+          },
+          differ = recordDiffer[Right[A, B]](
+            typeName = recordCaseTypeName("scala.util.Right", "Right"),
+            fields = ListMap(
+              "value" -> (((value: Right[A, B]) => value.value), rightDiffer.asInstanceOf[Differ[Any]]),
+            ),
+          ),
+        ),
+      ),
+      isIgnored = false,
+      differTypeName = "OneOfDiffer",
+    )
+
   implicit val stringDiffer: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
   implicit val charDiffer: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
   implicit val booleanDiffer: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
@@ -72,9 +143,6 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
   implicit val longDiffer: NumericDiffer[Long] = NumericDiffer.make[Long](_.toString)
   implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal](_.toString)
   implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt](_.toString)
-
-  implicit def optionDiffer[T: Differ]: Differ[Option[T]] = derived[Option[T]]
-  implicit def eitherDiffer[A: Differ, B: Differ]: Differ[Either[A, B]] = derived[Either[A, B]]
 
   implicit def mapDiffer[M[_, _], K, V](implicit
     keyDiffer: ValueDiffer[K],
@@ -114,5 +182,22 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       asSet = asSet,
     )
   }
+
+  private def recordDiffer[A](
+    typeName: TypeName.SomeTypeName,
+    fields: ListMap[String, (A => Any, Differ[Any])],
+  ): RecordDiffer[A] =
+    new RecordDiffer[A](
+      fieldDiffers = fields,
+      isIgnored = false,
+      typeName = typeName,
+    )
+
+  private def recordCaseTypeName(long: String, short: String): TypeName.SomeTypeName =
+    TypeName[Any](
+      long = long,
+      short = short,
+      typeArguments = Nil,
+    )
 
 }

@@ -40,6 +40,9 @@ Fully automatic derivation is strongly discouraged, however it might be convenie
 With automatic derivation, the compiler will derive the instances **every time it is needed**.
 This very frequently leads to extremely long compile times which isn't worth the few lines of code it saves you.
 
+If you only want recursive derivation at one explicit call site, prefer `Differ.derivedDeep[T]`. It derives missing
+field instances recursively without enabling automatic derivation for the surrounding scope.
+
 To enable auto-derivation add following import:
 
 for scala 2
@@ -87,4 +90,3 @@ val userIdDiffer: Differ[UserId] = Differ.stringDiffer.contramap(_.value)
 ```
 
 Note that the type of Differ.stringDiffer is a `ValueDiffer` (`ValueDiffer` is a subtype of `Differ`)
-

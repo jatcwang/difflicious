@@ -27,7 +27,18 @@ val intListDiffer = Differ[List[Int]]
 val differ = Differ.derived[Person]
 ```
 
-For classes with generic fields, you need to also ask for Differ instance of the field type (not just the generic type).
+Use `Differ.derivedDeep` when you want Difflicious to recursively derive missing field instances at that call site.
+Existing instances in scope still take priority.
+
+```scala mdoc:nest:silent
+case class Address(city: String)
+case class Employee(name: String, address: Address)
+
+val differ = Differ.derivedDeep[Employee]
+```
+
+For classes with generic fields, `Differ.derived` needs you to also ask for the `Differ` instance of the field type
+(not just the generic type).
 
 ```scala mdoc:silent:nest
 case class Box[A](
@@ -42,6 +53,12 @@ implicit def boxDiffer[A](implicit listDiffer: Differ[List[A]]): Differ[Box[A]] 
 implicit def factoryDiffer[A](implicit boxesDiffer: Differ[List[Box[A]]]): Differ[Factory[A]]  = Differ.derived[Factory[A]]
 
 val differ = Differ[Factory[Int]]
+```
+
+If you do not need to name those intermediate instances, `derivedDeep` can derive the missing instances recursively:
+
+```scala mdoc:silent:nest
+val differ = Differ.derivedDeep[Factory[Int]]
 ```
 
 ### Configuring Differs
@@ -59,5 +76,4 @@ differ.ignoreAt(_.each.each.name)
 val anotherPersonListDiffer: Differ[List[Person]] = ???
 differ.replace(_.each)(anotherPersonListDiffer)
 ```
-
 

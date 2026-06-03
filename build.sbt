@@ -10,6 +10,7 @@ val catsVersion = "2.13.0"
 val circeVersion = "0.14.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
+val hearthVersion = "0.3.0"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
@@ -59,13 +60,11 @@ lazy val core = projectMatrix
     libraryDependencies ++= Seq(
       "dev.zio" %%% "izumi-reflect" % "3.0.9",
       "com.lihaoyi" %%% "fansi" % "0.5.1",
+      "com.kubuszok" %%% "hearth" % hearthVersion,
     ) ++ (if (isScala3.value) {
-            Seq("com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.20")
+            Seq(compilerPlugin("com.kubuszok" %% "hearth-cross-quotes" % hearthVersion))
           } else
-            Seq(
-              "com.softwaremill.magnolia1_2" %%% "magnolia" % "1.1.10",
-              "org.scala-lang" % "scala-reflect" % Build.Scala213,
-            )),
+            Seq("org.scala-lang" % "scala-reflect" % Build.Scala213)),
     Compile / sourceGenerators += Def.task {
       val file = (Compile / sourceManaged).value / "difflicious" / "TupleDifferInstances.scala"
       IO.write(file, TupleDifferInstancesGen.fileContent)
@@ -249,7 +248,7 @@ lazy val commonSettings = Seq(
                          "-Wconf:msg=.*access modifiers for.*:s", // silence warnings about coyp method on case class with private constructors
                        )),
   // TODO: Not sure why but having these scalac options seems to crash the compiler complaining about
-  // magnoalia class files having duplicate top level definitions..
+  // duplicate top level definitions in generated class files.
   // Maybe related to https://github.com/scala/scala3/issues/18674
   scalacOptions --= (if (isScala3.value)
                        Seq(
@@ -261,6 +260,13 @@ lazy val commonSettings = Seq(
                          "-Wunused:privates",
                        )
                      else Seq.empty),
+  scalacOptions ++= (if (isScala3.value)
+                       Seq.empty
+                     else
+                       Seq(
+                         "-Wconf:cat=unused-nowarn:s",
+                         "-Wconf:msg=.* in method workaround_[0-9]+ is never used:s",
+                       )),
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
@@ -271,7 +277,7 @@ lazy val noPublishSettings = Seq(
   publish / skip := true,
 )
 
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
