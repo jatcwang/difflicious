@@ -6,7 +6,6 @@ import hearth.fp.effect.*
 import hearth.fp.instances.*
 import hearth.fp.syntax.*
 
-import scala.collection.immutable.ListMap
 import scala.util.control.NoStackTrace
 
 private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
@@ -85,19 +84,15 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
       field.value.asInstanceOf[Method[A, Field]].isConstructorArgument
     }
 
-    val fields = constructorFields.zipWithIndex.toList.parTraverse { case (field, index) =>
+    val fields = constructorFields.toList.parTraverse { field =>
       import field.Underlying as Field
 
       val fieldName = decodedName(field.value.name)
-      val getter = productGetterFor[A](index)
       summonFieldDiffer[A, Field](deriveIfMissing).map { differ =>
         Expr.quote {
           Tuple2(
             Expr.splice(Expr(fieldName)),
-            Tuple2(
-              Expr.splice(getter),
-              Expr.splice(differ).asInstanceOf[difflicious.Differ[Any]],
-            ),
+            Expr.splice(differ).asInstanceOf[difflicious.Differ[Any]],
           )
         }
       }
@@ -105,8 +100,8 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
 
     fields.map { fields =>
       Expr.quote {
-        new difflicious.differ.RecordDiffer[A](
-          fieldDiffers = Expr.splice(listMapExpr[A](fields)),
+        new difflicious.differ.ProductDiffer[A](
+          fieldDiffers = Expr.splice(fieldDiffersExpr(fields)),
           isIgnored = false,
           typeName = Expr.splice(typeNameExpr[A]),
         )
@@ -642,19 +637,15 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
           renderDerivationErrorLines(errors, s"$indent  ")
     }
 
-  private def productGetterFor[A: Type](index: Int): Expr[A => Any] =
-    Expr.quote { (value: A) =>
-      value.asInstanceOf[scala.Product].productElement(Expr.splice(Expr(index)))
-    }
+  private def fieldDiffersExpr(
+    fields: List[Expr[(String, Differ[Any])]],
+  ): Expr[Vector[(String, Differ[Any])]] = {
+    implicit val fieldDifferPair: Type[(String, Differ[Any])] = fieldDifferPairType
 
-  private def listMapExpr[A: Type](
-    fields: List[Expr[(String, (A => Any, Differ[Any]))]],
-  ): Expr[ListMap[String, (A => Any, Differ[Any])]] =
-    fields.foldLeft(Expr.quote(ListMap.empty[String, (A => Any, difflicious.Differ[Any])])) { (acc, field) =>
-      Expr.quote {
-        Expr.splice(acc) + Expr.splice(field)
-      }
+    Expr.quote {
+      Vector(Expr.splice(VarArgs(fields*))*)
     }
+  }
 
   private def vectorExpr[A: Type](
     cases: List[Expr[OneOfDiffer.Case[A, Any]]],
@@ -692,6 +683,9 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
 
   private def oneOfCaseTypeInstance[A: Type]: Type[OneOfDiffer.Case[A, Any]] =
     Type.of[OneOfDiffer.Case[A, Any]]
+
+  private def fieldDifferPairType: Type[(String, Differ[Any])] =
+    Type.of[(String, Differ[Any])]
 
   private def derivationCacheKey[A: Type]: String =
     s"${Type[A].plainPrint}"
