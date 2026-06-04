@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Library Integrations"
-permalink: docs/library-integrations
+id: library-integrations
+title: Library Integrations
 ---
 
 # Library Integrations
@@ -10,7 +9,7 @@ permalink: docs/library-integrations
 
 Add this to your SBT build
 ```
-"com.github.jatcwang" %% "difflicious-munit" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
 ```
 
 and then in your test suites you can call `assertNoDiff` on any `Differ`.
@@ -31,7 +30,7 @@ class MyTest extends FunSuite {
 
 Add this to your SBT build
 ```
-"com.github.jatcwang" %% "difflicious-scalatest" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-scalatest" % "@VERSION@" % Test
 ```
 
 Tests should be run with the `-oW` option to disable Scalatest from coloring test failures all red as it interferes with 
@@ -59,7 +58,7 @@ class MyTest extends AnyFunSuite {
 
 Add this to your SBT build
 ```
-"com.github.jatcwang" %% "difflicious-weaver" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-weaver" % "@VERSION@" % Test
 ```
 
 and then in your test suites you can call `assertNoDiff` on any `Differ`.
@@ -81,7 +80,7 @@ object MyTest extends SimpleIOSuite {
 Differ instances for cats data structures like `NonEmptyList` and `Chain` can be found in
 
 ```
-"com.github.jatcwang" %% "difflicious-cats" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-cats" % "@VERSION@" % Test
 ```
 
 ```scala mdoc:nest
@@ -91,6 +90,5 @@ import cats.data.{NonEmptyMap, NonEmptyList}
 
 val differ: Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]] = Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]]
 ```
-
 
 

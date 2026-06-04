@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Basic Differs"
-permalink: docs/basic-differs
+id: basic-differs
+title: Basic Differs
 ---
 
 # Basic Differs
@@ -36,8 +35,8 @@ object MyInt {
 MyInt.differ.diff(MyInt(1), MyInt(2))
 ```
 
-<pre class="diff-render">
-<span style="color: red;">MyInt(1)</span> -> <span style="color: green;">MyInt(2)</span>
+<pre className="diff-render">
+<span className="diff-red">MyInt(1)</span> -> <span className="diff-green">MyInt(2)</span>
 </pre>
 
 # Collection Differs
@@ -45,7 +44,7 @@ MyInt.differ.diff(MyInt(1), MyInt(2))
 Difflicious provides `Differ` instances for common collection shapes such as sequences, maps, and sets.
 
 ```scala mdoc:silent
-final case class Person(name: String, age: Int)
+case class Person(name: String, age: Int)
 
 object Person {
   implicit val differ: Differ[Person] = Differ.derived[Person]
@@ -76,7 +75,7 @@ Differ.seqDiffer[List, Person].diff(
 )
 ```
 
-<pre class="diff-render">
+<pre className="diff-render">
 List(
   Person(
     name: "Alice",
@@ -84,9 +83,9 @@ List(
   ),
   Person(
     name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
+    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
   ),
-  <span style="color: green;">Person(
+  <span className="diff-green">Person(
     name: "Charles",
     age: 80,
   )</span>,
@@ -112,11 +111,11 @@ differByName.diff(
 
 When we match by a person's name instead of index, we can now easily spot that Bob has the wrong age.
 
-<pre class="diff-render">
+<pre className="diff-render">
 List(
   Person(
     name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
+    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
   ),
   Person(
     name: "Charles",
@@ -152,17 +151,17 @@ Differ[Map[String, Person]].diff(
 )
 ```
 
-<pre class="diff-render">
+<pre className="diff-render">
 Map(
-  <span style="color: red;">"a"</span> -> <span style="color: red;">Person(
+  <span className="diff-red">"a"</span> -> <span className="diff-red">Person(
       name: "Alice",
       age: 30,
     )</span>,
   "b" -> Person(
       name: "Bob",
-      age: <span style="color: red;">25</span> -> <span style="color: green;">50</span>,
+      age: <span className="diff-red">25</span> -> <span className="diff-green">50</span>,
     ),
-  <span style="color: green;">"c"</span> -> <span style="color: green;">Person(
+  <span className="diff-green">"c"</span> -> <span className="diff-green">Person(
       name: "Charles",
       age: 80,
     )</span>,
@@ -189,11 +188,11 @@ differByName.diff(
 )
 ```
 
-<pre class="diff-render">
+<pre className="diff-render">
 Set(
   Person(
     name: "Bob",
-    age: <span style="color: red;">50</span> -> <span style="color: green;">25</span>,
+    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
   ),
   Person(
     name: "Charles",

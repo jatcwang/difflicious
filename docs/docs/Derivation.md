@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Derivation"
-permalink: docs/derivation
+id: derivation
+title: Derivation
 ---
 
 # Derivation

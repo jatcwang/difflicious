@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">Difflicious</title>
+  <desc id="desc">Difflicious logo with comparison marks.</desc>
+  <rect width="120" height="120" rx="18" fill="#205060"/>
+  <path d="M28 36h42" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M28 60h64" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M28 84h42" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M82 34l18 18-18 18" fill="none" stroke="#7bd88c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M82 70l18 18-18 18" fill="none" stroke="#ff6b6b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

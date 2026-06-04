@@ -1,0 +1,44 @@
+{
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "start": "docusaurus start --host 0.0.0.0",
+    "build": "docusaurus build",
+    "clear": "docusaurus clear",
+    "deploy": "docusaurus deploy",
+    "publish-gh-pages": "docusaurus deploy",
+    "serve": "docusaurus serve",
+    "write-translations": "docusaurus write-translations",
+    "version": "docusaurus docs:version"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.10.1",
+    "@docusaurus/preset-classic": "3.10.1",
+    "@mdx-js/react": "^3.1.1",
+    "clsx": "^2.1.1",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.10.1",
+    "@docusaurus/types": "3.10.1",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
+  }
+}

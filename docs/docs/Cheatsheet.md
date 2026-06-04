@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Cheatsheet"
-permalink: docs/cheatsheet
+id: cheatsheet
+title: Cheatsheet
 ---
 
 ### Basic imports
@@ -76,4 +75,3 @@ differ.ignoreAt(_.each.each.name)
 val anotherPersonListDiffer: Differ[List[Person]] = ???
 differ.replace(_.each)(anotherPersonListDiffer)
 ```
-

@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Introduction"
-permalink: docs/introduction
+id: introduction
+title: Introduction
 ---
 
 # Introduction
@@ -21,8 +20,8 @@ sealed trait HousePet {
   def name: String
 }
 object HousePet {
-  final case class Dog(name: String, age: Int) extends HousePet
-  final case class Cat(name: String, livesLeft: Int) extends HousePet
+  case class Dog(name: String, age: Int) extends HousePet
+  case class Cat(name: String, livesLeft: Int) extends HousePet
   
   implicit val differ: Differ[HousePet] = Differ.derived
 }
@@ -49,26 +48,26 @@ petsDiffer.diff(
 
 And this is the diffs you will see:
 
-<pre class="diff-render">
+<pre className="diff-render">
 List(
-  <span style="color: red;">Dog</span> != <span style="color: green;">Cat</span>
-  <span style="color: red;">=== Obtained ===
+  <span className="diff-red">Dog</span> != <span className="diff-green">Cat</span>
+  <span className="diff-red">=== Obtained ===
   Dog(
     name: "Andy",
     age: 12,
   )</span>
-  <span style="color: green;">=== Expected ===
+  <span className="diff-green">=== Expected ===
   Cat(
     name: "Andy",
     livesLeft: [IGNORED],
   )</span>,
   Cat(
     name: "Dr.Evil",
-    livesLeft: <span style="color: gray;">[IGNORED]</span>,
+    livesLeft: <span className="diff-gray">[IGNORED]</span>,
   ),
   Dog(
     name: "Lucky",
-    age: <span style="color: red;">5</span> -> <span style="color: green;">6</span>,
+    age: <span className="diff-red">5</span> -> <span className="diff-green">6</span>,
   ),
 )
 </pre>

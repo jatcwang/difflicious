@@ -1,7 +1,6 @@
 ---
-layout: docs
-title:  "Quickstart"
-permalink: docs/quickstart
+id: quickstart
+title: Quickstart
 ---
 
 # Quickstart
@@ -11,7 +10,7 @@ Let's see how you can use Difflicious in your MUnit tests
 First, add the following dependency in your SBT configuration:
 
 ```
-"com.github.jatcwang" %% "difflicious-munit" % "{{ site.version }}" % Test
+"com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
 ```
 
 If you are running tests using **IntelliJ IDEA**'s test runner, you will want 
@@ -58,7 +57,7 @@ class ExampleTest extends FunSuite {
 
 Run the tests, and you should see a nice failure diff:
 
-<img src="../img/diff_failure.jpg" />
+![Difflicious failure diff](assets/diff_failure.jpg)
 
 Pretty right? You should explore the next sections of the documentation and learn about the different Differs 
 and how you can configure them!
