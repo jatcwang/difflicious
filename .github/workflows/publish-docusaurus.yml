@@ -1,0 +1,44 @@
+name: Publish Docusaurus Docs
+
+run-name: Publish Docusaurus Docs (${{ inputs.version }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to render in docs dependency examples
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-docusaurus-docs
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Docusaurus docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@v4
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Publish docs
+        env:
+          CURRENT_BRANCH: ${{ github.ref_name }}
+          DOCS_VERSION: ${{ inputs.version }}
+          GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
+          GIT_USER: github-actions[bot]
+          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_USER_NAME: github-actions[bot]
+        run: sbt --client "docs/docusaurusPublishGhpages"

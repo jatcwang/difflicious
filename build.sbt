@@ -197,7 +197,7 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     mdocIn := file("docs/docs"),
-    mdocVariables := Map("VERSION" -> version.value),
+    mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     docusaurusCreateSite := {
       (Compile / mdoc).toTask(" ").value
