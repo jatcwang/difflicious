@@ -17,13 +17,25 @@ Difflicious supports three derivation strategies for deriving instances for case
 
 In all derivation strategies, if there's an existing Differ instance in the implicit scope, it will be reused.
 
-## Comparison of derivation strategies
+Our recommendation is to start with `Differ.derivedDeep`, and use `Differ.derived` if you want better control over when derivations happen.
+For quick experiments you can use automatic derivation, but it is not recommended as it can make code hard to follow especially when you have customized `Differ` instances.
 
-| Strategy | Compile time | Allocation | Verbosity |
-| --- | --- | --- | --- |
-| `Differ.derived[T]` | Probably lowest and more predictable. It derives only `T` and summons the field or subtype instances already in scope. | Predictable. There's only one Differ instance for each type | High, as you need to create a Differ for each type |
-| `Differ.derivedDeep[T]` | Potentially higher than `derived` - you may end up deriving Differ for the same type multiple times if it is used in multiple places | Better than automatic derivation. Existing instances are reused, and missing intermediate instances are generated from the explicit call site. | Medium - you can avoid defining Differ instances for all intermediate types |
-| Fully automatic derivation | High - derivation is performed every time you request for a Differ instance | High - no Differ instance reuse unless you define them manually | Lowest - you just ask for a `Differ[T]` :) |
+## Debugging derivation
 
-Our recommendation is to start with `Differ.derivedDeep`, and use `Differ.derived` for better control.
-For quick experiments you can use automatic derivation, but it is not recommended for code you want to keep - The compile time drag on the codebase is generally not worth the small convenience.
+To inspect the derivation chain and see which instances are derived and which are source from implicit scope, 
+you can import `difflicious.debug.implicits.logDerivation` which will diagnostics to logged for all derivation in scope.
+
+```scala
+import difflicious.debug.implicits.logDerivation
+
+implicit val personDiffer: Differ[Person] = Differ.derivedDeep[Person]
+```
+
+For derivation timing information, enable Hearth's benchmark-scope macro setting:
+
+```scala
+Compile / scalacOptions ++= Seq("-Xmacro-settings:hearth.mioBenchmarkScopes=true")
+```
+
+Read more about benchmarking in Hearth's [documentation here](https://scala-hearth.readthedocs.io/en/latest/micro-fp/#benchmarking-scopes-and-flame-graphs), 
+including how to generate flame graphs if you need them.

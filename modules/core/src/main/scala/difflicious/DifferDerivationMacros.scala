@@ -16,28 +16,42 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
 
   private val derivedDiffersCache: MLocal[ValDefsCache] = ValDefsCache.mlocal
 
-  def deriveDiffer[A: Type](deriveIfMissing: Boolean): Expr[Differ[A]] =
-    deriveDifferMIO[A](deriveIfMissing)
-      .runToExprOrFail(s"difflicious.Differ[${Type[A].plainPrint}]") { (_, errors) =>
+  def deriveDiffer[A: Type](deriveIfMissing: Boolean): Expr[Differ[A]] = {
+    Log
+      .namedScope("Derivation entrypoint") {
+        deriveDifferMIO[A](deriveIfMissing)
+      }
+      .runToExprOrFail(
+        s"difflicious.Differ[${Type[A].plainPrint}]",
+        infoRendering = if (shouldWeLogDerivation) RenderFrom(Log.Level.Info) else DontRender,
+      ) { (_, errors) =>
         renderDerivationErrors[A](errors.toVector, deriveIfMissing)
       }
+  }
 
   def deriveAutoDiffer[A: Type](
     reportError: String => Unit,
     fallback: => Expr[Differ[A]],
   ): Expr[Differ[A]] =
-    deriveDifferMIO[A](deriveIfMissing = true).attempt
+    Log
+      .namedScope("Derivation entrypoint") {
+        deriveDifferMIO[A](deriveIfMissing = true)
+      }
+      .attempt
       .map {
         case Right(differ) => differ
         case Left(errors) =>
           reportError(renderDerivationErrors[A](errors.toVector, deriveIfMissing = true))
           fallback
       }
-      .runToExprOrFail(s"difflicious.Differ[${Type[A].plainPrint}]") { (_, errors) =>
+      .runToExprOrFail(
+        s"difflicious.Differ[${Type[A].plainPrint}]",
+        infoRendering = if (shouldWeLogDerivation) RenderFrom(Log.Level.Info) else DontRender,
+      ) { (_, errors) =>
         renderDerivationErrors[A](errors.toVector, deriveIfMissing = true)
       }
 
-  private def deriveDifferMIO[A: Type](deriveIfMissing: Boolean): MIO[Expr[Differ[A]]] =
+  private def deriveDifferMIO[A: Type](deriveIfMissing: Boolean): MIO[Expr[Differ[A]]] = {
     cachedDerive[A](deriveIfMissing)
       .flatMap { differ =>
         derivedDiffersCache.get.map { cache =>
@@ -46,6 +60,7 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
           }
         }
       }
+  }
 
   private def derive[A: Type](deriveIfMissing: Boolean): MIO[Expr[Differ[A]]] =
     CaseClass
@@ -412,7 +427,7 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
   private def summonOrDerive[A: Type](deriveIfMissing: Boolean): MIO[Expr[Differ[A]]] = {
     implicit val differAType: Type[Differ[A]] = differTypeInstance[A]
     Expr.summonImplicit[Differ[A]].toOption match {
-      case Some(differ) => MIO.pure(differ)
+      case Some(differ) => Log.info(s"Found Differ[${typeNameForError[A]}] in implicit scope") >> MIO.pure(differ)
       case None => cachedDerive[A](deriveIfMissing)
     }
   }
@@ -487,7 +502,9 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
   ): MIO[Option[Expr[Differ[Field]]]] = {
     implicit val differFieldType: Type[Differ[Field]] = differTypeInstance[Field]
     Expr.summonImplicit[Differ[Field]].toOption match {
-      case Some(differ) => MIO.pure(Some(differ))
+      case Some(differ) =>
+        Log.info(s"Found Differ[${typeNameForError[Field]}] in implicit scope") >>
+          MIO.pure(Some(differ))
       case None =>
         cachedDifferRef[Field].flatMap {
           case Some(differ) => MIO.pure(Some(differ))
@@ -516,9 +533,11 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
     val cacheKey = derivationCacheKey[A]
 
     derivedDiffersCache.get0Ary[Differ[A]](cacheKey).flatMap {
-      case Some(differ) => MIO.pure(differ)
+      case Some(differ) =>
+        Log.info(s"Found in this derivation's cache: Differ[${typeNameForError[A]}]") >>
+          MIO.pure(differ)
       case None =>
-        Log.namedScope(s"Derive Differ[${typeNameForError[A]}]") {
+        Log.namedScope(s"Deriving Differ[${typeNameForError[A]}]") {
           val builder = ValDefBuilder.ofLazy[Differ[A]]("derivedDiffer")
 
           for {
@@ -676,6 +695,15 @@ private[difflicious] trait DifferDerivationMacros { this: hearth.MacroCommons =>
 
   private def derivationCacheKey[A: Type]: String =
     s"${Type[A].plainPrint}"
+
+  private def shouldWeLogDerivation: Boolean = {
+    implicit val logDerivationType: Type[debug.LogDerivation] = logDerivationTypeInstance
+
+    Expr.summonImplicit[debug.LogDerivation].isDefined
+  }
+
+  private def logDerivationTypeInstance: Type[debug.LogDerivation] =
+    Type.of[debug.LogDerivation]
 }
 
 private[difflicious] sealed abstract class DifferDerivationError(message: String)
