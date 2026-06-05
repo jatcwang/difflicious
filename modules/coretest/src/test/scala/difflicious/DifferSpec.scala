@@ -690,29 +690,29 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     )
   }
 
-  test("Record: isOk == true if two values are equal") {
+  test("Product: isOk == true if two values are equal") {
     assertOkIfValuesEqualProp(CC.differ)
   }
 
-  test("Record: isOk == false if two values are not equal") {
+  test("Product: isOk == false if two values are not equal") {
     assertNotOkIfNotEqualProp(CC.differ)
   }
 
-  test("Record: isOk always true if differ is marked ignored") {
+  test("Product: isOk always true if differ is marked ignored") {
     assertIsOkIfIgnoredProp(CC.differ)
   }
 
-  test("Record: Attempting to update nonexistent field fails") {
+  test("Product: Attempting to update nonexistent field fails") {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.of("nonexistent"), ConfigureOp.ignore),
       Left(
         ConfigureError
-          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty), "RecordDiffer"),
+          .NonExistentField(ConfigurePath(Vector("nonexistent"), List.empty), "ProductDiffer"),
       ),
     )
   }
 
-  test("Record: Trying to update the differ with PairBy op should fail") {
+  test("Product: Trying to update the differ with PairBy op should fail") {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
@@ -720,13 +720,13 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
           .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
-            "RecordDiffer",
+            "ProductDiffer",
           ),
       ),
     )
   }
 
-  test("Record: ignoreFieldByNameOrFail succeeds if field exists") {
+  test("Product: ignoreFieldByNameOrFail succeeds if field exists") {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
       Left(
@@ -734,7 +734,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
           .InvalidConfigureOp(
             ConfigurePath(Vector.empty, List.empty),
             ConfigureOp.PairBy.Index,
-            "RecordDiffer",
+            "ProductDiffer",
           ),
       ),
     )

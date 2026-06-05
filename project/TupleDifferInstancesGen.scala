@@ -14,11 +14,11 @@ object TupleDifferInstancesGen {
             }
             .mkString(",\n  ")},
          |  typeName: TypeName[${typeName}]
-         |): RecordDiffer[$typeName] = new RecordDiffer[$typeName](
-         |  ListMap(
+         |): ProductDiffer[$typeName] = new ProductDiffer[$typeName](
+         |  Vector(
          |    ${(1 to tupleSize)
             .map { t =>
-              s""""_$t" -> Tuple2(_._$t, a${t}Diff.asInstanceOf[Differ[Any]])"""
+              s""""_$t" -> a${t}Diff.asInstanceOf[Differ[Any]]"""
             }
             .mkString(",\n    ")}
          |  ),
@@ -35,10 +35,9 @@ object TupleDifferInstancesGen {
     s"""
       |package difflicious
       |
-      |import difflicious.differ.RecordDiffer
+      |import difflicious.differ.ProductDiffer
       |import difflicious.utils.TypeName
       |
-      |import scala.collection.immutable.ListMap
       |// $$COVERAGE-OFF$$
       |trait DifferTupleInstances {
       |  ${iter}
