@@ -269,6 +269,13 @@ lazy val benchmarkCompile = projectMatrix
 
 lazy val commonSettings = Seq(
   versionScheme := Some("early-semver"),
+  nativeConfig ~= { config =>
+    // Avoid GNU ld executable-stack warnings from Scala Native runtime assembly objects.
+    val linuxNoExecStackLinkerOption = "-Wl,-z,noexecstack"
+    if (scala.util.Properties.isLinux && !config.linkingOptions.contains(linuxNoExecStackLinkerOption))
+      config.withLinkingOptions(config.linkingOptions :+ linuxNoExecStackLinkerOption)
+    else config
+  },
   scalacOptions ++= (if (isScala3.value)
                        Seq.empty
                      else
