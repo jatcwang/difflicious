@@ -50,6 +50,8 @@ inThisBuild(
 
 addCommandAlias("runBenchCompile2", "benchmarkCompile / clean ; benchmarkCompile / Compile / compile")
 addCommandAlias("runBenchCompile3", "benchmarkCompile3 / clean ; benchmarkCompile3 / Compile / compile")
+addCommandAlias("test2", "coretest/test")
+addCommandAlias("test3", "coretest3/test")
 
 lazy val allModules =
   Seq(core, coretest, munit, scalatest, weaver, cats, circe, benchmarks, docs).flatMap(_.projectRefs)
@@ -276,6 +278,11 @@ lazy val commonSettings = Seq(
       config.withLinkingOptions(config.linkingOptions :+ linuxNoExecStackLinkerOption)
     else config
   },
+  // Uncomment to get derivation scope timings in combination of "import difflicious.debug.implicits.logDerivation"
+//  scalacOptions ++= Seq(
+//    "-Xmacro-settings:hearth.mioBenchmarkScopes=true",
+//    "-Xmacro-settings:hearth.mioBenchmarkFlameGraphDir=/tmp/hearth-bench",
+//  ),
   scalacOptions ++= (if (isScala3.value)
                        Seq.empty
                      else

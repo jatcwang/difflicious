@@ -16,6 +16,30 @@ package object testutils {
   // Sometimes the [IGNORE] field exist in a obtained/expected-only object so it won't be colored
   val justIgnoredStr = s"[IGNORED]"
 
+  // Cannot use regex for this because of scala-native regex doesn't like \u001b
+  def stripAnsi(value: String): String = {
+    val builder = new StringBuilder(value.length)
+    var index = 0
+
+    while (index < value.length) {
+      if (value.charAt(index) == '\u001b' && index + 1 < value.length && value.charAt(index + 1) == '[') {
+        var end = index + 2
+        while (end < value.length && value.charAt(end) != 'm') end += 1
+
+        if (end < value.length) index = end + 1
+        else {
+          builder.append(value.charAt(index))
+          index += 1
+        }
+      } else {
+        builder.append(value.charAt(index))
+        index += 1
+      }
+    }
+
+    builder.result()
+  }
+
   def assertOkIfValuesEqualProp[A: Arbitrary](differ: Differ[A]): Prop = {
     forAll { (l: A) =>
       val res = differ.diff(l, l)

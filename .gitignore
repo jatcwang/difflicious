@@ -1,6 +1,7 @@
 *.iml
 *.class
 *.log
+/.sbt
 target/
 project/target/
 project/boot/
