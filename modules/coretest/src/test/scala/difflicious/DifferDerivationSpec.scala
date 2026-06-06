@@ -47,6 +47,47 @@ class DifferDerivationSpec extends munit.FunSuite {
     )
   }
 
+  test("derived works for generic case classes with generic field instances") {
+    val subject: Differ[GenericFactory[Int]] = Differ[GenericFactory[Int]]
+
+    assertConsoleDiffOutput(
+      subject,
+      GenericFactory(List(GenericBox(List(1)))),
+      GenericFactory(List(GenericBox(List(2)))),
+      s"""GenericFactory(
+         |  boxes: List(
+         |    GenericBox(
+         |      content: List(
+         |        ${R}1$X -> ${G}2$X
+         |      )
+         |    )
+         |  )
+         |)""".stripMargin,
+    )
+  }
+
+  test("derivedDeep works for generic case classes") {
+    val subject: Differ[GenericFactory[SimpleCaseClass1]] =
+      Differ.derivedDeep[GenericFactory[SimpleCaseClass1]]
+
+    assertConsoleDiffOutput(
+      subject,
+      GenericFactory(List(GenericBox(List(SimpleCaseClass1("a"))))),
+      GenericFactory(List(GenericBox(List(SimpleCaseClass1("b"))))),
+      s"""GenericFactory(
+         |  boxes: List(
+         |    GenericBox(
+         |      content: List(
+         |        SimpleCaseClass1(
+         |          value: $R"a"$X -> $G"b"$X
+         |        )
+         |      )
+         |    )
+         |  )
+         |)""".stripMargin,
+    )
+  }
+
   test("derived works for recursive data structures") {
     val subject: Differ[RecursiveDerivedNode] = Differ.derived[RecursiveDerivedNode]
 
@@ -89,6 +130,12 @@ class DifferDerivationSpec extends munit.FunSuite {
     )
   }
 
+  test("derived works for recursive data structures with custom SeqLike fields") {
+    val subject: Differ[RecursiveNodeWithCustomList] = Differ.derived[RecursiveNodeWithCustomList]
+
+    assertRecursiveCustomListDiffer(subject)
+  }
+
   test("derivedDeep works for recursive data structures") {
     val subject: Differ[RecursiveDerivedDeepNode] = Differ.derivedDeep[RecursiveDerivedDeepNode]
 
@@ -129,6 +176,12 @@ class DifferDerivationSpec extends munit.FunSuite {
          |  )
          |)""".stripMargin,
     )
+  }
+
+  test("derivedDeep works for recursive data structures with custom SeqLike fields") {
+    val subject: Differ[RecursiveNodeWithCustomList] = Differ.derivedDeep[RecursiveNodeWithCustomList]
+
+    assertRecursiveCustomListDiffer(subject)
   }
 
   test("derivedDeep uses manually defined instances for fields") {
@@ -174,6 +227,45 @@ class DifferDerivationSpec extends munit.FunSuite {
       DeepSealedSubject(DeepSealed.UsesDerived(SimpleCaseClass2("b"))),
     )
     assertEquals(derivedFieldResult.isOk, false)
+  }
+
+  test("derived works for sealed traits with generic type parameters") {
+    implicit val elementDiffer: Differ[SimpleCaseClass1] =
+      Differ.derived[SimpleCaseClass1]
+
+    val subject: Differ[GenericSealed[SimpleCaseClass1]] =
+      Differ.derived[GenericSealed[SimpleCaseClass1]]
+
+    assertConsoleDiffOutput(
+      subject,
+      GenericSealed.Many(List(SimpleCaseClass1("a"))),
+      GenericSealed.Many(List(SimpleCaseClass1("b"))),
+      s"""Many(
+         |  values: List(
+         |    SimpleCaseClass1(
+         |      value: $R"a"$X -> $G"b"$X
+         |    )
+         |  )
+         |)""".stripMargin,
+    )
+  }
+
+  test("derivedDeep derives sealed traits with generic type parameters") {
+    val subject: Differ[GenericSealedSubject[SimpleCaseClass1]] =
+      Differ.derivedDeep[GenericSealedSubject[SimpleCaseClass1]]
+
+    assertConsoleDiffOutput(
+      subject,
+      GenericSealedSubject(GenericSealed.Single(SimpleCaseClass1("a"))),
+      GenericSealedSubject(GenericSealed.Single(SimpleCaseClass1("b"))),
+      s"""GenericSealedSubject(
+         |  value: Single(
+         |    value: SimpleCaseClass1(
+         |      value: $R"a"$X -> $G"b"$X
+         |    )
+         |  )
+         |)""".stripMargin,
+    )
   }
 
   test("derived works for multi level sealed traits") {
@@ -283,99 +375,137 @@ class DifferDerivationSpec extends munit.FunSuite {
   }
 
   test("derived reports missing field differ for mutually referencing sealed traits") {
-    val result = compileErrors("""
+    val result = stripAnsi(compileErrors("""
         import difflicious.*
         import difflicious.testtypes.*
 
         val subject: Differ[MutualSealedLeft] = Differ.derived[MutualSealedLeft]
-        """)
+        """))
 
-    assert(
-      result.contains("Failed to derive Differ[MutualSealedLeft]"),
-      s"Expected MutualSealedLeft derivation to fail, got:\n$result",
-    )
-    assert(
-      result.contains("Differ[MutualSealedRight] cannot be found"),
-      s"Expected the error to report the missing MutualSealedRight field differ, got:\n$result",
-    )
-    assert(
-      !result.contains("Differ[MutualSealedRight] cannot be found or derived"),
-      s"Expected non-deep derivation to report that MutualSealedRight cannot be found, got:\n$result",
-    )
-    assert(
-      !result.contains("right: Differ[MutualSealedRight]"),
-      s"Expected the error to omit field names, got:\n$result",
+    assertStartsWith(
+      result,
+      """error:
+        |Failed to derive Differ[difflicious.testtypes.MutualSealedLeft]
+        |
+        |difflicious.testtypes.MutualSealedLeft
+        |  Differ[difflicious.testtypes.MutualSealedLeft.HasRight] cannot be derived because...
+        |    Differ[difflicious.testtypes.MutualSealedRight] cannot be found
+        |
+        |Summary: Derivation failed because we couldn't find Differ[difflicious.testtypes.MutualSealedRight]""".stripMargin,
     )
   }
 
   test("Derivation failure: All missing case class field instances are reported") {
-    val result = compileErrors("""
+    val result = stripAnsi(compileErrors("""
         import difflicious.*
         import difflicious.testtypes.*
 
         val subject: Differ[SimpleCaseClassSubject] = Differ.derived[SimpleCaseClassSubject]
-        """)
+        """))
     assertStartsWith(
       result,
       """error:
-         |Failed to derive Differ[SimpleCaseClassSubject]
+         |Failed to derive Differ[difflicious.testtypes.SimpleCaseClassSubject]
          |
-         |SimpleCaseClassSubject
-         |  Differ[SimpleCaseClass1] cannot be found
-         |  Differ[SimpleCaseClass2] cannot be found
-         |  Differ[SimpleCaseClass3] cannot be found
-         |""".stripMargin,
+         |difflicious.testtypes.SimpleCaseClassSubject
+         |  Differ[difflicious.testtypes.SimpleCaseClass1] cannot be found
+         |  Differ[difflicious.testtypes.SimpleCaseClass2] cannot be found
+         |  Differ[difflicious.testtypes.SimpleCaseClass3] cannot be found
+         |
+         |Summary: Derivation failed because we couldn't find Differ[difflicious.testtypes.SimpleCaseClass1], Differ[difflicious.testtypes.SimpleCaseClass2], Differ[difflicious.testtypes.SimpleCaseClass3]""".stripMargin,
     )
   }
 
   test("Derivation failure: Nested case class failures are reported as a tree") {
-    val result = compileErrors("""
+    val result = stripAnsi(compileErrors("""
         import difflicious.*
         import difflicious.testtypes.*
 
         val subject: Differ[DerivationFailureSubject] = Differ.derivedDeep[DerivationFailureSubject]
-        """)
+        """))
 
-    assert(
-      result.contains(
-        """Failed to derive Differ[DerivationFailureSubject]
-          |
-          |DerivationFailureSubject
-          |  Differ[SomeTrait] cannot be found or derived
-          |  Differ[DerivationFailureNested] cannot be derived because...
-          |    Differ[SomeTrait] cannot be found or derived
-          |    Differ[SomeOtherTrait] cannot be found or derived
-          |
-          |Summary: Derivation failed because we couldn't derive Differ[SomeTrait], Differ[SomeOtherTrait]""".stripMargin,
-      ),
-      s"Expected nested derivation failure tree, got:\n$result",
+    assertStartsWith(
+      result,
+      """error:
+        |Failed to derive Differ[difflicious.testtypes.DerivationFailureSubject]
+        |
+        |difflicious.testtypes.DerivationFailureSubject
+        |  Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |  Differ[difflicious.testtypes.DerivationFailureNested] cannot be derived because...
+        |    Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |    Differ[difflicious.testtypes.SomeOtherTrait] cannot be found or derived
+        |    Differ[scala.collection.immutable.List[difflicious.testtypes.SomeTrait]] cannot be derived because...
+        |      Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |
+        |Summary: Derivation failed because we couldn't find or derive Differ[difflicious.testtypes.SomeTrait], Differ[difflicious.testtypes.SomeOtherTrait]""".stripMargin,
+    )
+  }
+
+  test("Derivation failure: Map reports missing key ValueDiffer and value Differ") {
+    val result = normalizeMapTypeSpacing(stripAnsi(compileErrors("""
+        import difflicious.*
+        import difflicious.testtypes.*
+
+        val subject: Differ[MapDerivationFailureSubject] = Differ.derivedDeep[MapDerivationFailureSubject]
+        """)))
+
+    assertStartsWith(
+      result,
+      """error:
+        |Failed to derive Differ[difflicious.testtypes.MapDerivationFailureSubject]
+        |
+        |difflicious.testtypes.MapDerivationFailureSubject
+        |  Differ[scala.collection.immutable.Map[difflicious.testtypes.MissingMapKey,difflicious.testtypes.MissingMapValue]] cannot be derived because...
+        |    ValueDiffer[difflicious.testtypes.MissingMapKey] cannot be found
+        |    Differ[difflicious.testtypes.MissingMapValue] cannot be found or derived
+        |
+        |Summary: Derivation failed because we couldn't find ValueDiffer[difflicious.testtypes.MissingMapKey] and couldn't find or derive Differ[difflicious.testtypes.MissingMapValue]""".stripMargin,
     )
   }
 
   test("Derivation failure: Sealed trait failures are reported as a tree") {
-    val result = compileErrors("""
+    val result = stripAnsi(compileErrors("""
         import difflicious.*
         import difflicious.testtypes.*
 
         val subject: Differ[DerivationFailureSealed] = Differ.derivedDeep[DerivationFailureSealed]
-        """)
+        """))
 
-    assert(
-      result.contains(
-        """Failed to derive Differ[DerivationFailureSealed]
-          |
-          |DerivationFailureSealed
-          |  Differ[Direct] cannot be derived because...
-          |    Differ[SomeTrait] cannot be found or derived
-          |  Differ[Nested] cannot be derived because...
-          |    Differ[DerivationFailureNested] cannot be derived because...
-          |      Differ[SomeTrait] cannot be found or derived
-          |      Differ[SomeOtherTrait] cannot be found or derived
-          |
-          |Summary: Derivation failed because we couldn't derive Differ[SomeTrait], Differ[SomeOtherTrait]""".stripMargin,
-      ),
-      s"Expected sealed derivation failure tree, got:\n$result",
+    assertStartsWith(
+      result,
+      """error:
+        |Failed to derive Differ[difflicious.testtypes.DerivationFailureSealed]
+        |
+        |difflicious.testtypes.DerivationFailureSealed
+        |  Differ[difflicious.testtypes.DerivationFailureSealed.Direct] cannot be derived because...
+        |    Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |  Differ[difflicious.testtypes.DerivationFailureSealed.Nested] cannot be derived because...
+        |    Differ[difflicious.testtypes.DerivationFailureNested] cannot be derived because...
+        |      Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |      Differ[difflicious.testtypes.SomeOtherTrait] cannot be found or derived
+        |      Differ[scala.collection.immutable.List[difflicious.testtypes.SomeTrait]] cannot be derived because...
+        |        Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |
+        |Summary: Derivation failed because we couldn't find or derive Differ[difflicious.testtypes.SomeTrait], Differ[difflicious.testtypes.SomeOtherTrait]""".stripMargin,
     )
   }
+
+  private def assertRecursiveCustomListDiffer(subject: Differ[RecursiveNodeWithCustomList]): Unit = {
+    val left = recursiveNodeWithCustomList(recursiveNodeWithCustomList())
+    val right = recursiveNodeWithCustomList(
+      recursiveNodeWithCustomList(
+        recursiveNodeWithCustomList(),
+      ),
+    )
+
+    assertEquals(subject.diff(left, left).isOk, true)
+    assertEquals(subject.diff(left, right).isOk, false)
+  }
+
+  private def normalizeMapTypeSpacing(value: String): String =
+    value.replace(
+      "scala.collection.immutable.Map[difflicious.testtypes.MissingMapKey, difflicious.testtypes.MissingMapValue]",
+      "scala.collection.immutable.Map[difflicious.testtypes.MissingMapKey,difflicious.testtypes.MissingMapValue]",
+    )
 
 }

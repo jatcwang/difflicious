@@ -2,7 +2,7 @@ package difflicioustest
 
 import difflicious.testtypes.*
 import difflicious.Differ
-import difflicious.testutils.assertStartsWith
+import difflicious.testutils.{assertStartsWith, stripAnsi}
 
 // Note: When adding/modifying this file, make sure to edit the equivalent scala 2 test file too (if applicable)
 class DifferDerivationPlatformSpec extends munit.FunSuite:
@@ -53,26 +53,43 @@ class DifferDerivationPlatformSpec extends munit.FunSuite:
     assertEquals(result.isOk, false)
   }
 
+  test("Auto derivation works for recursive data structures with custom SeqLike fields") {
+    import difflicious.generic.auto.given
+
+    val subject: Differ[RecursiveNodeWithCustomList] = Differ[RecursiveNodeWithCustomList]
+    val left = recursiveNodeWithCustomList(recursiveNodeWithCustomList())
+    val right = recursiveNodeWithCustomList(
+      recursiveNodeWithCustomList(
+        recursiveNodeWithCustomList(),
+      ),
+    )
+
+    assertEquals(subject.diff(left, left).isOk, true)
+    assertEquals(subject.diff(left, right).isOk, false)
+  }
+
   test("Fully automatic derivation reports the failure tree when recursive derivation fails") {
-    val result = compileErrors("""
+    val result = stripAnsi(compileErrors("""
         import difflicious.*
         import difflicious.generic.auto.given
         import difflicious.testtypes.*
 
         Differ[DerivationFailureSubject]
-        """)
+        """))
 
     assertStartsWith(
       result,
       """error:
-        |Failed to derive Differ[DerivationFailureSubject]
+        |Failed to derive Differ[difflicious.testtypes.DerivationFailureSubject]
         |
-        |DerivationFailureSubject
-        |  Differ[SomeTrait] cannot be found or derived
-        |  Differ[DerivationFailureNested] cannot be derived because...
-        |    Differ[SomeTrait] cannot be found or derived
-        |    Differ[SomeOtherTrait] cannot be found or derived
+        |difflicious.testtypes.DerivationFailureSubject
+        |  Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |  Differ[difflicious.testtypes.DerivationFailureNested] cannot be derived because...
+        |    Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
+        |    Differ[difflicious.testtypes.SomeOtherTrait] cannot be found or derived
+        |    Differ[scala.collection.immutable.List[difflicious.testtypes.SomeTrait]] cannot be derived because...
+        |      Differ[difflicious.testtypes.SomeTrait] cannot be found or derived
         |
-        |Summary: Derivation failed because we couldn't derive Differ[SomeTrait], Differ[SomeOtherTrait]""".stripMargin,
+        |Summary: Derivation failed because we couldn't find or derive Differ[difflicious.testtypes.SomeTrait], Differ[difflicious.testtypes.SomeOtherTrait]""".stripMargin,
     )
   }

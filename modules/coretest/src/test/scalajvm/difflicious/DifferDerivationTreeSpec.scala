@@ -6,7 +6,7 @@ import difflicious.Differ
 
 class DifferDerivationTreeSpec extends munit.FunSuite {
 
-  test("derivedDeep fully expanded syntax tree uses available field instances and derives missing ones") {
+  test("derivedDeep fully expanded syntax tree uses available field instances and derives + cache missing ones") {
     implicit val d1: Differ[TreeCaseClass1] = Differ.derived[TreeCaseClass1]
     val tree = ExpandedTree.expandTreeAndSimplify(Differ.derivedDeep[TreeContainer])
     val _ = d1

@@ -702,6 +702,15 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     assertIsOkIfIgnoredProp(CC.differ)
   }
 
+  test("Derived case object uses equals") {
+    val differ: Differ[SimpleCaseObject.type] = Differ.derived[SimpleCaseObject.type]
+
+    assertEquals(
+      differ.configureRaw(ConfigurePath.current, ConfigureOp.PairBy.Index),
+      Left(InvalidConfigureOp(ConfigurePath.current, ConfigureOp.PairBy.Index, "EqualsDiffer")),
+    )
+  }
+
   test("Product: Attempting to update nonexistent field fails") {
     assertEquals(
       CC.differ.configureRaw(ConfigurePath.of("nonexistent"), ConfigureOp.ignore),

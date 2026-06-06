@@ -52,4 +52,19 @@ class DifferDerivationPlatformSpec extends munit.FunSuite {
     assertEquals(result.isOk, false)
   }
 
+  test("Auto derivation works for recursive data structures with custom SeqLike fields") {
+    import difflicious.generic.auto.*
+
+    val subject: Differ[RecursiveNodeWithCustomList] = Differ[RecursiveNodeWithCustomList]
+    val left = recursiveNodeWithCustomList(recursiveNodeWithCustomList())
+    val right = recursiveNodeWithCustomList(
+      recursiveNodeWithCustomList(
+        recursiveNodeWithCustomList(),
+      ),
+    )
+
+    assertEquals(subject.diff(left, left).isOk, true)
+    assertEquals(subject.diff(left, right).isOk, false)
+  }
+
 }

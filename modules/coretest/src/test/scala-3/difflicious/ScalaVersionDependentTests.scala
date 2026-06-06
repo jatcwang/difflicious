@@ -28,6 +28,19 @@ trait ScalaVersionDependentTests:
     assertIsOkIfIgnoredProp(MyEnum.given_Differ_MyEnum)
   }
 
+  test("Derived enum case value uses equals") {
+    assertEquals(
+      MyEnum.given_Differ_MyEnum.configureRaw(ConfigurePath.of("I"), ConfigureOp.PairBy.Index),
+      Left(
+        ConfigureError.InvalidConfigureOp(
+          ConfigurePath(Vector("I"), Nil),
+          ConfigureOp.PairBy.Index,
+          "EqualsDiffer",
+        ),
+      ),
+    )
+  }
+
   test(".subType[MyEnum.XY] in path expression works") {
     assertConsoleDiffOutput(
       Differ[List[MyEnum]].ignoreAt(_.each.subType[MyEnum.XY].i),

@@ -2,7 +2,7 @@ package difflicious
 
 trait DifferGen {
 
-  def derived[T]: Differ[T] = macro DifferMacros.deriveImpl[T]
+  def derived[T]: Differ[T] = macro DifferDerivationMacros.deriveImpl[T]
 
   /** Derives a [[Differ]] for `T`, recursively deriving any missing field [[Differ]] instances.
     *
@@ -15,5 +15,5 @@ trait DifferGen {
     * Use this when you want semi-automatic derivation at a specific call site without enabling
     * `difflicious.generic.auto` for the surrounding scope.
     */
-  def derivedDeep[T]: Differ[T] = macro DifferMacros.deriveDeepImpl[T]
+  def derivedDeep[T]: Differ[T] = macro DifferDerivationMacros.deriveDeepImpl[T]
 }

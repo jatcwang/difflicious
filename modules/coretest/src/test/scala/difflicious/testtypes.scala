@@ -28,7 +28,7 @@ object testtypes extends ScalaVersionDependentTestTypes {
 
   object HasASeq {
     implicit def differ[A](implicit
-      differ: Differ[Seq[A]],
+      differ: Differ[A],
     ): Differ[HasASeq[A]] = {
       Differ.derived[HasASeq[A]]
     }
@@ -52,6 +52,7 @@ object testtypes extends ScalaVersionDependentTestTypes {
   final case class SimpleCaseClass1(value: String)
   final case class SimpleCaseClass2(value: String)
   final case class SimpleCaseClass3(value: String)
+  case object SimpleCaseObject
   final case class SimpleCaseClassSubject(
     p1: SimpleCaseClass1,
     p2: SimpleCaseClass2,
@@ -60,19 +61,55 @@ object testtypes extends ScalaVersionDependentTestTypes {
   final case class SimpleCaseClassListSubject(values: List[SimpleCaseClass1])
   final case class SimpleGenericCaseClass[A](value: A)
   final case class SimpleGenericCaseClassSubject(value: SimpleGenericCaseClass[SimpleCaseClass1])
+  final case class GenericBox[A](content: List[A])
+
+  object GenericBox {
+    implicit def differ[A](implicit contentDiffer: Differ[List[A]]): Differ[GenericBox[A]] =
+      Differ.derived[GenericBox[A]]
+  }
+
+  final case class GenericFactory[A](boxes: List[GenericBox[A]])
+
+  object GenericFactory {
+    implicit def differ[A](implicit boxesDiffer: Differ[List[GenericBox[A]]]): Differ[GenericFactory[A]] =
+      Differ.derived[GenericFactory[A]]
+  }
+
   final case class RecursiveDerivedNode(value: String, children: List[RecursiveDerivedNode])
   final case class RecursiveDerivedDeepNode(value: String, children: List[RecursiveDerivedDeepNode])
+  final case class CustomList[A](values: List[A])
+
+  object CustomList {
+    implicit val seqLike: difflicious.utils.SeqLike[CustomList] =
+      new difflicious.utils.SeqLike[CustomList] {
+        override def asSeq[A](f: CustomList[A]): Seq[A] = f.values
+      }
+  }
+
+  final case class RecursiveNodeWithCustomList(
+    nodes: CustomList[RecursiveNodeWithCustomList],
+  )
+
+  def recursiveNodeWithCustomList(children: RecursiveNodeWithCustomList*): RecursiveNodeWithCustomList =
+    RecursiveNodeWithCustomList(CustomList(children.toList))
+
   trait SomeTrait
   trait SomeOtherTrait
   final case class DerivationFailureNested(
     value: SomeTrait,
     duplicateValue: SomeTrait,
     otherValue: SomeOtherTrait,
+    list: List[SomeTrait],
   )
   final case class DerivationFailureSubject(
     missing: SomeTrait,
     duplicateMissing: SomeTrait,
     nested: DerivationFailureNested,
+  )
+  trait MissingMapKey
+  trait MissingMapValue
+  final case class MapDerivationFailureSubject(
+    map: Map[MissingMapKey, MissingMapValue],
   )
 
   sealed trait DerivationFailureSealed
@@ -118,6 +155,15 @@ object testtypes extends ScalaVersionDependentTestTypes {
   }
 
   final case class DeepSealedSubject(value: DeepSealed)
+
+  sealed trait GenericSealed[A]
+
+  object GenericSealed {
+    final case class Single[A](value: A) extends GenericSealed[A]
+    final case class Many[A](values: List[A]) extends GenericSealed[A]
+  }
+
+  final case class GenericSealedSubject[A](value: GenericSealed[A])
 
   sealed trait MultiLevelSealed
 
