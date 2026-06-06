@@ -570,20 +570,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
         .asInstanceOf[Differ[A]]
     }
 
-  protected final def staticTypeName[A: Type]: Expr[TypeName.SomeTypeName] = {
-    val long = Expr(scala.reflect.NameTransformer.decode(Type[A].fqcn))
-    val short = Expr(scala.reflect.NameTransformer.decode(Type[A].shortName))
-
-    Expr
-      .quote {
-        TypeName[Any](
-          long = Expr.splice(long),
-          short = Expr.splice(short),
-          typeArguments = Nil,
-        )
-      }
-      .asInstanceOf[Expr[TypeName.SomeTypeName]]
-  }
+  protected def staticTypeName[A: Type]: Expr[TypeName.SomeTypeName]
 
   /** Summons the ValueDiffer required for MapLike keys.
     *

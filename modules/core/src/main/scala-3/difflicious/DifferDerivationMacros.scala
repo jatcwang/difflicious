@@ -42,6 +42,13 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
     }
   }
 
+  protected def staticTypeName[A: Type]: Expr[difflicious.utils.TypeName.SomeTypeName] = {
+    '{
+      difflicious.utils.TypeName[A]
+    }
+      .asInstanceOf[Expr[difflicious.utils.TypeName.SomeTypeName]]
+  }
+
   protected def decomposeApplied1[A: Type]: Option[Applied1[A]] = {
     import q.reflect.*
 

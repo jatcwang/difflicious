@@ -29,6 +29,14 @@ private[difflicious] class DifferDerivationMacros(val c: whitebox.Context)
   def autoImpl[T: c.WeakTypeTag]: c.Expr[Differ[T]] =
     deriveDeepImpl[T]
 
+  protected def staticTypeName[A: Type]: Expr[difflicious.utils.TypeName.SomeTypeName] = {
+    val tpt = tq"${Type[A].tpe}"
+
+    c.Expr[difflicious.utils.TypeName.SomeTypeName] {
+      q"_root_.difflicious.utils.TypeName[$tpt]"
+    }.asInstanceOf[Expr[difflicious.utils.TypeName.SomeTypeName]]
+  }
+
   protected def decomposeApplied1[A: Type]: Option[Applied1[A]] = {
     val appliedType = Type[A].tpe.dealias
 

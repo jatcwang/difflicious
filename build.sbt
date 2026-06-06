@@ -66,7 +66,6 @@ lazy val core = projectMatrix
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "izumi-reflect" % "3.0.9",
       "com.lihaoyi" %%% "fansi" % "0.5.1",
       "com.kubuszok" %%% "hearth" % hearthVersion,
     ) ++ (if (isScala3.value) {
