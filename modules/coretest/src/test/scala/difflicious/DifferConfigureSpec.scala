@@ -106,6 +106,10 @@ class DifferConfigureSpec extends munit.FunSuite {
     )
   }
 
+  test("DifferSubTypeRelationship is not automatically generated for true subtypes") {
+    assert(compileErrors("implicitly[DifferSubTypeRelationship[OpenSuperType, OpenSub]]").nonEmpty)
+  }
+
   test("pairBy works with Seq") {
     assertConsoleDiffOutput(
       Differ[HasASeq[CC]].configure(_.seq)(_.pairBy(_.i)),

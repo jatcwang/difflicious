@@ -17,6 +17,7 @@
   line-height: 1.45;
   overflow-x: auto;
   padding: 15px;
+  white-space: pre;
 }
 
 .diff-red {

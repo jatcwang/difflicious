@@ -192,6 +192,7 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-literal" % circeVersion,
       "org.scalatest" %%% "scalatest" % scalatestVersion,
       "org.typelevel" %%% "weaver-cats" % weaverVersion,
     ),

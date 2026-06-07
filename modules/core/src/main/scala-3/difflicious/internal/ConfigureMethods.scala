@@ -70,23 +70,55 @@ private[difflicious] object ConfigureMethodImpls:
   def collectPathElements[T, U](pathExpr: Expr[T => U])(using Quotes): Expr[List[String]] = {
     import quotes.reflect.*
 
-//    import dotty.tools.dotc.ast.Trees.*
+    def isImplicitConversion(term: Term): Boolean =
+      term.symbol.flags.is(Flags.Implicit)
+
+    def relationshipPathElement(superType: TypeRepr, subType: TypeRepr): Option[Expr[String]] =
+      (superType.asType, subType.asType) match {
+        case ('[a], '[b]) =>
+          Expr.summon[difflicious.DifferSubTypeRelationship[a, b]].map { relationship =>
+            '{ $relationship.path }
+          }
+        case _ => None
+      }
+
     @tailrec
-    def collectPathElementsLoop(pathAccum: List[String], cur: Term): List[String] =
+    def collectPathElementsLoop(pathAccum: List[Expr[String]], cur: Term): List[Expr[String]] =
       cur match {
         case Select(rest, name) =>
-          collectPathElementsLoop(name.toString :: pathAccum, rest)
-        case x @ TypeApply(Select(Apply(TypeApply(_, superType :: Nil), rest :: Nil), "subType"), subType :: Nil) =>
-          val typeSym = subType.tpe.dealias.typeSymbol
-          if superType.symbol.children.contains(subType.tpe.dealias.typeSymbol) then
-            collectPathElementsLoop(typeSym.name :: pathAccum, rest)
+          collectPathElementsLoop(Expr(name.toString) :: pathAccum, rest)
+        case Apply(
+              TypeApply(Select(Apply(TypeApply(_, _ :: Nil), rest :: Nil), "subType"), _ :: Nil),
+              relationship :: Nil,
+            ) =>
+          val relationshipExpr = relationship.asExprOf[difflicious.DifferSubTypeRelationship[?, ?]]
+          collectPathElementsLoop('{ $relationshipExpr.path } :: pathAccum, rest)
+        case x @ TypeApply(Select(Apply(TypeApply(_, _ :: Nil), rest :: Nil), "subType"), subType :: Nil) =>
+          val superTypeRepr = rest.tpe.widen.dealias
+          val subTypeRepr = subType.tpe.dealias
+          val typeSym = subTypeRepr.typeSymbol
+          if subTypeRepr <:< superTypeRepr then
+            if superTypeRepr.typeSymbol.children.contains(typeSym) then
+              collectPathElementsLoop(Expr(typeSym.name) :: pathAccum, rest)
+            else
+              report.error(
+                s"subType requires that the super type be a sealed trait (enum), and the subtype being a direct children of the super type.",
+                x.asExpr,
+              )
+              List.empty
           else
-            report.error(
-              s"subType requires that the super type be a sealed trait (enum), and the subtype being a direct children of the super type.",
-              x.asExpr,
-            )
-            List.empty
-        case Apply(Apply(TypeApply(Ident(name), _), rest :: Nil), _) if name.toString == "toEachableOps" =>
+            relationshipPathElement(superTypeRepr, subTypeRepr) match {
+              case Some(pathElement) => collectPathElementsLoop(pathElement :: pathAccum, rest)
+              case None =>
+                report.error(
+                  s"subType requires either a true subtype or an implicit DifferSubTypeRelationship.",
+                  x.asExpr,
+                )
+                List.empty
+            }
+        case Apply(Apply(conversion, rest :: Nil), _) if isImplicitConversion(conversion) =>
+          collectPathElementsLoop(pathAccum, rest)
+        case Apply(conversion, rest :: Nil) if isImplicitConversion(conversion) =>
           collectPathElementsLoop(pathAccum, rest)
         case Ident(_) => pathAccum
         case _ => {
@@ -96,7 +128,7 @@ private[difflicious] object ConfigureMethodImpls:
 
     pathExpr.asTerm match {
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(tree))), _)) =>
-        Expr(collectPathElementsLoop(List.empty, tree))
+        Expr.ofList(collectPathElementsLoop(List.empty, tree))
       case _ =>
         report.error(s"Unexpected path expression. This is a bug: ${pathExpr.asTerm.show(using Printer.TreeStructure)}")
         '{ ??? }

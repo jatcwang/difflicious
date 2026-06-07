@@ -81,32 +81,56 @@ object ConfigureMacro {
     }
 
     @tailrec
-    def collectPathElements(tree: c.Tree, acc: List[String]): List[String] = {
+    def collectPathElements(tree: c.Tree, acc: List[c.Tree]): List[c.Tree] = {
+      def isImplicitConversion(func: c.Tree): Boolean =
+        func.symbol != NoSymbol && func.symbol.isImplicit
+
       tree match {
         case q"$parent.$child" => {
-          collectPathElements(parent, child.decodedName.toString :: acc)
+          collectPathElements(parent, q"${child.decodedName.toString}" :: acc)
         }
         case _: Ident => acc
         case q"$func[..$tArgs]($t)($ev)" => {
           collectPathElements(t, acc)
         }
+        case q"$func[$superType]($rest).subType[$subType]($relationship)" => {
+          collectPathElements(rest, q"$relationship.path" :: acc)
+        }
         case q"$func[$superType]($rest).subType[$subType]" => {
-          val superTypeSym = superType.symbol.asClass
-          val subTypeSym = subType.symbol.asClass
+          val superTypeTpe = rest.tpe.dealias
+          val subTypeTpe = subType.tpe.dealias
 
-          val allKnownSubTypesInHierarchy =
-            resolveAllSubtypesInHierarchy(toCheck = superTypeSym.knownDirectSubclasses.toVector, accum = Vector.empty)
-          if (allKnownSubTypesInHierarchy.contains(subTypeSym)) {
-            collectPathElements(rest, subTypeSym.name.decodedName.toString :: acc)
+          if (subTypeTpe <:< superTypeTpe) {
+            val superTypeSym = superTypeTpe.typeSymbol.asClass
+            val subTypeSym = subTypeTpe.typeSymbol.asClass
+            val allKnownSubTypesInHierarchy =
+              resolveAllSubtypesInHierarchy(toCheck = superTypeSym.knownDirectSubclasses.toVector, accum = Vector.empty)
+            if (allKnownSubTypesInHierarchy.contains(subTypeSym)) {
+              collectPathElements(rest, q"${subTypeSym.name.decodedName.toString}" :: acc)
+            } else {
+              c.abort(
+                c.enclosingPosition,
+                s"""Specified subtype is not a known direct subtype of $superTypeSym.
+                   |The supertype needs to be sealed, and you might need to ensure that both the supertype
+                   |and subtype gets compiled before this invocation.
+                   |See also: <https://issues.scala-lang.org/browse/SI-7046>.""".stripMargin,
+              )
+            }
           } else {
-            c.abort(
-              c.enclosingPosition,
-              s"""Specified subtype is not a known direct subtype of $superTypeSym.
-                 |The supertype needs to be sealed, and you might need to ensure that both the supertype 
-                 |and subtype gets compiled before this invocation.
-                 |See also: <https://issues.scala-lang.org/browse/SI-7046>.""".stripMargin,
+            val relationshipType = appliedType(
+              c.mirror.staticClass("difflicious.DifferSubTypeRelationship").toTypeConstructor,
+              superTypeTpe :: subTypeTpe :: Nil,
             )
+            val relationship = c.inferImplicitValue(relationshipType, silent = true)
+            if (relationship != EmptyTree) {
+              collectPathElements(rest, q"$relationship.path" :: acc)
+            } else {
+              c.abort(c.enclosingPosition, s"$requiredShapeMsg, got: ${tree}")
+            }
           }
+        }
+        case q"$func($t)" if isImplicitConversion(func) => {
+          collectPathElements(t, acc)
         }
         case _ =>
           c.abort(c.enclosingPosition, s"$requiredShapeMsg, got: ${tree}")
@@ -115,9 +139,9 @@ object ConfigureMacro {
 
     path.tree match {
       case q"($_) => $pathBody" => {
-        val pathStr = collectPathElements(pathBody, List.empty)
+        val pathElements = collectPathElements(pathBody, List.empty)
         q"""${c.prefix.tree}.configureRaw(
-            _root_.difflicious.ConfigurePath.fromPath($pathStr),
+            _root_.difflicious.ConfigurePath.fromPath(_root_.scala.List(..$pathElements)),
             $op
           ) match {
             case Right(newDiffer) => newDiffer

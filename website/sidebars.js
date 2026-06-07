@@ -10,7 +10,21 @@ module.exports = {
         'derivation',
         'basic-differs',
         'configuring-differs',
-        'library-integrations',
+        {
+          type: 'category',
+          label: 'Library Integrations',
+          link: {
+            type: 'doc',
+            id: 'library-integrations',
+          },
+          items: [
+            'library-integrations/munit',
+            'library-integrations/scalatest',
+            'library-integrations/weaver',
+            'library-integrations/cats',
+            'library-integrations/circe',
+          ],
+        },
         'best-practices-and-faq',
         'cheatsheet',
       ],
