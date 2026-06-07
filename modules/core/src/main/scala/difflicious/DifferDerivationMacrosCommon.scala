@@ -1,58 +1,21 @@
 package difflicious
 
 import difflicious.differ.{LazyDiffer, OneOfDiffer, ProductDiffer, ValueDiffer}
-import difflicious.utils.TypeName
-import hearth.fp.effect._
-import hearth.fp.instances._
-import hearth.fp.syntax._
+import difflicious.utils.{MapLike, SeqLike, SetLike, TypeName}
+import hearth.fp.effect.*
+import hearth.fp.instances.*
+import hearth.fp.syntax.*
 
+import scala.annotation.nowarn
 import scala.util.control.NoStackTrace
 
 private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroCommons =>
-
-  /** Platform-specific view of an applied type with one type argument, such as Option[A], List[A], or Set[A].
-    *
-    * Implementations identify whether the type is an Option, has a SeqLike instance, or has a SetLike instance, then
-    * build the appropriate container Differ while keeping the common derivation logic platform-independent.
-    */
-  protected trait Applied1[A] {
-    type Elem
-
-    implicit val elemType: Type[Elem]
-
-    def isOptionLike: Boolean
-    def hasSeqLike: Boolean
-    def hasSetLike: Boolean
-    def buildSeqDiffer(itemDiffer: Expr[Differ[Elem]]): Expr[Differ[A]]
-    def buildSetDiffer(itemDiffer: Expr[Differ[Elem]]): Expr[Differ[A]]
-  }
-
-  /** Platform-specific view of an applied type with two type arguments, such as Either[L, R] or Map[K, V].
-    *
-    * Implementations identify whether the type is an Either or has a MapLike instance, then build the appropriate
-    * container Differ while keeping the common derivation logic platform-independent.
-    */
-  protected trait Applied2[A] {
-    type Key
-    type Value
-
-    implicit val keyType: Type[Key]
-    implicit val valueType: Type[Value]
-
-    def isEitherLike: Boolean
-    def hasMapLike: Boolean
-    def buildMapDiffer(
-      keyDiffer: Expr[ValueDiffer[Key]],
-      valueDiffer: Expr[Differ[Value]],
-    ): Expr[Differ[A]]
-  }
-
   private val logDerivationTypeInstance: Type[debug.LogDerivation] =
     Type.of[debug.LogDerivation]
 
-  protected def decomposeApplied1[A: Type]: Option[Applied1[A]]
+  protected def mkCollectionHelper1[A: Type]: Option[CollectionHelper1[A]]
 
-  protected def decomposeApplied2[A: Type]: Option[Applied2[A]]
+  protected def mkCollectionHelper2[A: Type]: Option[CollectionHelper2[A]]
 
   private val derivedDiffersCache: MLocal[ValDefsCache] = ValDefsCache.mlocal
 
@@ -72,6 +35,10 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
   private lazy val differCtor: Type.Ctor1[Differ] = Type.Ctor1.of[Differ]
 
   private lazy val valueDifferCtor: Type.Ctor1[ValueDiffer] = Type.Ctor1.of[ValueDiffer]
+
+  private lazy val optionCtor: Type.Ctor1[Option] = Type.Ctor1.of[Option]
+
+  private lazy val eitherCtor: Type.Ctor2[Either] = Type.Ctor2.of[Either]
 
   private def differType[A: Type]: Type[Differ[A]] =
     differCtor.apply[A]
@@ -99,27 +66,6 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     deriveDifferMIO[T](isCascadeDerive)
       .runToExprOrFail(
         macroName,
-        infoRendering = if (shouldWeLogDerivation) RenderFrom(Log.Level.Info) else DontRender,
-      ) { (errorLogs, errors) =>
-        formatDerivationErrors[T](errorLogs, errors.toVector)
-      }
-  }
-
-  /** Entry point for auto derivation.
-    *
-    * Auto derivation always uses cascade derivation. On failure it reports the derivation error through the platform
-    * macro reporter and returns the supplied fallback expression so implicit search can continue reporting normally.
-    */
-  final def deriveAutoDiffer[T: Type](
-    reportError: String => Unit,
-    fallback: Expr[Differ[T]],
-  ): Expr[Differ[T]] = {
-    deriveDifferMIO[T](isCascadeDerive = true)
-      .handleErrorWith { errors =>
-        MIO(reportError(formatDerivationErrors[T]("", errors.toVector))).as(fallback)
-      }
-      .runToExprOrFail(
-        macroName = s"Differ[${displayTypeName[T]}]",
         infoRendering = if (shouldWeLogDerivation) RenderFrom(Log.Level.Info) else DontRender,
       ) { (errorLogs, errors) =>
         formatDerivationErrors[T](errorLogs, errors.toVector)
@@ -156,12 +102,17 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
             Log.info(s"Summoned Differ[${displayTypeName[A]}] 👻") >>
               MIO.pure(differ)
           case None =>
-            resolveContainerDiffer[A](isCascadeDerive).flatMap {
-              case Some(differ) => MIO.pure(differ)
-              case None =>
-                if (isCascadeDerive) resolveRootDiffer[A](isCascadeDerive, summonExisting = false)
-                else MIO.fail(DifferDerivationError.missingDiffer(displayTypeName[A], isCascadeDerive))
-            }
+            resolveContainer1[A](isCascadeDerive)
+              .flatMap {
+                case Some(differ) => MIO.pure(Some(differ))
+                case None => resolveContainer2[A](isCascadeDerive)
+              }
+              .flatMap {
+                case Some(differ) => MIO.pure(differ)
+                case None =>
+                  if (isCascadeDerive) resolveRootDiffer[A](isCascadeDerive, summonExisting = false)
+                  else MIO.fail(DifferDerivationError.missingDiffer(displayTypeName[A], isCascadeDerive))
+              }
         }
       }
     }
@@ -264,7 +215,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     resolve: => MIO[Expr[Differ[A]]],
   ): MIO[Expr[Differ[A]]] =
     resolve.handleErrorWith { errors =>
-      val error = collapseErrors(errors.toVector, displayTypeName[A])
+      val error = combineErrors(errors.toVector, displayTypeName[A])
       val cacheKey = derivationCacheKey[A]
       failedDerivedDiffersCache.get.flatMap { failed =>
         failedDerivedDiffersCache.set(failed.updated(cacheKey, error)) >>
@@ -272,51 +223,46 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
       }
     }
 
-  /** Attempts derivation for known container shapes before ordinary implicit search.
-    *
-    * One-argument containers are tried first because they include Option, SeqLike, and SetLike. Two-argument containers
-    * cover Either and MapLike.
-    */
-  private def resolveContainerDiffer[A: Type](
-    isCascadeDerive: Boolean,
-  ): MIO[Option[Expr[Differ[A]]]] =
-    resolveApplied1[A](isCascadeDerive).flatMap {
-      case Some(differ) => MIO.pure(Some(differ))
-      case None => resolveApplied2[A](isCascadeDerive)
-    }
-
-  /** Resolves one-argument applied types.
+  /** Resolves Differ for any type that has 2 type arguments.
     *
     * Cases covered:
     *   - Option-like types use `Differ.optionDiffer`,
     *   - types with a `SeqLike` instance
     *   - types with a `SetLike` instance
     */
-  private def resolveApplied1[A: Type](
+  private def resolveContainer1[A: Type](
     isCascadeDerive: Boolean,
   ): MIO[Option[Expr[Differ[A]]]] =
-    MIO(decomposeApplied1[A]).flatMap {
+    MIO(mkCollectionHelper1[A]).flatMap {
       case Some(applied) =>
         import applied.elemType
 
         reportContainerFailure[A] {
-          if (applied.isOptionLike) {
-            Log.info(s"Is Option: ${displayTypeName[A]}") >>
-              resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
-                Some(optionDiffer[A, applied.Elem](elemDiffer))
+          MIO(optionCtor.unapply(Type[A])).flatMap {
+            case Some(_) =>
+              Log.info(s"Is Option: ${displayTypeName[A]}") >>
+                resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
+                  Some(optionDiffer[A, applied.Elem](elemDiffer))
+                }
+
+            case None =>
+              summonExprOpt[SeqLike[applied.F]](applied.typeOfSeqLike) match {
+                case Some(seqLike) =>
+                  Log.info(s"Found SeqLike instance for ${displayTypeName[A]}. Resolving SeqDiffer..") >>
+                    resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
+                      Some(seqDiffer[A, applied.Elem](elemDiffer, seqLike.asInstanceOf[Expr[Any]]))
+                    }
+                case None =>
+                  summonExprOpt[SetLike[applied.F]](applied.typeOfSetLike) match {
+                    case Some(setLike) =>
+                      Log.info(s"Found SetLike instance for ${displayTypeName[A]}. Resolving SetDiffer..") >>
+                        resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
+                          Some(setDiffer[A, applied.Elem](elemDiffer, setLike.asInstanceOf[Expr[Any]]))
+                        }
+                    case None =>
+                      MIO.pure(None)
+                  }
               }
-          } else if (applied.hasSeqLike) {
-            Log.info(s"Found SeqLike instance for ${displayTypeName[A]}. Resolving SeqDiffer..") >>
-              resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
-                Some(applied.buildSeqDiffer(elemDiffer))
-              }
-          } else if (applied.hasSetLike) {
-            Log.info(s"Found SetLike instance for ${displayTypeName[A]}. Resolving SetDiffer..") >>
-              resolveFieldDiffer[applied.Elem](isCascadeDerive).map { elemDiffer =>
-                Some(applied.buildSetDiffer(elemDiffer))
-              }
-          } else {
-            MIO.pure(None)
           }
         }
 
@@ -331,45 +277,51 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
       MIO.fail(DifferDerivationError.FailedDiffer(displayTypeName[A], derivationErrors(errors.toVector)))
     }
 
-  /** Resolves two-argument applied types.
+  /** Resolves Differ for any type that has 2 type arguments.
     *
     * Cases covered:
     *   - Either
     *   - types with a `MapLike` instance use `MapDiffer` values,
     *   - all other two-argument types fall through to implicit search or derivation.
     */
-  private def resolveApplied2[A: Type](
+  private def resolveContainer2[A: Type](
     isCascadeDerive: Boolean,
   ): MIO[Option[Expr[Differ[A]]]] =
-    MIO(decomposeApplied2[A]).flatMap {
+    MIO(mkCollectionHelper2[A]).flatMap {
       case Some(applied) =>
         import applied.keyType
         import applied.valueType
 
         reportContainerFailure[A] {
-          if (applied.isEitherLike) {
-            Log.info(s"Resolving Either-like Differ[${displayTypeName[A]}]") >>
-              combine2(
-                resolveFieldDiffer[applied.Key](isCascadeDerive),
-                resolveFieldDiffer[applied.Value](isCascadeDerive),
-              ) { (left, right) =>
-                eitherDiffer[A, applied.Key, applied.Value](left, right)
-              }.map(Some(_))
-          } else if (applied.hasMapLike) {
-            val keyDiffer = MIO(summonValueDiffer[applied.Key]).flatMap {
-              case Some(differ) => MIO.pure(differ)
-              case None =>
-                MIO.fail(DifferDerivationError.missingValueDiffer(displayTypeName[applied.Key]))
-            }
-            val valueDiffer =
-              resolveFieldDiffer[applied.Value](isCascadeDerive)
+          MIO(eitherCtor.unapply(Type[A])).flatMap {
+            case Some(_) =>
+              Log.info(s"Resolving Either-like Differ[${displayTypeName[A]}]") >>
+                resolveFieldDiffer[applied.Key](isCascadeDerive)
+                  .parMap2(resolveFieldDiffer[applied.Value](isCascadeDerive)) { (leftDiffer, rightDiffer) =>
+                    eitherDiffer[A, applied.Key, applied.Value](leftDiffer, rightDiffer)
+                  }
+                  .map(Some(_))
 
-            Log.info(s"MapLike: Differ[${displayTypeName[A]}]") >>
-              combine2(keyDiffer, valueDiffer) { (key, value) =>
-                applied.buildMapDiffer(key, value)
-              }.map(Some(_))
-          } else {
-            MIO.pure(None)
+            case None =>
+              summonExprOpt[MapLike[applied.F]](applied.typeOfMapLike) match {
+                case Some(mapLike) =>
+                  val keyDiffer = MIO(summonExprOpt(valueDifferCtor.apply[applied.Key])).flatMap {
+                    case Some(differ) => MIO.pure(differ)
+                    case None =>
+                      MIO.fail(DifferDerivationError.missingValueDiffer(displayTypeName[applied.Key]))
+                  }
+                  val valueDiffer =
+                    resolveFieldDiffer[applied.Value](isCascadeDerive)
+
+                  Log.info(s"MapLike: Differ[${displayTypeName[A]}]") >>
+                    keyDiffer
+                      .parMap2(valueDiffer) { (key, value) =>
+                        mapDiffer[A, applied.Key, applied.Value](key, value, mapLike.asInstanceOf[Expr[Any]])
+                      }
+                      .map(Some(_))
+                case None =>
+                  MIO.pure(None)
+              }
           }
         }
 
@@ -415,10 +367,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     MIO.pure {
       val label = Expr(scala.reflect.NameTransformer.decode(Type[A].shortName).stripSuffix(".type"))
       Expr.quote {
-        val valueToString: Any => String = (value: Any) =>
-          value match {
-            case _ => Expr.splice(label)
-          }
+        val valueToString: Any => String = Function.const(Expr.splice(label))
         Differ.useEquals[A](valueToString.asInstanceOf[A => String]): Differ[A]
       }
     }
@@ -508,7 +457,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
         }
       }
 
-  /** Builds a OneOfDiffer.Case for a sealed child.
+  /** Builds a OneOfDiffer.Case for a sealed trait child.
     */
   private def mkSealedCase[A: Type, B: Type](
     differ: Expr[Differ[B]],
@@ -531,7 +480,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     *
     * Singleton children, such as case objects and enum cases, are matched by equality against their singleton value.
     */
-  @scala.annotation.nowarn("msg=abstract type .* is unchecked since it is eliminated by erasure")
+  @nowarn("msg=abstract type .* is unchecked since it is eliminated by erasure")
   private def extractCase[A: Type, B: Type]: Expr[A => Option[B]] =
     Expr.singletonOf[B] match {
       case Some(singleton) =>
@@ -547,39 +496,91 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     }
 
   /** Builds the Option differ expression for an Option-like applied type. */
-  @scala.annotation.nowarn("msg=Implicit parameters should be provided with a `using` clause")
   private def optionDiffer[A: Type, Elem: Type](
     valueDiffer: Expr[Differ[Elem]],
   ): Expr[Differ[A]] =
     Expr.quote {
-      Differ.optionDiffer[Elem](Expr.splice(valueDiffer)).asInstanceOf[Differ[A]]
+      Differ.optionDiffer[Elem](using Expr.splice(valueDiffer)).asInstanceOf[Differ[A]]
     }
 
   /** Builds the Either differ expression for an Either-like applied type. */
-  @scala.annotation.nowarn("msg=Implicit parameters should be provided with a `using` clause")
   private def eitherDiffer[A: Type, L: Type, R: Type](
     leftDiffer: Expr[Differ[L]],
     rightDiffer: Expr[Differ[R]],
   ): Expr[Differ[A]] =
     Expr.quote {
       Differ
-        .eitherDiffer[L, R](
+        .eitherDiffer[L, R](using
           Expr.splice(leftDiffer),
           Expr.splice(rightDiffer),
         )
         .asInstanceOf[Differ[A]]
     }
 
+  /** Builds the Seq differ expression for any one-argument type with a SeqLike instance. */
+  private def seqDiffer[A: Type, Elem: Type](
+    itemDiffer: Expr[Differ[Elem]],
+    seqLike: Expr[Any],
+  ): Expr[Differ[A]] = {
+    val typeName = staticTypeName[A]
+
+    Expr.quote {
+      type Container[X] = A
+
+      difflicious.differ.SeqDiffer
+        .create[Container, Elem](
+          itemDiffer = Expr.splice(itemDiffer),
+          typeName = Expr.splice(typeName),
+          asSeq = Expr.splice(seqLike).asInstanceOf[difflicious.utils.SeqLike[Container]],
+        )
+    }
+  }
+
+  /** Builds the Set differ expression for any one-argument type with a SetLike instance. */
+  private def setDiffer[A: Type, Elem: Type](
+    itemDiffer: Expr[Differ[Elem]],
+    setLike: Expr[Any],
+  ): Expr[Differ[A]] = {
+    val typeName = staticTypeName[A]
+
+    Expr.quote {
+      type Container[X] = A
+
+      difflicious.differ.SetDiffer
+        .create[Container, Elem](
+          itemDiffer = Expr.splice(itemDiffer),
+          typeName = Expr.splice(typeName),
+          asSet = Expr.splice(setLike).asInstanceOf[difflicious.utils.SetLike[Container]],
+        )
+    }
+  }
+
+  /** Builds the Map differ expression for any two-argument type with a MapLike instance. */
+  private def mapDiffer[A: Type, Key: Type, Value: Type](
+    keyDiffer: Expr[ValueDiffer[Key]],
+    valueDiffer: Expr[Differ[Value]],
+    asMap: Expr[Any],
+  ): Expr[Differ[A]] = {
+    val typeName = staticTypeName[A]
+
+    Expr.quote {
+      type Container[X, Y] = A
+
+      new difflicious.differ.MapDiffer[Container, Key, Value](
+        isIgnored = false,
+        keyDiffer = Expr.splice(keyDiffer),
+        valueDiffer = Expr.splice(valueDiffer),
+        typeName = Expr.splice(typeName),
+        asMap = Expr.splice(asMap).asInstanceOf[difflicious.utils.MapLike[Container]],
+      )
+    }
+  }
+
   protected def staticTypeName[A: Type]: Expr[TypeName.SomeTypeName]
 
-  /** Summons the ValueDiffer required for MapLike keys.
-    *
-    * Map keys must render as stable values, so `MapDiffer` requires `ValueDiffer[K]` rather than a general `Differ[K]`.
-    * Missing key instances are reported as missing value differs for the key type.
-    */
-  private def summonValueDiffer[A: Type]: Option[Expr[ValueDiffer[A]]] = {
-    implicit val valueDifferType: Type[ValueDiffer[A]] = valueDifferCtor.apply[A]
-    Expr.summonImplicit[ValueDiffer[A]].toOption
+  private def summonExprOpt[A](instanceType: Type[A]): Option[Expr[A]] = {
+    implicit val implicitType: Type[A] = instanceType
+    Expr.summonImplicit[A].toOption
   }
 
   /** Converts generated element expressions into a Vector expression without relying on varargs quoting. */
@@ -587,17 +588,6 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     items.foldLeft(Expr.quote(Vector.empty[A])) { (acc, item) =>
       Expr.quote(Expr.splice(acc) :+ Expr.splice(item))
     }
-
-  /** Runs two independent derivation steps in parallel.
-    *
-    * This is used for Either and MapLike, where both sides should be attempted before container error reporting groups
-    * any failures under the containing type.
-    */
-  private def combine2[A, B, C](
-    a: MIO[A],
-    b: MIO[B],
-  )(f: (A, B) => C): MIO[C] =
-    a.parMap2(b)(f)
 
   /** Normalizes thrown errors into unique DifferDerivationError values. */
   private def derivationErrors(errors: Vector[Throwable]): Vector[DifferDerivationError] =
@@ -607,7 +597,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     }
 
   /** Collapses one or more errors into the most specific error tree for a parent differ. */
-  private def collapseErrors(errors: Vector[Throwable], differType: String): DifferDerivationError =
+  private def combineErrors(errors: Vector[Throwable], differType: String): DifferDerivationError =
     derivationErrors(errors) match {
       case Vector(error) => error
       case errors => DifferDerivationError.FailedDiffer(differType, errors)
@@ -617,10 +607,12 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
   private def displayTypeName[A: Type]: String =
     scala.reflect.NameTransformer.decode(Type[A].prettyPrint)
 
-  /** Formats the root derivation failure and adds a summary of missing differs when available. */
-  private def formatDerivationError[A: Type](error: DifferDerivationError): String = {
-    val tree = renderError(error, indent = 0, root = true)
-    val missingInstances = collectMissingInstances(error)
+  /** Formats macro failure output, optionally appending derivation logs captured by hearth. */
+  private def formatDerivationErrors[A: Type](errorLogs: String, errors: Vector[Throwable]): String = {
+    val combinedError = combineErrors(errors, displayTypeName[A])
+
+    val tree = renderError(combinedError, indent = 0, root = true)
+    val missingInstances = collectMissingInstances(combinedError)
     val missingOnly = missingInstances.collect {
       case missing if !missing.canDerive => missing.instanceRepr
     }.distinct
@@ -639,15 +631,10 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
       if (summaryParts.isEmpty) ""
       else s"\n\nSummary: Derivation failed because we ${summaryParts.mkString(" and ")}"
 
-    s"Failed to derive Differ[${displayTypeName[A]}]\n\n$tree$summary"
-  }
-
-  /** Formats macro failure output, optionally appending derivation logs captured by hearth. */
-  private def formatDerivationErrors[A: Type](errorLogs: String, errors: Vector[Throwable]): String = {
-    val message = formatDerivationError[A](collapseErrors(errors, displayTypeName[A]))
+    val message = s"Failed to derive Differ[${displayTypeName[A]}]\n\n$tree$summary"
 
     if (errorLogs.trim.isEmpty) message
-    else s"$message\n\nDerivation logs:\n$errorLogs"
+    else s"$message\n\nDerivation error logs:\n$errorLogs"
   }
 
   /** Renders a nested derivation error tree.
@@ -659,7 +646,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
     indent: Int,
     root: Boolean,
   ): String = {
-    val prefix = "  " * indent
+    val prefix = "  ".repeat(indent)
 
     error match {
       case DifferDerivationError.FailedDiffer(differType, errors) =>
@@ -684,6 +671,34 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
       case DifferDerivationError.Other(_) =>
         Vector.empty
     }
+
+  /** Helper for Collections with 1 type parameter. Helper us construct certain Type[..] values that involves higher
+    * kinded types (not supported by Hearth atm).
+    */
+  protected trait CollectionHelper1[A] {
+    type F[_]
+    type Elem
+
+    implicit val elemType: Type[Elem]
+
+    def typeOfSeqLike: Type[SeqLike[F]]
+    def typeOfSetLike: Type[SetLike[F]]
+  }
+
+  /** Helper for Collections with 2 type parameter. Helper us construct certain Type[..] values that involves higher
+    * kinded types (not supported by Hearth atm).
+    */
+  protected trait CollectionHelper2[A] {
+    type F[_, _]
+    type Key
+    type Value
+
+    implicit val keyType: Type[Key]
+    implicit val valueType: Type[Value]
+
+    def typeOfMapLike: Type[MapLike[F]]
+  }
+
 }
 
 private[difflicious] sealed abstract class DifferDerivationError(val instanceRepr: String)

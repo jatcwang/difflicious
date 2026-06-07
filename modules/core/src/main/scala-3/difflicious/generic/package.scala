@@ -6,7 +6,7 @@ package object auto extends AutoDerivation
 
 trait AutoDerivation extends DifferGen {
 
-  inline given autoDerivedDiffer[T]: Differ[T] = ${ DifferDerivationMacros.deriveAutoImpl[T] }
+  inline given autoDerivedDiffer[T]: Differ[T] = ${ DifferDerivationMacros.deriveDeepImpl[T] }
 
   def fallback[T]: Differ[T] = Differ.useEquals[T](_.toString)
 }

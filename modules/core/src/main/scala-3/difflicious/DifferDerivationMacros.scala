@@ -1,6 +1,5 @@
 package difflicious
 
-import difflicious.differ.ValueDiffer
 import difflicious.utils.{MapLike, SeqLike, SetLike}
 
 import scala.quoted.{Expr as QExpr, Quotes, Type as QType}
@@ -32,15 +31,8 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
   private def appliedTypeOf(typeCtor: q.reflect.TypeRepr, typeArg: q.reflect.TypeRepr): q.reflect.TypeRepr =
     typeCtor.appliedTo(List(typeArg))
 
-  private def inferImplicit(tpe: q.reflect.TypeRepr): Option[q.reflect.Term] = {
-    import q.reflect.*
-
-    Implicits.search(tpe) match {
-      case success: ImplicitSearchSuccess => Some(success.tree)
-      case _: ImplicitSearchFailure => None
-      case _ => None
-    }
-  }
+  private def typeOf[A](tpe: q.reflect.TypeRepr): Type[A] =
+    UntypedType.toTyped[A](tpe.asInstanceOf[UntypedType])
 
   protected def staticTypeName[A: Type]: Expr[difflicious.utils.TypeName.SomeTypeName] = {
     '{
@@ -49,7 +41,7 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
       .asInstanceOf[Expr[difflicious.utils.TypeName.SomeTypeName]]
   }
 
-  protected def decomposeApplied1[A: Type]: Option[Applied1[A]] = {
+  protected def mkCollectionHelper1[A: Type]: Option[CollectionHelper1[A]] = {
     import q.reflect.*
 
     TypeRepr.of[A].dealias match {
@@ -57,47 +49,20 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
         elemTpe.asType match {
           case '[elem] =>
             val elemQType = QType.of[elem]
-            val typeName = staticTypeName[A]
-            val optionLike = TypeRepr.of[A] <:< TypeRepr.of[Option[elem]]
+            type Container[X] = A
 
-            Some(new Applied1[A] {
+            Some(new CollectionHelper1[A] {
+              type F[X] = Container[X]
               type Elem = elem
 
               implicit val elemType: Type[Elem] =
-                elemQType.asInstanceOf[Type[Elem]]
+                elemQType.asInstanceOf[Type[elem]]
 
-              private lazy val seqLike =
-                inferImplicit(appliedTypeOf(seqLikeTypeCtor, typeCtor))
+              def typeOfSeqLike: Type[SeqLike[F]] =
+                typeOf[SeqLike[Container]](appliedTypeOf(seqLikeTypeCtor, typeCtor))
 
-              private lazy val setLike =
-                inferImplicit(appliedTypeOf(setLikeTypeCtor, typeCtor))
-
-              def isOptionLike: Boolean =
-                optionLike
-
-              def hasSeqLike: Boolean = seqLike.isDefined
-
-              def hasSetLike: Boolean = setLike.isDefined
-
-              def buildSeqDiffer(itemDiffer: Expr[Differ[Elem]]): Expr[Differ[A]] = {
-                val call =
-                  Select
-                    .unique(Ref(Symbol.requiredModule("difflicious.differ.SeqDiffer")), "create")
-                    .appliedToTypes(List(typeCtor, elemTpe))
-                    .appliedToArgs(List(itemDiffer.asTerm, typeName.asTerm, seqLike.get))
-
-                call.asExpr.asInstanceOf[Expr[Differ[A]]]
-              }
-
-              def buildSetDiffer(itemDiffer: Expr[Differ[Elem]]): Expr[Differ[A]] = {
-                val call =
-                  Select
-                    .unique(Ref(Symbol.requiredModule("difflicious.differ.SetDiffer")), "create")
-                    .appliedToTypes(List(typeCtor, elemTpe))
-                    .appliedToArgs(List(itemDiffer.asTerm, typeName.asTerm, setLike.get))
-
-                call.asExpr.asInstanceOf[Expr[Differ[A]]]
-              }
+              def typeOfSetLike: Type[SetLike[F]] =
+                typeOf[SetLike[Container]](appliedTypeOf(setLikeTypeCtor, typeCtor))
             })
           case _ => None
         }
@@ -105,7 +70,7 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
     }
   }
 
-  protected def decomposeApplied2[A: Type]: Option[Applied2[A]] = {
+  protected def mkCollectionHelper2[A: Type]: Option[CollectionHelper2[A]] = {
     import q.reflect.*
 
     TypeRepr.of[A].dealias match {
@@ -114,48 +79,20 @@ private[difflicious] class DifferDerivationMacros(q: Quotes)
           case ('[key], '[value]) =>
             val keyQType = QType.of[key]
             val valueQType = QType.of[value]
-            val typeName = staticTypeName[A]
-            val eitherLike = TypeRepr.of[A] <:< TypeRepr.of[Either[key, value]]
+            type Container[X, Y] = A
 
-            Some(new Applied2[A] {
+            Some(new CollectionHelper2[A] {
+              type F[X, Y] = Container[X, Y]
               type Key = key
               type Value = value
 
               implicit val keyType: Type[Key] =
-                keyQType.asInstanceOf[Type[Key]]
+                keyQType.asInstanceOf[Type[key]]
               implicit val valueType: Type[Value] =
-                valueQType.asInstanceOf[Type[Value]]
+                valueQType.asInstanceOf[Type[value]]
 
-              private lazy val mapLike =
-                inferImplicit(appliedTypeOf(mapLikeTypeCtor, typeCtor))
-
-              def isEitherLike: Boolean =
-                eitherLike
-
-              def hasMapLike: Boolean = mapLike.isDefined
-
-              def buildMapDiffer(
-                keyDiffer: Expr[ValueDiffer[Key]],
-                valueDiffer: Expr[Differ[Value]],
-              ): Expr[Differ[A]] = {
-                val mapDifferClass = Symbol.requiredClass("difflicious.differ.MapDiffer")
-
-                val call =
-                  New(TypeIdent(mapDifferClass))
-                    .select(mapDifferClass.primaryConstructor)
-                    .appliedToTypes(List(typeCtor, keyTpe, valueTpe))
-                    .appliedToArgs(
-                      List(
-                        Expr(false).asTerm,
-                        keyDiffer.asTerm,
-                        valueDiffer.asTerm,
-                        typeName.asTerm,
-                        mapLike.get,
-                      ),
-                    )
-
-                call.asExpr.asInstanceOf[Expr[Differ[A]]]
-              }
+              def typeOfMapLike: Type[MapLike[F]] =
+                typeOf[MapLike[Container]](appliedTypeOf(mapLikeTypeCtor, typeCtor))
             })
           case _ => None
         }
@@ -172,13 +109,4 @@ private[difflicious] object DifferDerivationMacros {
 
   def deriveDeepImpl[T: QType](using q: Quotes): QExpr[Differ[T]] =
     new DifferDerivationMacros(q).deriveDifferEntryPoint[T](isCascadeDerive = true)
-
-  def deriveAutoImpl[T: QType](using q: Quotes): QExpr[Differ[T]] = {
-    import q.reflect.report
-
-    new DifferDerivationMacros(q).deriveAutoDiffer[T](
-      reportError = message => report.error(message),
-      fallback = '{ scala.Predef.??? : Differ[T] },
-    )
-  }
 }
