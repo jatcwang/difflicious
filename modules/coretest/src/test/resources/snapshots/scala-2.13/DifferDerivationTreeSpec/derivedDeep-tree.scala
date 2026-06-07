@@ -5,13 +5,19 @@
   lazy val derivedDiffer$macro$7: difflicious.Differ[String] = difflicious.Differ.stringDiffer;
   lazy val derivedDiffer$macro$8: difflicious.Differ[Option[difflicious.testtypes.TreeCaseClass2]] = difflicious.Differ.optionDiffer[difflicious.testtypes.TreeCaseClass2](derivedDiffer$macro$6).asInstanceOf[difflicious.Differ[Option[difflicious.testtypes.TreeCaseClass2]]];
   lazy val derivedDiffer$macro$9: difflicious.Differ[Either[difflicious.testtypes.TreeCaseClass1,difflicious.testtypes.TreeCaseClass2]] = difflicious.Differ.eitherDiffer[difflicious.testtypes.TreeCaseClass1, difflicious.testtypes.TreeCaseClass2](derivedDiffer$macro$4, derivedDiffer$macro$6).asInstanceOf[difflicious.Differ[Either[difflicious.testtypes.TreeCaseClass1,difflicious.testtypes.TreeCaseClass2]]];
-  lazy val derivedDiffer$macro$10: difflicious.Differ[Map[String,difflicious.testtypes.TreeCaseClass2]] = new difflicious.differ.MapDiffer[Map, String, difflicious.testtypes.TreeCaseClass2](false, difflicious.Differ.stringDiffer, derivedDiffer$macro$6, ((difflicious.utils.TypeName.apply[Map[String,difflicious.testtypes.TreeCaseClass2]]("Map", "Map", List.apply[(difflicious.utils.TypeName[_$6] forSome {
-  type _$6
-})](difflicious.utils.TypeName.apply[Any]("String", "String", Nil), difflicious.utils.TypeName.apply[Any]("difflicious.testtypes.TreeCaseClass2", "TreeCaseClass2", Nil)))): difflicious.utils.TypeName[Map[String,difflicious.testtypes.TreeCaseClass2]]), difflicious.utils.MapLike.stdMapAsMap[[K, +V]Map[K,V]]).asInstanceOf[difflicious.Differ[Map[String,difflicious.testtypes.TreeCaseClass2]]];
-  lazy val derivedDiffer$macro$11: difflicious.Differ[List[Option[difflicious.testtypes.TreeCaseClass2]]] = difflicious.differ.SeqDiffer.create[List, Option[difflicious.testtypes.TreeCaseClass2]](derivedDiffer$macro$8, ((difflicious.utils.TypeName.apply[List[Option[difflicious.testtypes.TreeCaseClass2]]]("List", "List", List.apply[(difflicious.utils.TypeName[_$9] forSome {
-  type _$9
-})](difflicious.utils.TypeName.apply[Any]("Option", "Option", List.apply[(difflicious.utils.TypeName[_$8] forSome {
-  type _$8
-})](difflicious.utils.TypeName.apply[Any]("difflicious.testtypes.TreeCaseClass2", "TreeCaseClass2", Nil)))))): difflicious.utils.TypeName[List[Option[difflicious.testtypes.TreeCaseClass2]]]), difflicious.utils.SeqLike.stdSeqAsSeq[[+A]List[A]]).asInstanceOf[difflicious.Differ[List[Option[difflicious.testtypes.TreeCaseClass2]]]];
+  lazy val derivedDiffer$macro$10: difflicious.Differ[Map[String,difflicious.testtypes.TreeCaseClass2]] = {
+    type Container[X, Y] = Map[String,difflicious.testtypes.TreeCaseClass2];
+    new difflicious.differ.MapDiffer[Container, String, difflicious.testtypes.TreeCaseClass2](false, difflicious.Differ.stringDiffer, derivedDiffer$macro$6, ((difflicious.utils.TypeName.apply[Map[String,difflicious.testtypes.TreeCaseClass2]]("Map", "Map", List.apply[(difflicious.utils.TypeName[_$6] forSome {
+      type _$6
+    })](difflicious.utils.TypeName.apply[Any]("String", "String", Nil), difflicious.utils.TypeName.apply[Any]("difflicious.testtypes.TreeCaseClass2", "TreeCaseClass2", Nil)))): difflicious.utils.TypeName[Map[String,difflicious.testtypes.TreeCaseClass2]]), difflicious.utils.MapLike.stdMapAsMap[[K, +V]Map[K,V]].asInstanceOf[difflicious.utils.MapLike[Container]])
+  };
+  lazy val derivedDiffer$macro$11: difflicious.Differ[List[Option[difflicious.testtypes.TreeCaseClass2]]] = {
+    type Container[X] = List[Option[difflicious.testtypes.TreeCaseClass2]];
+    difflicious.differ.SeqDiffer.create[Container, Option[difflicious.testtypes.TreeCaseClass2]](derivedDiffer$macro$8, ((difflicious.utils.TypeName.apply[List[Option[difflicious.testtypes.TreeCaseClass2]]]("List", "List", List.apply[(difflicious.utils.TypeName[_$9] forSome {
+      type _$9
+    })](difflicious.utils.TypeName.apply[Any]("Option", "Option", List.apply[(difflicious.utils.TypeName[_$8] forSome {
+      type _$8
+    })](difflicious.utils.TypeName.apply[Any]("difflicious.testtypes.TreeCaseClass2", "TreeCaseClass2", Nil)))))): difflicious.utils.TypeName[List[Option[difflicious.testtypes.TreeCaseClass2]]]), difflicious.utils.SeqLike.stdSeqAsSeq[[+A]List[A]].asInstanceOf[difflicious.utils.SeqLike[Container]])
+  };
   derivedDiffer$macro$3
 }
