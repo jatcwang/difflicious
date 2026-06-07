@@ -10,7 +10,7 @@ trait CatsInstances {
     override def asMap[A, B](m: NonEmptyMap[A, B]): Map[A, B] = m.toSortedMap
   }
 
-  implicit def nonEmptyMapEachable[K]: Eachable[NonEmptyMap[K, *]] = new Eachable[NonEmptyMap[K, *]] {}
+  implicit val nonEmptyMapEachable: Eachable2[NonEmptyMap] = new Eachable2[NonEmptyMap] {}
 
   implicit val nonEmptyListAsSeq: SeqLike[NonEmptyList] = new SeqLike[NonEmptyList] {
     override def asSeq[A](f: NonEmptyList[A]): Seq[A] = f.toList

@@ -1,7 +1,7 @@
 package difflicious.circe
 
 import difflicious.*
-import difflicious.circe.implicits.*
+import difflicious.implicits.*
 import difflicious.internal.EitherGetSyntax.*
 import difflicious.testutils.*
 import io.circe.{Json, JsonObject}
@@ -166,6 +166,98 @@ class CirceJsonDiffSpec extends FunSuite {
       s"""JArray(
          |  $grayIgnoredStr,
          |  $grayIgnoredStr
+         |)""".stripMargin,
+    )
+  }
+
+  test("Json: can configure all JSON subtypes with typed relationships") {
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JNull]),
+      Json.Null,
+      Json.Null,
+      grayIgnoredStr,
+    )
+
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JBoolean]),
+      Json.fromBoolean(true),
+      Json.fromBoolean(false),
+      grayIgnoredStr,
+    )
+
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JNumber]),
+      Json.fromInt(1),
+      Json.fromInt(2),
+      grayIgnoredStr,
+    )
+
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JString]),
+      Json.fromString("Alice"),
+      Json.fromString("Bob"),
+      grayIgnoredStr,
+    )
+
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JArray]),
+      Json.arr(Json.fromInt(1)),
+      Json.arr(Json.fromInt(2)),
+      grayIgnoredStr,
+    )
+
+    assertConsoleDiffOutput(
+      Differ[Json].ignoreAt(_.subType[JsonObject]),
+      Json.obj("name" -> Json.fromString("Alice")),
+      Json.obj("name" -> Json.fromString("Bob")),
+      grayIgnoredStr,
+    )
+  }
+
+  test("Json: can configure array values with typed relationship path") {
+    val differ = Differ[Json].ignoreAt(_.subType[JArray].each.subType[JNumber])
+
+    assertConsoleDiffOutput(
+      differ,
+      Json.arr(Json.fromInt(1), Json.fromInt(2)),
+      Json.arr(Json.fromInt(3), Json.fromInt(4)),
+      s"""JArray(
+         |  $grayIgnoredStr,
+         |  $grayIgnoredStr
+         |)""".stripMargin,
+    )
+  }
+
+  test("Json: can transform a differ through typed relationship path") {
+    val differ = Differ[Json].configure(_.subType[JArray].each.subType[JNumber])(_.ignore)
+
+    assertConsoleDiffOutput(
+      differ,
+      Json.arr(Json.fromInt(1), Json.fromInt(2)),
+      Json.arr(Json.fromInt(3), Json.fromInt(4)),
+      s"""JArray(
+         |  $grayIgnoredStr,
+         |  $grayIgnoredStr
+         |)""".stripMargin,
+    )
+  }
+
+  test("Json: can configure object values with typed relationship path") {
+    val differ = Differ[Json].ignoreAt(_.subType[JsonObject].each.subType[JNumber])
+
+    assertConsoleDiffOutput(
+      differ,
+      Json.obj(
+        "age" -> Json.fromInt(30),
+        "name" -> Json.fromString("Alice"),
+      ),
+      Json.obj(
+        "age" -> Json.fromInt(31),
+        "name" -> Json.fromString("Bob"),
+      ),
+      s"""JsonObject(
+         |  "age" -> $grayIgnoredStr,
+         |  "name" -> $R"Alice"$X -> $G"Bob"$X
          |)""".stripMargin,
     )
   }

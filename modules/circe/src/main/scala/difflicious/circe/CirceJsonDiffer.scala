@@ -93,6 +93,9 @@ object JsonDiffer {
   private val jsonArrayTypeName: TypeName[Vector[Json]] =
     TypeName(long = "io.circe.Json.JArray", short = "JArray", typeArguments = Nil)
 
+  private val jsonObjectCaseTypeName: TypeName[JsonObject] =
+    TypeName(long = "io.circe.Json.JObject", short = "JsonObject", typeArguments = Nil)
+
   private val jsonObjectTypeName: TypeName[JsonObject] =
     TypeName(long = "io.circe.JsonObject", short = "JsonObject", typeArguments = Nil)
 
@@ -110,16 +113,19 @@ object JsonDiffer {
   private val jsonNumberDiffer: ValueDiffer[JsonNumber] =
     Differ.useEquals[JsonNumber](_.toString)
 
-  private[difflicious] def jsonObjectDiffer(valueDiffer: Differ[Json]): JsonObjectDiffer =
+  private def jsonObjectDiffer(valueDiffer: Differ[Json], typeName: TypeName[JsonObject]): JsonObjectDiffer =
     new JsonObjectDiffer(
       new MapDiffer[VectorMap, String, Json](
         isIgnored = false,
         keyDiffer = Differ.stringDiffer,
         valueDiffer = valueDiffer,
-        typeName = JsonDiffer.jsonObjectTypeName,
+        typeName = typeName,
         asMap = JsonDiffer.vectorMapLike,
       ),
     )
+
+  private[difflicious] def jsonObjectDiffer(valueDiffer: Differ[Json]): JsonObjectDiffer =
+    jsonObjectDiffer(valueDiffer, JsonDiffer.jsonObjectTypeName)
 
   private[difflicious] lazy val underlyingOneOfDifferForJson: OneOfDiffer[Json] = {
     val recursiveDiffer = new LazyDiffer[Json](underlyingOneOfDifferForJson)
@@ -155,9 +161,9 @@ object JsonDiffer {
         ),
       ),
       OneOfDiffer.caseOf[Json, JsonObject](
-        typeName = JsonDiffer.jsonObjectTypeName,
+        typeName = JsonDiffer.jsonObjectCaseTypeName,
         extract = _.asObject,
-        differ = JsonDiffer.jsonObjectDiffer(recursiveDiffer),
+        differ = JsonDiffer.jsonObjectDiffer(recursiveDiffer, JsonDiffer.jsonObjectCaseTypeName),
       ),
     )
   }

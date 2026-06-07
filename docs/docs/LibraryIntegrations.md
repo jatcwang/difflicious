@@ -5,90 +5,11 @@ title: Library Integrations
 
 # Library Integrations
 
-## MUnit
+Difflicious has companion modules for common test frameworks and data libraries.
 
-Add this to your SBT build
-```
-"com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
-```
-
-and then in your test suites you can call `assertNoDiff` on any `Differ`.
-
-```scala mdoc:nest
-import munit.FunSuite
-import difflicious.munit.MUnitDiff.*
-import difflicious.Differ
-
-class MyTest extends FunSuite {
-  test("a == b") { 
-    Differ[Int].assertNoDiff(1, 2)
-  }
-}
-```
-
-## Scalatest
-
-Add this to your SBT build
-```
-"com.github.jatcwang" %% "difflicious-scalatest" % "@VERSION@" % Test
-```
-
-Tests should be run with the `-oW` option to disable Scalatest from coloring test failures all red as it interferes with 
-difflicious color display.
-
-```
-testOnly -- -oW
-```
-
-Here's an example of what a test using difflicious looks like:
-
-```scala mdoc:nest
-import org.scalatest.funsuite.AnyFunSuite
-import difflicious.scalatest.ScalatestDiff.*
-import difflicious.Differ
-
-class MyTest extends AnyFunSuite {
-  test("a == b") { 
-    Differ[Int].assertNoDiff(1, 2)
-  }
-}
-```
-
-## Weaver
-
-Add this to your SBT build
-```
-"com.github.jatcwang" %% "difflicious-weaver" % "@VERSION@" % Test
-```
-
-and then in your test suites you can call `assertNoDiff` on any `Differ`.
-
-```scala mdoc:nest
-import weaver.SimpleIOSuite
-import difflicious.weaver.WeaverDiff.*
-import difflicious.Differ
-
-object MyTest extends SimpleIOSuite {
-  pureTest("a == b") { 
-    Differ[Int].assertNoDiff(1, 2)
-  }
-}
-```
-
-## Cats
-
-Differ instances for cats data structures like `NonEmptyList` and `Chain` can be found in
-
-```
-"com.github.jatcwang" %% "difflicious-cats" % "@VERSION@" % Test
-```
-
-```scala mdoc:nest
-import difflicious.Differ
-import difflicious.cats.implicits.*
-import cats.data.{NonEmptyMap, NonEmptyList}
-
-val differ: Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]] = Differ[List[NonEmptyMap[String, NonEmptyList[Int]]]]
-```
-
+- [MUnit](library-integrations/munit.md)
+- [ScalaTest](library-integrations/scalatest.md)
+- [Weaver](library-integrations/weaver.md)
+- [Cats](library-integrations/cats.md)
+- [Circe](library-integrations/circe.md)
 
