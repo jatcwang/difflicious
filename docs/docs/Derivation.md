@@ -31,7 +31,7 @@ import difflicious.debug.implicits.logDerivation
 implicit val personDiffer: Differ[Person] = Differ.derivedDeep[Person]
 ```
 
-For derivation timing information, enable Hearth's benchmark-scope macro setting:
+If you also want to know how much time is spent deriving each instance, enable Hearth's benchmark-scope macro setting:
 
 ```scala
 Compile / scalacOptions ++= Seq("-Xmacro-settings:hearth.mioBenchmarkScopes=true")
