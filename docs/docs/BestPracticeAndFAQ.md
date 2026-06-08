@@ -35,15 +35,12 @@ val schoolDiffer: Differ[School] = {
 
 ## Where is fully automatic derivation for `Differ`s?
 
-Fully automatic derivation is strongly discouraged, however it might be convenient in certain debugging use-cases.
-
-With automatic derivation, the compiler will derive the instances **every time it is needed**.
-This very frequently leads to extremely long compile times which isn't worth the few lines of code it saves you.
+Fully automatic derivation is generally discouraged, however it might be convenient for quick .
 
 If you only want recursive derivation at one explicit call site, prefer `Differ.derivedDeep[T]`. It derives missing
 field instances recursively without enabling automatic derivation for the surrounding scope.
 
-To enable auto-derivation add following import:
+If you still want auto-derivation, add following import:
 
 for scala 2
 ```scala

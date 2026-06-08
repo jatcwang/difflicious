@@ -33,25 +33,23 @@ export default function Home() {
           </Heading>
           <p className={styles.tagline}>{siteConfig.tagline}</p>
           <div className={styles.actions}>
-            <Link className="button button--primary button--lg" to="/docs/quickstart">
-              Quickstart
-            </Link>
-            <Link className="button button--secondary button--lg" to="/docs/introduction">
-              Introduction
+            <Link className="button button--secondary button--lg" to="/docs/quickstart">
+              Quick Start
             </Link>
           </div>
         </div>
       </header>
       <main>
         <div className={clsx('container', styles.features)}>
-          <Feature title="Readable results">
-            Difflicious highlights the exact mismatches that caused a test failure.
+          <Feature title="Pinpoint exactly what's different">
+            Quickly pinpoint the field, collection item, or map entry that caused
+            an assertion to fail.
           </Feature>
-          <Feature title="Configurable comparisons">
-            Ignore noisy fields, pair collection entries, and tune nested comparisons.
+          <Feature title="Configurable comparison">
+            Exclude fields from comparison and configure alternative pairing strategy when comparing collections.
           </Feature>
-          <Feature title="Test framework integrations">
-            Use Difflicious with MUnit, ScalaTest, Weaver, Cats, and Circe.
+          <Feature title="Test framework and library integration">
+            Integrates with popular framework and libraries such as MUnit, ScalaTest, Weaver, Cats, and Circe.
           </Feature>
         </div>
       </main>
