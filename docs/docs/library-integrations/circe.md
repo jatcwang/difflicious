@@ -14,7 +14,7 @@ Differ instances for Circe `Json` and `JsonObject` can be found in
 Import `difflicious.circe.*` to bring difflicious circe support into scope:
 
 ```scala mdoc:silent
-import difflicious.circe.*
+import difflicious.circe.{*, given}
 
 import difflicious.*
 import difflicious.implicits.*
