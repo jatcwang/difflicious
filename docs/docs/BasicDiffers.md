@@ -10,6 +10,10 @@ should always be ignored.
 
 The examples below assume the following imports:
 
+```scala mdoc:invisible
+import difflicious.Example.diffHtml
+```
+
 ```scala mdoc:silent
 import difflicious.*
 import difflicious.implicits.*
@@ -32,12 +36,12 @@ object MyInt {
 ```
 
 ```scala mdoc:silent
-MyInt.differ.diff(MyInt(1), MyInt(2))
+val myIntDiff = MyInt.differ.diff(MyInt(1), MyInt(2))
 ```
 
-<pre className="diff-render">
-<span className="diff-red">MyInt(1)</span> -> <span className="diff-green">MyInt(2)</span>
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(myIntDiff))
+```
 
 # Collection Differs
 
@@ -69,28 +73,15 @@ val bob = Person("Bob", 25)
 val bob50 = Person("Bob", 50)
 val charles = Person("Charles", 80)
 
-Differ.seqDiffer[List, Person].diff(
+val seqDiff = Differ.seqDiffer[List, Person].diff(
   List(alice, bob50),
   List(alice, bob, charles)
 )
 ```
 
-<pre className="diff-render">
-List(
-  Person(
-    name: "Alice",
-    age: 30,
-  ),
-  Person(
-    name: "Bob",
-    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
-  ),
-  <span className="diff-green">Person(
-    name: "Charles",
-    age: 80,
-  )</span>,
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(seqDiff))
+```
 
 ## Pair by field
 
@@ -103,7 +94,7 @@ In this case, you can configure a `Differ` to pair by a field instead.
 ```scala mdoc:silent
 val differByName = Differ[List[Person]].pairBy(_.name)
 
-differByName.diff(
+val seqDiffByName = differByName.diff(
   List(bob50, charles, alice),
   List(alice, bob, charles)
 )
@@ -111,22 +102,9 @@ differByName.diff(
 
 When we match by a person's name instead of index, we can now easily spot that Bob has the wrong age.
 
-<pre className="diff-render">
-List(
-  Person(
-    name: "Bob",
-    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
-  ),
-  Person(
-    name: "Charles",
-    age: 80,
-  ),
-  Person(
-    name: "Alice",
-    age: 30,
-  ),
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(seqDiffByName))
+```
 
 # Map Differ
 
@@ -139,7 +117,7 @@ It requires:
 - a `Differ` instance for the map value type
 
 ```scala mdoc:silent
-Differ[Map[String, Person]].diff(
+val mapDiff = Differ[Map[String, Person]].diff(
   Map(
     "a" -> alice,
     "b" -> bob
@@ -151,22 +129,9 @@ Differ[Map[String, Person]].diff(
 )
 ```
 
-<pre className="diff-render">
-Map(
-  <span className="diff-red">"a"</span> -> <span className="diff-red">Person(
-      name: "Alice",
-      age: 30,
-    )</span>,
-  "b" -> Person(
-      name: "Bob",
-      age: <span className="diff-red">25</span> -> <span className="diff-green">50</span>,
-    ),
-  <span className="diff-green">"c"</span> -> <span className="diff-green">Person(
-      name: "Charles",
-      age: 80,
-    )</span>,
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(mapDiff))
+```
 
 # Set Differ
 
@@ -179,31 +144,18 @@ However, you most likely want to pair elements using a field on an element inste
 
 For the best error reporting, you want to configure `SetDiffer` to pair by a field.
 
-```scala mdoc:nest:silent
-val differByName: Differ[Set[Person]] = Differ[Set[Person]].pairBy(_.name)
+```scala mdoc:silent
+val setDifferByName: Differ[Set[Person]] = Differ[Set[Person]].pairBy(_.name)
 
-differByName.diff(
+val setDiffByName = setDifferByName.diff(
   Set(bob50, charles, alice),
   Set(alice, bob, charles)
 )
 ```
 
-<pre className="diff-render">
-Set(
-  Person(
-    name: "Bob",
-    age: <span className="diff-red">50</span> -> <span className="diff-green">25</span>,
-  ),
-  Person(
-    name: "Charles",
-    age: 80,
-  ),
-  Person(
-    name: "Alice",
-    age: 30,
-  ),
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(setDiffByName))
+```
 
 # Always Ignored Differ
 

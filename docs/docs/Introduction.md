@@ -12,6 +12,10 @@ title: Introduction
   
 Here's a motivational example!
 
+```scala mdoc:invisible
+import difflicious.Example.diffHtml
+```
+
 ```scala mdoc:silent
 import difflicious.*
 import difflicious.implicits.*
@@ -32,7 +36,7 @@ val petsDiffer = Differ[List[HousePet]]
   .pairBy(_.name)                          // Match pets in the list by name for comparison
   .ignoreAt(_.each.subType[Cat].livesLeft) // Don't worry about livesLeft for cats when comparing
   
-petsDiffer.diff(
+val petsDiff = petsDiffer.diff(
   obtained = List(
     Dog("Andy", 12),
     Cat("Dr.Evil", 8),
@@ -48,29 +52,9 @@ petsDiffer.diff(
 
 And this is the diffs you will see:
 
-<pre className="diff-render">
-List(
-  <span className="diff-red">Dog</span> != <span className="diff-green">Cat</span>
-  <span className="diff-red">=== Obtained ===
-  Dog(
-    name: "Andy",
-    age: 12,
-  )</span>
-  <span className="diff-green">=== Expected ===
-  Cat(
-    name: "Andy",
-    livesLeft: [IGNORED],
-  )</span>,
-  Cat(
-    name: "Dr.Evil",
-    livesLeft: <span className="diff-gray">[IGNORED]</span>,
-  ),
-  Dog(
-    name: "Lucky",
-    age: <span className="diff-red">5</span> -> <span className="diff-green">6</span>,
-  ),
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(petsDiff))
+```
 
 In the example, we can see that:
 

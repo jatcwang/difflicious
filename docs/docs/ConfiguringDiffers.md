@@ -129,7 +129,7 @@ val differPairByName: Differ[Map[String, List[Person]]] = defaultDiffer
   ).right.get
   
 // Try it!  
-differPairByName.diff(
+val diffPairByName = differPairByName.diff(
   Map(
     "Germany" -> List(
       Person("Bob", 55),
@@ -146,22 +146,9 @@ differPairByName.diff(
 )
 ```
 
-<pre className="diff-render">
-Map(
-  "Germany" -> List(
-      Person(
-        name: "Bob",
-        age: 55,
-      ),
-      Person(
-        name: "Alice",
-        age: <span className="diff-red">55</span> -> <span className="diff-green">56</span>,
-      ),
-    ),
-  <span className="diff-green">"France"</span> -> <span className="diff-green">List(
-    )</span>,
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(diffPairByName))
+```
 
 **Example: Ignore a field in a Person when comparing**
 
@@ -175,7 +162,7 @@ val differPersonAgeIgnored: Differ[Map[String, List[Person]]] = defaultDiffer
   ).right.get
   
 // Try it!  
-differPersonAgeIgnored.diff(
+val diffPersonAgeIgnored = differPersonAgeIgnored.diff(
   Map(
     "Germany" -> List(
       Person("Alice", 55),
@@ -191,19 +178,8 @@ differPersonAgeIgnored.diff(
 )
 ```
 
-<pre className="diff-render">
-Map(
-  "Germany" -> List(
-      Person(
-        name: "Alice",
-        age: <span className="diff-gray">[IGNORED]</span>,
-      ),
-      Person(
-        name: "Bob",
-        age: <span className="diff-gray">[IGNORED]</span>,
-      ),
-    ),
-)
-</pre>
+```scala mdoc:passthrough
+println(diffHtml(diffPersonAgeIgnored))
+```
 
 When testing (e.g. assertNoDiff) the test would pass because the person's age is not considered in the comparison.
