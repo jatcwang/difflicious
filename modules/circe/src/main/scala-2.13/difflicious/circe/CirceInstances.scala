@@ -1,6 +1,6 @@
 package difflicious.circe
 
-import difflicious.*
+import difflicious._
 import difflicious.utils.Eachable0
 import io.circe.{Json, JsonObject}
 
