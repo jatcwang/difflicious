@@ -70,7 +70,7 @@ const config = {
           title: 'Docs',
           items: [
             {label: 'Quickstart', to: '/docs/quickstart'},
-            {label: 'Introduction', to: '/docs/introduction'},
+            {label: 'Overview', to: '/docs'},
             {label: 'Configuring Differs', to: '/docs/configuring-differs'},
           ],
         },

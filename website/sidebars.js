@@ -5,10 +5,9 @@ module.exports = {
       label: 'Difflicious',
       items: [
         'index',
-        'introduction',
         'quickstart',
-        'derivation',
         'basic-differs',
+        'derivation',
         'configuring-differs',
         {
           type: 'category',
