@@ -1,6 +1,6 @@
 {
   "private": true,
-  "packageManager": "npm@11.16.0",
+  "packageManager": "yarn@4.9.4",
   "scripts": {
     "start": "docusaurus start --host 0.0.0.0",
     "build": "docusaurus build",
@@ -40,5 +40,10 @@
   },
   "engines": {
     "node": ">=20.0"
+  },
+  "dependenciesMeta": {
+    "image-size@2.0.2": {
+      "unplugged": true
+    }
   }
 }
