@@ -31,6 +31,12 @@ metals.sbt
 /wt
 website/build/
 website/.docusaurus/
+website/.yarn/*
+!website/.yarn/patches/
+!website/.yarn/plugins/
+!website/.yarn/releases/
+!website/.yarn/sdks/
+!website/.yarn/versions/
 website/node_modules/
 website/translated_docs/
 website/i18n/

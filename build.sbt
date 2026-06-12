@@ -204,8 +204,8 @@ lazy val docs: ProjectMatrix = projectMatrix
     docusaurusCreateSite := {
       (Compile / mdoc).toTask(" ").value
       val website = (ThisBuild / baseDirectory).value / "website"
-      runWebsiteCommand(Seq("npm", "ci"), website)
-      runWebsiteCommand(Seq("npm", "run", "build"), website)
+      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+      runWebsiteCommand(Seq("yarn", "run", "build"), website)
       website / "build"
     },
     docusaurusPublishGhpages := {
@@ -220,8 +220,8 @@ lazy val docs: ProjectMatrix = projectMatrix
           "jatcwang@gmail.com",
         ),
       ).filter(_._2.nonEmpty)
-      runWebsiteCommand(Seq("npm", "ci"), website)
-      runWebsiteCommand(Seq("npm", "run", "publish-gh-pages"), website, publishEnv: _*)
+      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv: _*)
     },
   )
   .settings(
