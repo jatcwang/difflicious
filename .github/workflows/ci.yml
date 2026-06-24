@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -42,7 +42,7 @@ jobs:
         run: sbt githubWorkflowCheck
 
       - name: Build project and docs
-        run: sbt test docs/docusaurusCreateSite
+        run: sbt 'test; docs/docusaurusCreateSite'
 
   publish:
     name: Publish Artifacts
@@ -58,7 +58,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
