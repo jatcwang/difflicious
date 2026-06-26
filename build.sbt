@@ -8,7 +8,7 @@ import scala.sys.process.Process
 val munitVersion = "1.3.3"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
-val circeVersion = "0.14.15"
+val circeVersion = "0.14.16"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.3.1"
