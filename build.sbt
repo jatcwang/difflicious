@@ -11,7 +11,7 @@ val catsVersion = "2.13.0"
 val circeVersion = "0.14.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
-val hearthVersion = "0.3.1"
+val hearthVersion = "0.4.1"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
