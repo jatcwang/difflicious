@@ -5,7 +5,7 @@ import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 import scala.sys.process.Process
 
-val munitVersion = "1.3.3"
+val munitVersion = "1.3.4"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.15"
