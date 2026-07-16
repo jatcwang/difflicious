@@ -1,0 +1,25 @@
+Usage:
+    difflicious --help
+    difflicious [--interactive] [--json] [--plain] [--test-id <ulid>] [--no-color] [<report.jsonl>...]
+
+View Difflicious JSON diffs interactively, as JSON, or as plain text.
+
+Options and flags:
+    --help, -h
+        Display this help text.
+    --interactive
+        Open the interactive terminal viewer.
+    --json
+        Print machine-readable JSON.
+    --plain
+        Print a plain-text summary.
+    --test-id <ulid>
+        Show only the matching reporter ULID in non-interactive modes, or jump to it in TUI mode.
+    --no-color
+        Disable ANSI color in TUI output.
+
+Exit codes:
+    0
+        output was rendered successfully, including diff failures
+    2
+        invalid arguments, unreadable input, or invalid JSONL
