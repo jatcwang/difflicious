@@ -4,7 +4,7 @@ merge_queue:
 queue_rules:
   - name: default
     merge_conditions:
-      - check-success ~= "^Build and Test.*$"
+      - check-success ~= ^Build and Test.*$
 
 pull_request_rules:
   - name: queue PRs marked for merge
@@ -17,7 +17,6 @@ pull_request_rules:
   - name: auto-queue Scala Steward PRs
     conditions:
       - author = scala-steward
-      - status-success ~= "^Build and Test.*$"
     actions:
       queue:
         name: default
