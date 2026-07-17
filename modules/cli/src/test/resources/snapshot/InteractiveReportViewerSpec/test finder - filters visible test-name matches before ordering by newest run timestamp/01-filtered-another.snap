@@ -1,0 +1,47 @@
+╔═ Go to test ═════════════════════════════════════════════════════════════════════════════════════╗
+║ Search: another                                                                                  ║
+║                                                                                                  ║
+║   ▾ 01CRZ3NDEKTSV4RRFFQ69G5FAV (2018-10-04 10:38:46)                                             ║
+║     ▾ example.AnotherSuite                                                                       ║
+║ >       deep order invoice snapshot has nested differences                                     < ║
+║   ▾ 01BRZ3NDEKTSV4RRFFQ69G5FAV (2017-09-01 18:16:28)                                             ║
+║     ▾ example.ComplexSuite                                                                       ║
+║         another test that fails                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ runId: 01CRZ3NDEKTSV4RRFFQ69G5FAV                                                                │
+│ testId: 01ARZ3NDEKTSV4RRFFQ69G5FAW                                                               │
+│ Suite: example.AnotherSuite                                                                      │
+│ Line: 37                                                                                         │
+│ File: /workspace/AnotherSuite.scala                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

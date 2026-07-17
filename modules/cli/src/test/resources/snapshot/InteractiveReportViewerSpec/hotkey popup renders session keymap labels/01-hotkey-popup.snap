@@ -1,0 +1,47 @@
+No diff failures found.
+
+
+
+
+
+
+
+
+
+
+
+               ┌─ Hotkeys ──────────────────────────────────────────────────────────┐
+               │ Navigation                                                         │
+               │   up or k / down or j         move selection                       │
+               │   page up / page down         move by half a screen                │
+               │   enter or o                  open or toggle selected entry        │
+               │   left or h / right or l      collapse or expand selected entry    │
+               │   ] / [                       expand or collapse selected subtree  │
+               │                                                                    │
+               │ Search                                                             │
+               │   /                           search current view                  │
+               │   x                           search tests with finder             │
+               │                                                                    │
+               │ Diff detail                                                        │
+               │   /                           search field names                   │
+               │   n / N                       next or previous field search result │
+               │   f / b                       next or previous diff                │
+               │   a                           anchor selected subtree              │
+               │   t                           return to top                        │
+               │   i                           toggle short/full type names         │
+               │                                                                    │
+               │ General                                                            │
+               │   ? or F1                     show this help                       │
+               │   escape or ctrl-c or ctrl-d  quit or go back                      │
+               └────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
