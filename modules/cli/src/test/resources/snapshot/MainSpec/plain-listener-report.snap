@@ -1,0 +1,15 @@
+Difflicious diff report: different
+Summary: 1 diff failure(s), 1 non-ignored change(s).
+
+Failure 1: example.ExampleSuite / compares values
+Run id: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+Test id: 01ARZ3NDEKTSV4RRFFQ69G5FAW
+Location: /workspace/ExampleSuite.scala:37
+Difflicious diff result: different
+Summary: 1 non-ignored change(s).
+
+Differences:
+1. $ - changed
+   obtained: 1
+   expected: 2
+

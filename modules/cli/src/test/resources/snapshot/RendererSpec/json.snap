@@ -1,0 +1,417 @@
+{
+  "isOk" : false,
+  "summary" : {
+    "isOk" : false,
+    "totalChanges" : 6,
+    "changed" : 4,
+    "typeMismatches" : 0,
+    "obtainedOnly" : 1,
+    "expectedOnly" : 1,
+    "ignored" : 0
+  },
+  "changes" : [
+    {
+      "path" : "$.customer.email",
+      "kind" : "changed",
+      "pairType" : "both",
+      "typeName" : null,
+      "obtained" : "\"alice@old.example\"",
+      "expected" : "\"alice@example.com\"",
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "\"alice@old.example\" -> \"alice@example.com\""
+    },
+    {
+      "path" : "$.shipping.city",
+      "kind" : "changed",
+      "pairType" : "both",
+      "typeName" : null,
+      "obtained" : "\"London\"",
+      "expected" : "\"Bristol\"",
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "\"London\" -> \"Bristol\""
+    },
+    {
+      "path" : "$.lines[0].quantity",
+      "kind" : "changed",
+      "pairType" : "both",
+      "typeName" : null,
+      "obtained" : "1",
+      "expected" : "2",
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "1 -> 2"
+    },
+    {
+      "path" : "$.lines[1]",
+      "kind" : "obtained_only",
+      "pairType" : "obtained_only",
+      "typeName" : "OrderLine",
+      "obtained" : "OrderLine(\n  sku: \"SKU-OLD\",\n  description: \"Discontinued lid\",\n  quantity: 1,\n  unitCents: 499\n)",
+      "expected" : null,
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "OrderLine(\n  sku: \"SKU-OLD\",\n  description: \"Discontinued lid\",\n  quantity: 1,\n  unitCents: 499\n)"
+    },
+    {
+      "path" : "$.status",
+      "kind" : "changed",
+      "pairType" : "both",
+      "typeName" : null,
+      "obtained" : "\"processing\"",
+      "expected" : "\"shipped\"",
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "\"processing\" -> \"shipped\""
+    },
+    {
+      "path" : "$.notes[0]",
+      "kind" : "expected_only",
+      "pairType" : "expected_only",
+      "typeName" : null,
+      "obtained" : null,
+      "expected" : "\"Leave with reception\"",
+      "isIgnored" : false,
+      "isOk" : false,
+      "rendered" : "\"Leave with reception\""
+    }
+  ],
+  "tree" : {
+    "kind" : "record",
+    "pairType" : "both",
+    "isIgnored" : false,
+    "isOk" : false,
+    "typeName" : {
+      "short" : "OrderSnapshot",
+      "long" : "difflicious.cli.RendererSpec.OrderSnapshot",
+      "withTypeParamsLong" : "difflicious.cli.RendererSpec.OrderSnapshot"
+    },
+    "fields" : [
+      {
+        "name" : "orderId",
+        "value" : {
+          "kind" : "value",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : true,
+          "typeName" : null,
+          "obtained" : "\"ORD-1042\"",
+          "expected" : "\"ORD-1042\"",
+          "isSame" : true
+        }
+      },
+      {
+        "name" : "customer",
+        "value" : {
+          "kind" : "record",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : false,
+          "typeName" : {
+            "short" : "Customer",
+            "long" : "difflicious.cli.RendererSpec.Customer",
+            "withTypeParamsLong" : "difflicious.cli.RendererSpec.Customer"
+          },
+          "fields" : [
+            {
+              "name" : "id",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"CUS-7\"",
+                "expected" : "\"CUS-7\"",
+                "isSame" : true
+              }
+            },
+            {
+              "name" : "name",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"Alice\"",
+                "expected" : "\"Alice\"",
+                "isSame" : true
+              }
+            },
+            {
+              "name" : "email",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : false,
+                "typeName" : null,
+                "obtained" : "\"alice@old.example\"",
+                "expected" : "\"alice@example.com\"",
+                "isSame" : false
+              }
+            },
+            {
+              "name" : "loyaltyTier",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"gold\"",
+                "expected" : "\"gold\"",
+                "isSame" : true
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name" : "shipping",
+        "value" : {
+          "kind" : "record",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : false,
+          "typeName" : {
+            "short" : "Address",
+            "long" : "difflicious.cli.RendererSpec.Address",
+            "withTypeParamsLong" : "difflicious.cli.RendererSpec.Address"
+          },
+          "fields" : [
+            {
+              "name" : "line1",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"10 Market Street\"",
+                "expected" : "\"10 Market Street\"",
+                "isSame" : true
+              }
+            },
+            {
+              "name" : "city",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : false,
+                "typeName" : null,
+                "obtained" : "\"London\"",
+                "expected" : "\"Bristol\"",
+                "isSame" : false
+              }
+            },
+            {
+              "name" : "country",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"UK\"",
+                "expected" : "\"UK\"",
+                "isSame" : true
+              }
+            },
+            {
+              "name" : "postalCode",
+              "value" : {
+                "kind" : "value",
+                "pairType" : "both",
+                "isIgnored" : false,
+                "isOk" : true,
+                "typeName" : null,
+                "obtained" : "\"EC1A 1BB\"",
+                "expected" : "\"EC1A 1BB\"",
+                "isSame" : true
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name" : "lines",
+        "value" : {
+          "kind" : "list",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : false,
+          "typeName" : {
+            "short" : "List",
+            "long" : "scala.collection.immutable.List",
+            "withTypeParamsLong" : "scala.collection.immutable.List[difflicious.cli.RendererSpec.OrderLine]"
+          },
+          "items" : [
+            {
+              "kind" : "record",
+              "pairType" : "both",
+              "isIgnored" : false,
+              "isOk" : false,
+              "typeName" : {
+                "short" : "OrderLine",
+                "long" : "difflicious.cli.RendererSpec.OrderLine",
+                "withTypeParamsLong" : "difflicious.cli.RendererSpec.OrderLine"
+              },
+              "fields" : [
+                {
+                  "name" : "sku",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "both",
+                    "isIgnored" : false,
+                    "isOk" : true,
+                    "typeName" : null,
+                    "obtained" : "\"SKU-RED\"",
+                    "expected" : "\"SKU-RED\"",
+                    "isSame" : true
+                  }
+                },
+                {
+                  "name" : "description",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "both",
+                    "isIgnored" : false,
+                    "isOk" : true,
+                    "typeName" : null,
+                    "obtained" : "\"Red travel mug\"",
+                    "expected" : "\"Red travel mug\"",
+                    "isSame" : true
+                  }
+                },
+                {
+                  "name" : "quantity",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "both",
+                    "isIgnored" : false,
+                    "isOk" : false,
+                    "typeName" : null,
+                    "obtained" : "1",
+                    "expected" : "2",
+                    "isSame" : false
+                  }
+                },
+                {
+                  "name" : "unitCents",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "both",
+                    "isIgnored" : false,
+                    "isOk" : true,
+                    "typeName" : null,
+                    "obtained" : "1899",
+                    "expected" : "1899",
+                    "isSame" : true
+                  }
+                }
+              ]
+            },
+            {
+              "kind" : "record",
+              "pairType" : "obtained_only",
+              "isIgnored" : false,
+              "isOk" : false,
+              "typeName" : {
+                "short" : "OrderLine",
+                "long" : "difflicious.cli.RendererSpec.OrderLine",
+                "withTypeParamsLong" : "difflicious.cli.RendererSpec.OrderLine"
+              },
+              "fields" : [
+                {
+                  "name" : "sku",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "obtained_only",
+                    "isIgnored" : false,
+                    "isOk" : false,
+                    "typeName" : null,
+                    "obtained" : "\"SKU-OLD\""
+                  }
+                },
+                {
+                  "name" : "description",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "obtained_only",
+                    "isIgnored" : false,
+                    "isOk" : false,
+                    "typeName" : null,
+                    "obtained" : "\"Discontinued lid\""
+                  }
+                },
+                {
+                  "name" : "quantity",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "obtained_only",
+                    "isIgnored" : false,
+                    "isOk" : false,
+                    "typeName" : null,
+                    "obtained" : "1"
+                  }
+                },
+                {
+                  "name" : "unitCents",
+                  "value" : {
+                    "kind" : "value",
+                    "pairType" : "obtained_only",
+                    "isIgnored" : false,
+                    "isOk" : false,
+                    "typeName" : null,
+                    "obtained" : "499"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name" : "status",
+        "value" : {
+          "kind" : "value",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : false,
+          "typeName" : null,
+          "obtained" : "\"processing\"",
+          "expected" : "\"shipped\"",
+          "isSame" : false
+        }
+      },
+      {
+        "name" : "notes",
+        "value" : {
+          "kind" : "list",
+          "pairType" : "both",
+          "isIgnored" : false,
+          "isOk" : false,
+          "typeName" : {
+            "short" : "List",
+            "long" : "scala.collection.immutable.List",
+            "withTypeParamsLong" : "scala.collection.immutable.List[java.lang.String]"
+          },
+          "items" : [
+            {
+              "kind" : "value",
+              "pairType" : "expected_only",
+              "isIgnored" : false,
+              "isOk" : false,
+              "typeName" : null,
+              "expected" : "\"Leave with reception\""
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

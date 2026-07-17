@@ -1,0 +1,31 @@
+Difflicious diff result: different
+Summary: 6 non-ignored change(s).
+
+Differences:
+1. $.customer.email - changed
+   obtained: "alice@old.example"
+   expected: "alice@example.com"
+
+2. $.shipping.city - changed
+   obtained: "London"
+   expected: "Bristol"
+
+3. $.lines[0].quantity - changed
+   obtained: 1
+   expected: 2
+
+4. $.lines[1] - obtained_only (OrderLine)
+   obtained:
+      OrderLine(
+        sku: "SKU-OLD",
+        description: "Discontinued lid",
+        quantity: 1,
+        unitCents: 499
+      )
+
+5. $.status - changed
+   obtained: "processing"
+   expected: "shipped"
+
+6. $.notes[0] - expected_only
+   expected: "Leave with reception"
