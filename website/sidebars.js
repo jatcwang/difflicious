@@ -6,6 +6,7 @@ module.exports = {
       items: [
         'index',
         'quickstart',
+        'cli',
         'basic-differs',
         'derivation',
         'configuring-differs',
