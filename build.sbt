@@ -4,14 +4,18 @@ import complete.DefaultParsers.*
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 import scala.sys.process.Process
+import snapshot4s.BuildInfo.snapshot4sVersion
 
 val munitVersion = "1.3.4"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.15"
+val declineVersion = "2.4.1"
+val jlineVersion = "3.29.0"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.3.1"
+val jsoniterScalaVersion = "2.38.4"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
@@ -42,7 +46,7 @@ inThisBuild(
         url("https://almostfunctional.com"),
       ),
     ),
-    commands ++= Build.createBuildCommands(allModules),
+    commands ++= Build.createBuildCommands(projectMatrixModules.flatMap(_.projectRefs)),
     tpolecatDefaultOptionsMode := (if (sys.env.contains("CI")) CiMode else DevMode),
     useReadableConsoleGit,
   ),
@@ -53,12 +57,41 @@ addCommandAlias("runBenchCompile3", "benchmarkCompile3 / clean ; benchmarkCompil
 addCommandAlias("test2", "coretest/test")
 addCommandAlias("test3", "coretest3/test")
 
+lazy val projectMatrixModules =
+  Seq(core, coretest, munit, scalatest, weaver, cats, circe, reporterCore, cli, benchmarks, docs)
+
 lazy val allModules =
-  Seq(core, coretest, munit, scalatest, weaver, cats, circe, benchmarks, docs).flatMap(_.projectRefs)
+  projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("diffliciousSbtPlugin")
 
 lazy val difflicious = Project("difflicious", file("."))
   .aggregate(allModules: _*)
   .settings(commonSettings, noPublishSettings)
+
+lazy val diffliciousSbtPlugin = project
+  .in(file("modules/sbt-plugin"))
+  .enablePlugins(SbtPlugin, ScriptedPlugin)
+  .settings(
+    name := "sbt-difflicious",
+    sbtPlugin := true,
+    addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
+    scalaVersion := Build.Scala212,
+    crossScalaVersions := Seq(Build.Scala212, Build.Scala3),
+    pluginCrossBuild / sbtVersion := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.12.11"
+        case _      => "2.0.2"
+      }
+    },
+    versionScheme := Some("early-semver"),
+    scriptedDependencies := {
+      (LocalProject("core3") / publishLocal).value
+      (LocalProject("reporterCore3") / publishLocal).value
+      (LocalProject("scalatest3") / publishLocal).value
+      scriptedDependencies.value
+    },
+    scriptedBufferLog := false,
+    scriptedLaunchOpts ++= Seq(s"-Dplugin.version=${version.value}"),
+  )
 
 lazy val core = projectMatrix
   .in(file("modules/core"))
@@ -105,15 +138,27 @@ lazy val munit = projectMatrix
 
 lazy val scalatest = projectMatrix
   .in(file("modules/scalatest"))
-  .dependsOn(core)
+  .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest-core" % scalatestVersion,
     ),
+    libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit" % munitVersion,
+    ).map(_ % Test),
   )
-  .jvmPlatform(scalaCrossVersions)
+  .jvmPlatform(
+    scalaCrossVersions,
+    Seq(
+      libraryDependencies +=
+        "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
+      libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion % Test,
+      libraryDependencies += "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
+      libraryDependencies += "org.scalatest" %%% "scalatest-freespec" % scalatestVersion % Test,
+    ),
+  )
   .jsPlatform(scalaCrossVersions)
   .nativePlatform(scalaCrossVersions)
 
@@ -161,6 +206,59 @@ lazy val circe = projectMatrix
   .jvmPlatform(scalaCrossVersions)
   .jsPlatform(scalaCrossVersions)
   .nativePlatform(scalaCrossVersions)
+
+lazy val reporterCore = projectMatrix
+  .in(file("modules/reporter-core"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "difflicious-reporter-core",
+    libraryDependencies ++= Seq(
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
+    ),
+    libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-parser" % circeVersion,
+      "org.scalameta" %%% "munit" % munitVersion,
+    ).map(_ % Test),
+  )
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
+
+lazy val cli = projectMatrix
+  .in(file("modules/cli"))
+  .dependsOn(reporterCore, circe)
+  .enablePlugins(Snapshot4sPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "difflicious-cli",
+    libraryDependencies ++= Seq(
+      "com.monovore" %%% "decline" % declineVersion,
+      "org.typelevel" %%% "cats-core" % catsVersion,
+      "io.circe" %%% "circe-parser" % circeVersion,
+      "org.jline" % "jline" % jlineVersion,
+      "org.scalameta" %%% "munit" % munitVersion % Test,
+      "com.siriusxm" %%% "snapshot4s-munit" % snapshot4sVersion % Test,
+    ),
+    Compile / mainClass := Some("difflicious.cli.Main"),
+    Compile / run / fork := true,
+    Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
+    Compile / run / connectInput := true,
+  )
+  .jvmPlatform(Seq(Build.Scala3))
+
+lazy val cliPlayground = projectMatrix
+  .in(file("modules/cli-playground"))
+  .dependsOn(scalatest, cats)
+  .settings(commonSettings, noPublishSettings)
+  .settings(
+    name := "difflicious-cli-playground",
+    libraryDependencies ++= Seq(
+      "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
+    ),
+  )
+  .jvmPlatform(Seq(Build.Scala3))
 
 lazy val coretest = projectMatrix
   .in(file("modules/coretest"))

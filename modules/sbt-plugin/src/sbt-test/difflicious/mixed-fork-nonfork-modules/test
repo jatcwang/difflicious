@@ -1,0 +1,16 @@
+> checkForkSettings
+> checkSharedRunId
+> checkSbtJvmRunId
+> cleanReports
+-> forked/test
+-> forked/test
+> checkForkedIndividualTestRunIdsDiffer
+> cleanReports
+-> unforked/test
+-> unforked/test
+> checkUnforkedIndividualTestRunIdsDiffer
+> cleanReports
+-> test
+> checkRootTestRunIdAfterFirstRun
+-> test
+> checkRootTestRunIdAfterSecondRun
