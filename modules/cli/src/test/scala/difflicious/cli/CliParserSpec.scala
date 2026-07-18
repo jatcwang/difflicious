@@ -7,7 +7,7 @@ import snapshot4s.munit.SnapshotAssertions
 class CliParserSpec extends FunSuite with SnapshotAssertions {
   test("parses JSONL report inputs with json mode") {
     assertEquals(
-      CliParser.parse(List("--json", "target/difflicious-result")),
+      CliParser.parse(List("--json", "--report-directory", "target/difflicious-result")),
       Right(
         CliCommand.Run(
           CliConfig(
@@ -23,7 +23,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
 
   test("parses multiple JSONL report inputs with interactive mode and no color") {
     assertEquals(
-      CliParser.parse(List("--interactive", "--no-color", "suite-a.jsonl", "suite-b.jsonl")),
+      CliParser.parse(List("--interactive", "--no-color", "-d", "suite-a.jsonl", "-d", "suite-b.jsonl")),
       Right(
         CliCommand.Run(
           CliConfig(
@@ -52,7 +52,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
 
   test("parses test id filter for JSONL report inputs") {
     assertEquals(
-      CliParser.parse(List("--test-id", "01ARZ3NDEKTSV4RRFFQ69G5FAW", "--plain", "failures.jsonl")),
+      CliParser.parse(List("--test-id", "01ARZ3NDEKTSV4RRFFQ69G5FAW", "--plain", "-d", "failures.jsonl")),
       Right(
         CliCommand.Run(
           CliConfig(
@@ -83,7 +83,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
   }
 
   test("reports conflicting mode selectors") {
-    val error = CliParser.parse(List("--json", "--plain", "failures.jsonl")).left.toOption.getOrElse("")
+    val error = CliParser.parse(List("--json", "--plain", "-d", "failures.jsonl")).left.toOption.getOrElse("")
 
     assert(error.contains("Choose only one output mode"))
   }

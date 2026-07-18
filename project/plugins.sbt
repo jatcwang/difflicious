@@ -13,5 +13,5 @@ addSbtPlugin("com.siriusxm" % "sbt-snapshot4s" % "0.2.2")
 
 Compile / unmanagedSourceDirectories ++= {
   val dir = (ThisBuild / baseDirectory).value.getParentFile / "modules" / "sbt-plugin" / "src" / "main"
-  Seq(dir / "scala")
+  Seq(dir / "scala", dir / "scala-sbt-1.0")
 }

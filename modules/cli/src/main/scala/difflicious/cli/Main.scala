@@ -4,7 +4,7 @@ import java.io.{InputStream, PrintStream}
 
 object Main {
   def main(args: Array[String]): Unit =
-    scala.sys.exit(run(args.toList, System.in, System.out, System.err))
+    System.exit(run(args.toList, System.in, System.out, System.err))
 
   def run(args: List[String], stdin: InputStream, stdout: PrintStream, stderr: PrintStream): Int =
     run(args, stdin, stdout, stderr, InteractiveReportViewer)
