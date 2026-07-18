@@ -15,7 +15,7 @@ val jlineVersion = "3.29.0"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.1"
-val jsoniterScalaVersion = "2.38.4"
+val jsoniterScalaVersion = "2.38.17"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
@@ -79,7 +79,7 @@ lazy val diffliciousSbtPlugin = project
     pluginCrossBuild / sbtVersion := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.12.11"
-        case _      => "2.0.2"
+        case _ => "2.0.2"
       }
     },
     versionScheme := Some("early-semver"),
