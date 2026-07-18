@@ -11,7 +11,7 @@ val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.16"
 val declineVersion = "2.4.1"
-val jlineVersion = "3.29.0"
+val jlineVersion = "3.30.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.1"
@@ -79,7 +79,7 @@ lazy val diffliciousSbtPlugin = project
     pluginCrossBuild / sbtVersion := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.12.11"
-        case _      => "2.0.2"
+        case _ => "2.0.2"
       }
     },
     versionScheme := Some("early-semver"),
