@@ -10,9 +10,12 @@ val testDependencies = Seq(
 ).map(_ % Test)
 
 lazy val checkForkSettings = taskKey[Unit]("Verify DiffliciousPlugin does not modify Test / fork")
+lazy val checkReportAllOutputDirs = taskKey[Unit]("Verify aggregated Difflicious report output directories")
+lazy val checkCliDependency = taskKey[Unit]("Verify the Difflicious CLI dependency is resolved")
 lazy val checkSharedRunId = taskKey[Unit]("Verify forked and non-forked modules share the build run id")
 lazy val checkSbtJvmRunId = taskKey[Unit]("Verify setDiffliciousRunId writes the shared run id to the sbt JVM")
 lazy val cleanReports = taskKey[Unit]("Delete Difflicious JSONL reports")
+lazy val createViewerReportDirs = taskKey[Unit]("Create the report directories passed to the viewer")
 lazy val checkForkedIndividualTestRunIdsDiffer =
   taskKey[Unit]("Verify two separate forked module test runs get different run ids")
 lazy val checkUnforkedIndividualTestRunIdsDiffer =
@@ -27,19 +30,54 @@ lazy val root = project
   .aggregate(forked, unforked)
   .settings(
     cleanReports := Def.uncached {
-      IO.delete((forked / Test / diffliciousReportOutputDir).value)
-      IO.delete((unforked / Test / diffliciousReportOutputDir).value)
+      IO.delete((forked / target).value / "difflicious-report")
+      IO.delete((unforked / target).value / "difflicious-report")
+    },
+    createViewerReportDirs := Def.uncached {
+      Seq(
+        target.value / "difflicious-report",
+        (forked / target).value / "difflicious-report",
+        (unforked / target).value / "difflicious-report",
+      ).foreach(IO.createDirectory)
     },
     checkForkSettings := Def.uncached {
       assert((forked / Test / fork).value, "forked / Test / fork should remain true")
       assert(!(unforked / Test / fork).value, "unforked / Test / fork should remain false")
     },
+    checkReportAllOutputDirs := Def.uncached {
+      val actual = (Test / diffliciousReportAllOutputDirs).value
+      val expected = Seq(
+        target.value / "difflicious-report",
+        (forked / target).value / "difflicious-report",
+        (unforked / target).value / "difflicious-report",
+      )
+      assert(
+        actual.toSet == expected.toSet && actual.size == expected.size,
+        s"root report output directories should include itself and all aggregated projects: $actual",
+      )
+      val viewerArguments = diffliciousViewerAdditionalArguments.value
+      val viewerDirectories = viewerArguments.grouped(2).collect {
+        case Seq("-d", directory) => file(directory)
+      }.toSeq
+      assert(
+        viewerArguments.size == viewerDirectories.size * 2 && viewerDirectories.toSet == expected.toSet,
+        s"viewer arguments should pass each report output directory with -d: $viewerArguments",
+      )
+    },
+    checkCliDependency := Def.uncached {
+      val cliModules = update.value.allModules.filter(_.name == "difflicious-cli_2.13")
+      assert(!(diffliciousViewer / aggregate).value, "diffliciousViewer should run only once for an aggregate project")
+      assert(
+        cliModules.exists(_.revision == sys.props("plugin.version")),
+        s"expected difflicious-cli_2.13 at the plugin version, got $cliModules",
+      )
+    },
     checkSharedRunId := Def.uncached {
       val runId = (ThisBuild / diffliciousCurrentRunId).value
       val forkedRunIdOption = s"-D${SysPropNames.RUN_ID}=$runId"
       val unforkedRunIdOption = s"-D${SysPropNames.RUN_ID}=$runId"
-      val forkedOutputDir = (forked / Test / diffliciousReportOutputDir).value.getAbsolutePath
-      val unforkedOutputDir = (unforked / Test / diffliciousReportOutputDir).value.getAbsolutePath
+      val forkedOutputDir = ((forked / target).value / "difflicious-report").getAbsolutePath
+      val unforkedOutputDir = ((unforked / target).value / "difflicious-report").getAbsolutePath
       val forkedOutputDirOption = s"-D${SysPropNames.REPORT_OUTPUT_DIR}=$forkedOutputDir"
       val unforkedOutputDirOption = s"-D${SysPropNames.REPORT_OUTPUT_DIR}=$unforkedOutputDir"
 
@@ -76,13 +114,13 @@ lazy val root = project
     },
     checkForkedIndividualTestRunIdsDiffer := Def.uncached {
       assertDifferentRunIds(
-        readRunIds((forked / Test / diffliciousReportOutputDir).value),
+        readRunIds((forked / target).value / "difflicious-report"),
         "separate forked/test runs should use different run ids",
       )
     },
     checkUnforkedIndividualTestRunIdsDiffer := Def.uncached {
       assertDifferentRunIds(
-        readRunIds((unforked / Test / diffliciousReportOutputDir).value),
+        readRunIds((unforked / target).value / "difflicious-report"),
         "separate unforked/test runs should use different run ids",
       )
     },

@@ -5,7 +5,7 @@ import com.monovore.decline.{Command, Opts}
 import difflicious.reporter.DiffliciousResultDefaults
 
 object CliParser {
-  lazy val usage: String = withExitCodes(command.showHelp)
+  lazy val usage: String = command.showHelp
 
   def parse(args: List[String]): Either[String, CliCommand] =
     command.parse(args) match {
@@ -16,7 +16,7 @@ object CliParser {
         Right(CliCommand.ShowHelp)
 
       case Left(help) =>
-        Left(withExitCodes(help.toString))
+        Left(help.toString)
     }
 
   private lazy val command: Command[CliConfig] =
@@ -65,10 +65,15 @@ object CliParser {
 
   private lazy val reportInputOptions: Opts[CliInput.Report] =
     Opts
-      .arguments[String](metavar = "report.jsonl")
+      .options[String](
+        long = "report-directory",
+        help = "Directory containing Difflicious JSONL reports. May be specified multiple times.",
+        short = "d",
+        metavar = "directory",
+      )
       .orNone
       .map {
-        case Some(paths) => CliInput.Report(paths.toList.toVector)
+        case Some(directories) => CliInput.Report(directories.toList.toVector)
         case None => CliInput.Report(Vector(DiffliciousResultDefaults.OutputDirectory))
       }
 
@@ -89,12 +94,4 @@ object CliParser {
       )
       .orFalse
 
-  private def withExitCodes(help: String): String =
-    s"""$help
-       |
-       |Exit codes:
-       |    0
-       |        output was rendered successfully, including diff failures
-       |    2
-       |        invalid arguments, unreadable input, or invalid JSONL""".stripMargin
 }

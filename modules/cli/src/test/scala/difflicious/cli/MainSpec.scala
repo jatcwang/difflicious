@@ -27,7 +27,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--plain", report.toString),
+      List("--plain", "-d", report.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -56,7 +56,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--json", directory.toString),
+      List("--json", "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -90,7 +90,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--json", "--test-id", OtherTestId, directory.toString),
+      List("--json", "--test-id", OtherTestId, "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -134,7 +134,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val tuiRunner = new RecordingTuiRunner
 
     val exitCode = Main.run(
-      List("--interactive", "--no-color", "--test-id", OtherTestId, directory.toString),
+      List("--interactive", "--no-color", "--test-id", OtherTestId, "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -158,7 +158,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--plain", "--test-id", "missing-test", report.toString),
+      List("--plain", "--test-id", "missing-test", "-d", report.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
