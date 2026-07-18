@@ -30,7 +30,22 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
 
     testDriver.assertSnapshot("test-finder")
     testDriver.pressKey(SearchKey.Cancel)
+    assert(!testDriver.isTerminated)
+    assert(testDriver.render.last.contains("Press ESC again to exit."))
+    testDriver.pressKey(SearchKey.Cancel)
     assert(testDriver.isTerminated)
+  }
+
+  test("test finder escape cancels an active search without exiting or arming exit") {
+    val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.typeKeys("second")
+    testDriver.pressKey(SearchKey.Cancel)
+
+    assert(!testDriver.isTerminated)
+    assert(testDriver.render.exists(_.contains("Search: ")))
+    assert(!testDriver.render.exists(_.contains("Press ESC again to exit.")))
   }
 
   snapshotTest("test finder - opens selected report result") {
@@ -124,7 +139,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.typeKeys("scn")
     testDriver.assertSnapshot("highlight-second")
     testDriver.pressKey(SearchKey.Submit)
-    testDriver.pressKey(TerminalKey.Quit)
+    testDriver.pressKey(TerminalKey.Escape)
     testDriver.assertSnapshot("selected-result")
   }
 
@@ -207,6 +222,28 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
+  snapshotTest("test finder - searches test ids and labels matching entries") {
+    val matchingTestId = "stable-test-identifier"
+    val report =
+      DiffReport(
+        Vector(
+          diffRun("ExampleSuite", "first", testId = matchingTestId),
+          diffRun("OtherSuite", "second"),
+        ),
+      )
+    val testDriver = TestDriver(makeViewerState(report, color = true))
+
+    testDriver.typeKeys("identifier")
+
+    val matches = InteractiveReportViewer.testSearchMatches(report.runs, "identifier")
+    assertEquals(matches.map(_.candidate.testId), Vector(Some(matchingTestId)))
+    assert(matches.head.testIdMatch.nonEmpty)
+    testDriver.assertSnapshot("hierarchical-test-id-match")
+
+    testDriver.pressKey(SearchKey.ToggleHierarchy)
+    testDriver.assertSnapshot("flat-test-id-match")
+  }
+
   snapshotTest("test finder - filters visible test-name matches before ordering by newest run timestamp") {
     val report =
       DiffReport(
@@ -257,7 +294,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.pressKey(TerminalKey.Help)
     testDriver.assertSnapshot("hotkey-popup")
 
-    testDriver.pressKey(TerminalKey.Quit)
+    testDriver.pressKey(TerminalKey.Escape)
     assertEquals(testDriver.render, baseScreen)
   }
 
@@ -422,6 +459,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.pressKey(TerminalKey.FieldSearch)
     testDriver.typeKeys("last")
     testDriver.pressKey(SearchKey.Cancel)
+    assert(!testDriver.isTerminated)
     testDriver.pressKey(TerminalKey.Next)
     assertFileSnapshot(
       snapshotLines(testDriver.render),
@@ -540,10 +578,38 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       snapshotLines(testDriver.render),
       "InteractiveReportViewerSpec/diff-screen-escape-anchored-subtree.snap",
     )
-    testDriver.pressKey(TerminalKey.Quit)
+    testDriver.pressKey(TerminalKey.Escape)
     assertNoSubtreeHeader(testDriver.render)
-    testDriver.pressKey(TerminalKey.Quit)
+    testDriver.pressKey(TerminalKey.Escape)
     assertNoSubtreeHeader(testDriver.render)
+    assert(!testDriver.isTerminated)
+    assert(testDriver.render.last.contains("Press ESC again to exit."))
+    testDriver.pressKey(TerminalKey.Escape)
+    assert(testDriver.isTerminated)
+  }
+
+  test("diff screen requires consecutive escapes to exit") {
+    val report = DiffReport(Vector(rawDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.Escape)
+    assert(!testDriver.isTerminated)
+    assert(testDriver.render.last.contains("Press ESC again to exit."))
+
+    testDriver.pressKey(TerminalKey.Next)
+    assert(!testDriver.render.exists(_.contains("Press ESC again to exit.")))
+
+    testDriver.pressInputs(Vector(27, 27))
+    assert(testDriver.isTerminated)
+  }
+
+  test("ctrl-c quits immediately") {
+    val report = DiffReport(Vector(rawDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.Quit)
+
+    assert(testDriver.isTerminated)
   }
 
   test("diff screen next and previous diff reveal folded descendants") {
@@ -660,13 +726,18 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
-  private def diffRun(suiteName: String, testName: String, runId: String = RunId): DiffRun =
+  private def diffRun(
+    suiteName: String,
+    testName: String,
+    runId: String = RunId,
+    testId: String = TestId,
+  ): DiffRun =
     rawDiffRun
       .copy(
         metadata = Some(
           DiffRunMetadata(
             runId = runId,
-            testId = TestId,
+            testId = testId,
             suiteName = suiteName,
             suiteId = s"example.$suiteName",
             suiteClassName = Some(s"example.$suiteName"),
@@ -1010,6 +1081,9 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     def pressSearchKeys(keys: SearchKey*): Unit =
       keys.foreach(pressKey)
 
+    def pressInputs(inputs: Vector[Int]): Unit =
+      state = state.handleInput(inputs)
+
     def render: Vector[String] =
       state.render
 
@@ -1043,7 +1117,8 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
 
   private def searchKeyInput(searchKey: SearchKey): Vector[Int] =
     searchKey match {
-      case SearchKey.Cancel => terminalKeyInput(TerminalKey.Quit)
+      case SearchKey.Cancel => terminalKeyInput(TerminalKey.Escape)
+      case SearchKey.Quit => terminalKeyInput(TerminalKey.Quit)
       case SearchKey.Submit => Vector(13)
       case SearchKey.Up => Vector(11)
       case SearchKey.Down => Vector(10)
