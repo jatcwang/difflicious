@@ -46,3 +46,71 @@ Here are some TUI hotkeys. In general, vim-style keybindings are provided too.
 | <kbd>?</kbd> / <kbd>F1</kbd> | Show the complete hotkey reference |
 | <kbd>Esc</kbd> | Go back or confirm quit |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>D</kbd> | Quit immediately |
+
+# Non-interactive mode
+
+Non-interactive mode is useful for quickly viewing a diff.
+
+There are two modes:
+
+- Plain (`--plain`): Plain text format useful for both humans and AI agents
+- JSON (`--json`): If you need programmatic rendering of the diff details
+
+## Plain text output
+
+To print every recorded test failure as plain text:
+
+```
+sbt> diffliciousViewer --plain
+```
+
+To print only the failure with a specific test id:
+
+```
+sbt> diffliciousViewer --plain --test-id 01ARZ3NDEKTSV4RRFFQ69G5FAW
+```
+
+The plain output includes test metadata, a summary, and each difference. For example:
+
+```text
+Difflicious diff report: different
+Summary: 1 diff failure(s), 6 non-ignored change(s).
+
+Failure 1: example.OrderSuite / order snapshot matches
+Run id: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+Test id: 01ARZ3NDEKTSV4RRFFQ69G5FAW
+Location: /workspace/OrderSuite.scala:37
+Difflicious diff result: different
+Summary: 6 non-ignored change(s), 1 ignored subtree(s).
+
+Differences:
+1. $.customer.email - changed
+   obtained: "alice@old.example"
+   expected: "alice@example.com"
+
+2. $.customer.loyaltyTier - ignored
+
+3. $.shipping.city - changed
+   obtained: "London"
+   expected: "Bristol"
+
+4. $.lines[0].quantity - changed
+   obtained: 1
+   expected: 2
+
+5. $.lines[1] - obtained_only (OrderLine)
+   obtained:
+      OrderLine(
+        sku: "SKU-OLD",
+        description: "Discontinued lid",
+        quantity: 1,
+        unitCents: 499
+      )
+
+6. $.status - changed
+   obtained: "processing"
+   expected: "shipped"
+
+7. $.notes[0] - expected_only
+   expected: "Leave with reception"
+```

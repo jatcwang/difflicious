@@ -5,6 +5,9 @@ import difflicious.{DiffResult, DiffResultPrinter}
 import scala.annotation.tailrec
 
 trait DifferenceFound {
+  private lazy val generatedTestId = UlidGenerator.Default.generate()
+
+  def testId: String = generatedTestId
   def diffResult: DiffResult
   def fileName: String
   def filePath: String
@@ -16,10 +19,14 @@ final case class DifferenceFoundException(
   fileName: String,
   filePath: String,
   lineNumber: Int,
-) extends RuntimeException(DiffResultPrinter.consoleOutput(diffResult, 0).render)
+  override val testId: String = UlidGenerator.Default.generate(),
+) extends RuntimeException(DifferenceFound.message(testId, diffResult))
     with DifferenceFound
 
 object DifferenceFound {
+  private[difflicious] def message(testId: String, diffResult: DiffResult): String =
+    s"Test id: $testId\n${DiffResultPrinter.consoleOutput(diffResult, 0).render}"
+
   @tailrec
   def fromThrowable(throwable: Throwable): Option[DifferenceFound] =
     throwable match {

@@ -226,13 +226,18 @@ private[cli] trait TerminalSession {
 }
 
 private[cli] trait TuiRunner {
-  def run(report: DiffReport, color: Boolean, initialIndex: Int): Unit
+  def run(report: DiffReport, color: Boolean, initialIndex: Int, openInitialResult: Boolean): Unit
 }
 
 object InteractiveReportViewer extends TuiRunner {
   private val SearchCandidateRows = 6
 
-  override def run(report: DiffReport, color: Boolean, initialIndex: Int = 0): Unit = {
+  override def run(
+    report: DiffReport,
+    color: Boolean,
+    initialIndex: Int = 0,
+    openInitialResult: Boolean = false,
+  ): Unit = {
     var terminal: Terminal = null
     var originalAttributes: Attributes = null
     var session: JLineTerminalSession = null
@@ -242,7 +247,7 @@ object InteractiveReportViewer extends TuiRunner {
       originalAttributes = terminal.enterRawMode()
       session = new JLineTerminalSession(terminal, TerminalKeymap.default)
       session.enterFullscreen()
-      runSession(report, session, color, initialIndex)
+      runSession(report, session, color, initialIndex, openInitialResult)
     } finally {
       if (session != null) ignoreNonFatal(session.exitFullscreen())
       if (terminal != null && originalAttributes != null) ignoreNonFatal(terminal.setAttributes(originalAttributes))
@@ -535,6 +540,7 @@ object InteractiveReportViewer extends TuiRunner {
       height: Int,
       keymap: TerminalKeymap = TerminalKeymap.default,
       initialIndex: Int = 0,
+      openInitialResult: Boolean = false,
       zoneId: ZoneId = ZoneId.systemDefault(),
     ): InteractiveReportViewerState = {
       val screen =
@@ -543,6 +549,15 @@ object InteractiveReportViewer extends TuiRunner {
             TerminalScreen.EmptyReport()
           case Vector(run) if run.metadata.isEmpty =>
             screenForRun(run, reportPanel = None, reportRuns = None, currentReportRunIndex = None)
+          case runs if openInitialResult =>
+            val initialRunIndex = normalizeIndex(initialIndex, runs.length)
+            val run = runs(initialRunIndex)
+            screenForRun(
+              run,
+              reportPanel = Some(ReportPanelSummary.fromRun(run)),
+              reportRuns = Some(runs),
+              currentReportRunIndex = Some(initialRunIndex),
+            )
           case runs =>
             val initialRunIndex = if (initialIndex == 0) None else Some(normalizeIndex(initialIndex, runs.length))
             TerminalScreen.ReportFinder(FinderState.initial(runs, initialRunIndex, zoneId = zoneId))
@@ -1014,6 +1029,7 @@ object InteractiveReportViewer extends TuiRunner {
     session: TerminalSession,
     color: Boolean,
     initialIndex: Int = 0,
+    openInitialResult: Boolean = false,
     zoneId: ZoneId = ZoneId.systemDefault(),
   ): Unit = {
     var model =
@@ -1024,6 +1040,7 @@ object InteractiveReportViewer extends TuiRunner {
         height = session.height,
         keymap = session.keymap,
         initialIndex = initialIndex,
+        openInitialResult = openInitialResult,
         zoneId = zoneId,
       )
 
@@ -1326,21 +1343,21 @@ object InteractiveReportViewer extends TuiRunner {
     contentWidth: Int,
     color: Boolean,
   ): Vector[String] = {
-    val start = windowStart(selectedIndex, matches.length, SearchCandidateRows)
-    val visibleMatches = matches.slice(start, start + SearchCandidateRows)
+    val lines =
+      matches.zipWithIndex.flatMap { case (searchMatch, index) =>
+        renderSearchCandidateLines(
+          searchMatch,
+          query,
+          selected = index == selectedIndex,
+          contentWidth = contentWidth,
+          color = color,
+        )
+      }
+    val selectedLineIndex = lines.indexWhere(_.selected)
+    val start = windowStart(math.max(0, selectedLineIndex), lines.length, SearchCandidateRows)
     val visibleLines =
       if (matches.isEmpty) Vector("No matches")
-      else
-        visibleMatches.zipWithIndex.map { case (searchMatch, offset) =>
-          val index = start + offset
-          renderSearchCandidateLine(
-            searchMatch,
-            query,
-            selected = index == selectedIndex,
-            contentWidth = contentWidth,
-            color = color,
-          )
-        }
+      else lines.slice(start, start + SearchCandidateRows).map(_.line)
     visibleLines ++ Vector.fill(math.max(0, SearchCandidateRows - visibleLines.length))("")
   }
 
@@ -1449,15 +1466,12 @@ object InteractiveReportViewer extends TuiRunner {
           selected = false,
         )
         suiteMatches.foreach { indexedSearchMatch =>
-          rows += SearchRenderRow(
-            renderHierarchicalSearchCandidateLine(
-              indexedSearchMatch.searchMatch,
-              query,
-              selected = indexedSearchMatch.index == selectedIndex,
-              contentWidth = contentWidth,
-              color = color,
-            ),
+          rows ++= renderHierarchicalSearchCandidateLines(
+            indexedSearchMatch.searchMatch,
+            query,
             selected = indexedSearchMatch.index == selectedIndex,
+            contentWidth = contentWidth,
+            color = color,
           )
         }
       }
@@ -1482,19 +1496,17 @@ object InteractiveReportViewer extends TuiRunner {
     padRightVisible(fitAnsi(renderStyledSegments(highlighted, contentWidth, color), contentWidth), contentWidth)
   }
 
-  private def renderHierarchicalSearchCandidateLine(
+  private def renderHierarchicalSearchCandidateLines(
     searchMatch: TestSearchMatch,
     query: String,
     selected: Boolean,
     contentWidth: Int,
     color: Boolean,
-  ): String = {
-    val candidateSegments =
-      Vector(StyledText("      ", None), StyledText(searchMatch.candidate.testName, None))
+  ): Vector[SearchRenderRow] = {
+    val candidateSegments = Vector(StyledText(searchMatch.candidate.testName, None))
     val segments =
       highlightSearchMatch(candidateSegments, Some(query)) ++ testIdMatchBadge(searchMatch)
-    val content = renderStyledSegments(segments, contentWidth, color)
-    renderSelectableLine(content, selected)
+    renderWrappedSearchCandidateLines(segments, "      \u00b7 ", "        ", selected, contentWidth, color)
   }
 
   private def renderSearchCandidateDetails(candidate: Option[TestSearchCandidate]): Vector[String] =
@@ -1517,13 +1529,13 @@ object InteractiveReportViewer extends TuiRunner {
         )
     }
 
-  private def renderSearchCandidateLine(
+  private def renderSearchCandidateLines(
     searchMatch: TestSearchMatch,
     query: String,
     selected: Boolean,
     contentWidth: Int,
     color: Boolean,
-  ): String = {
+  ): Vector[SearchRenderRow] = {
     val candidate = searchMatch.candidate
     val timestamp = candidate.runTimestampLabel.toVector
     val candidateSegments =
@@ -1531,8 +1543,61 @@ object InteractiveReportViewer extends TuiRunner {
         timestamp.flatMap(label => Vector(StyledText(" ", None), StyledText(label, Some(RowColor.Pink))))
     val segments =
       highlightSearchMatch(candidateSegments, Some(query)) ++ testIdMatchBadge(searchMatch)
-    val content = renderStyledSegments(segments, contentWidth, color)
-    renderSelectableLine(content, selected)
+    renderWrappedSearchCandidateLines(segments, "\u00b7 ", "  ", selected, contentWidth, color)
+  }
+
+  private def renderWrappedSearchCandidateLines(
+    segments: Vector[StyledText],
+    firstPrefix: String,
+    continuationPrefix: String,
+    selected: Boolean,
+    contentWidth: Int,
+    color: Boolean,
+  ): Vector[SearchRenderRow] = {
+    val normalized = segments.map(segment => segment.copy(value = oneLine(segment.value))).filter(_.value.nonEmpty)
+    val rows = Vector.newBuilder[SearchRenderRow]
+    var segmentIndex = 0
+    var segmentOffset = 0
+    var firstLine = true
+
+    while (segmentIndex < normalized.length) {
+      if (!firstLine) {
+        while (
+          segmentIndex < normalized.length &&
+          normalized(segmentIndex).value.charAt(segmentOffset).isWhitespace
+        ) {
+          segmentOffset += 1
+          if (segmentOffset == normalized(segmentIndex).value.length) {
+            segmentIndex += 1
+            segmentOffset = 0
+          }
+        }
+      }
+      val prefix = if (firstLine) firstPrefix else continuationPrefix
+      var remaining = math.max(1, contentWidth - prefix.length)
+      val lineSegments = Vector.newBuilder[StyledText]
+      lineSegments += StyledText(prefix, None)
+
+      while (segmentIndex < normalized.length && remaining > 0) {
+        val segment = normalized(segmentIndex)
+        val available = segment.value.length - segmentOffset
+        val take = math.min(available, remaining)
+        lineSegments += segment.copy(value = segment.value.substring(segmentOffset, segmentOffset + take))
+        segmentOffset += take
+        remaining -= take
+        if (segmentOffset == segment.value.length) {
+          segmentIndex += 1
+          segmentOffset = 0
+        }
+      }
+
+      val isSelectedLine = selected && firstLine
+      val content = renderStyledSegments(lineSegments.result(), contentWidth, color)
+      rows += SearchRenderRow(renderSelectableLine(content, isSelectedLine), isSelectedLine)
+      firstLine = false
+    }
+
+    rows.result()
   }
 
   private def testIdMatchBadge(searchMatch: TestSearchMatch): Vector[StyledText] =

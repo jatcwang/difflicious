@@ -8,10 +8,9 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 final class DiffResultJsonlWriter private[difflicious] (
   outputDirectory: String,
   runId: String,
-  ulidGenerator: UlidGenerator,
 ) {
   def this(outputDirectory: String) =
-    this(outputDirectory, DiffResultJsonlWriter.configuredRunId, UlidGenerator.Default)
+    this(outputDirectory, DiffResultJsonlWriter.configuredRunId)
 
   def this() =
     this(
@@ -20,7 +19,6 @@ final class DiffResultJsonlWriter private[difflicious] (
         DiffResultJsonlWriter.DefaultOutputDirectory,
       ),
       DiffResultJsonlWriter.configuredRunId,
-      UlidGenerator.Default,
     )
 
   private val outputDir = Paths.get(outputDirectory)
@@ -35,7 +33,7 @@ final class DiffResultJsonlWriter private[difflicious] (
   )(failure: DifferenceFound): Unit = synchronized {
     val record = DiffResultTestDetails(
       runId = runId,
-      testId = ulidGenerator.generate(),
+      testId = failure.testId,
       suiteName = suiteName,
       suiteId = suiteId,
       suiteClassName = suiteClassName,

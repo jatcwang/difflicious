@@ -146,6 +146,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     assertEquals(error.toString(StandardCharsets.UTF_8.name()), "")
     assertEquals(tuiRunner.calls.size, 1)
     assertEquals(tuiRunner.calls.head.initialIndex, 1)
+    assertEquals(tuiRunner.calls.head.openInitialResult, true)
     assertEquals(tuiRunner.calls.head.color, false)
     assertEquals(tuiRunner.calls.head.report.runs.size, 2)
     assertEquals(tuiRunner.calls.head.report.runs(1).metadata.map(_.runId), Some(ExampleRunId))
@@ -222,9 +223,14 @@ private object MainSpec {
   final class RecordingTuiRunner extends TuiRunner {
     var calls: Vector[TuiCall] = Vector.empty
 
-    override def run(report: DiffReport, color: Boolean, initialIndex: Int): Unit =
-      calls = calls :+ TuiCall(report, color, initialIndex)
+    override def run(report: DiffReport, color: Boolean, initialIndex: Int, openInitialResult: Boolean): Unit =
+      calls = calls :+ TuiCall(report, color, initialIndex, openInitialResult)
   }
 
-  final case class TuiCall(report: DiffReport, color: Boolean, initialIndex: Int)
+  final case class TuiCall(
+    report: DiffReport,
+    color: Boolean,
+    initialIndex: Int,
+    openInitialResult: Boolean,
+  )
 }
