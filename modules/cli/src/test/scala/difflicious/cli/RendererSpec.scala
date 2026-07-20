@@ -59,7 +59,12 @@ class RendererSpec extends FunSuite with SnapshotAssertions {
   }
 
   private def orderDiff: DiffRun =
-    DiffRun.fromResult(Differ[OrderSnapshot].diff(obtainedOrder, expectedOrder), metadata = None)
+    DiffRun.fromResult(
+      Differ[OrderSnapshot]
+        .ignoreAt(_.customer.loyaltyTier)
+        .diff(obtainedOrder, expectedOrder),
+      metadata = None,
+    )
 
   private def assertRendererSnapshot(rendered: String, path: String): Unit =
     assertFileSnapshot(rendered.stripSuffix("\n") + "\n", path)
@@ -94,7 +99,7 @@ private object RendererSpec {
   val expectedOrder: OrderSnapshot =
     OrderSnapshot(
       orderId = "ORD-1042",
-      customer = Customer("CUS-7", "Alice", "alice@example.com", "gold"),
+      customer = Customer("CUS-7", "Alice", "alice@example.com", "platinum"),
       shipping = Address("10 Market Street", "Bristol", "UK", "EC1A 1BB"),
       lines = List(
         OrderLine("SKU-RED", "Red travel mug", quantity = 2, unitCents = 1899),
