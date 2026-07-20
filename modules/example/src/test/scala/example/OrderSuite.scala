@@ -1,4 +1,4 @@
-package difflicious.playground
+package example
 
 import cats.data.NonEmptyList
 import difflicious.Differ
@@ -6,8 +6,8 @@ import difflicious.cats.implicits._
 import difflicious.scalatest.ScalatestDiff._
 import org.scalatest.funsuite.AnyFunSuite
 
-final class PlaygroundComplexSuite extends AnyFunSuite {
-  import PlaygroundComplexSuite._
+final class OrderSuite extends AnyFunSuite {
+  import OrderSuite._
 
   test("deep order invoice snapshot has nested differences") {
     Differ[OrderSnapshot].assertNoDiff(
@@ -148,7 +148,7 @@ final class PlaygroundComplexSuite extends AnyFunSuite {
   }
 }
 
-object PlaygroundComplexSuite {
+object OrderSuite {
   final case class OrderSnapshot(
     order: Order,
     invoice: Invoice,
@@ -157,7 +157,7 @@ object PlaygroundComplexSuite {
     auditTrail: AuditTrail,
     operationsMemo: OperationsMemo,
   )
-  
+
   object OrderSnapshot {
     given Differ[OrderSnapshot] = Differ.derived[OrderSnapshot].ignoreAt(_.auditTrail)
   }

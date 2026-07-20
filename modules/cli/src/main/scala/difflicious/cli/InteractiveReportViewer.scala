@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDate, ZoneId}
 import scala.util.control.NonFatal
 
+// When modifying the UI, consider regenerating the TUI screenshots after snapshots are updated (scripts/render-cli-screenshots.mjs)
 private[cli] sealed trait TerminalKey
 
 private[cli] object TerminalKey {

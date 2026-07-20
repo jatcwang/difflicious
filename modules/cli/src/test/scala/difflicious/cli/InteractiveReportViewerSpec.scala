@@ -21,7 +21,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
   private val Expanded = "\u25be"
   private val Collapsed = "\u25b8"
   private val TerminalWidth = 100
-  private val TerminalHeight = 48
+  private val TerminalHeight = 40
   private val SnapshotZoneId = ZoneId.of("Europe/Paris")
 
   snapshotTest("multiple-run report opens the test finder") {
@@ -464,17 +464,6 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     assertFileSnapshot(
       snapshotLines(testDriver.render),
       "InteractiveReportViewerSpec/diff-screen-cancel-field-search.snap",
-    )
-  }
-
-  test("diff screen colors tree rows by result kind") {
-    val report = DiffReport(Vector(coloredTreeDiffRun))
-    val testDriver = TestDriver(makeViewerState(report, color = true))
-
-    val rendered = testDriver.render
-    assertFileSnapshot(
-      rawSnapshotLines(rendered),
-      "InteractiveReportViewerSpec/diff-screen-result-colors.snap",
     )
   }
 

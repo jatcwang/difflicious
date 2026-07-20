@@ -264,14 +264,16 @@ lazy val cli = projectMatrix
   )
   .jvmPlatform(Seq(Build.Scala213, Build.Scala3))
 
-lazy val cliPlayground = projectMatrix
-  .in(file("modules/cli-playground"))
-  .dependsOn(scalatest, cats)
+lazy val example = projectMatrix
+  .in(file("modules/example"))
+  .dependsOn(scalatest, munit, weaver, cats)
   .settings(commonSettings, noPublishSettings)
   .settings(
-    name := "difflicious-cli-playground",
+    name := "example",
     libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
+      "org.typelevel" %%% "weaver-cats" % weaverVersion % Test,
     ),
   )
   .jvmPlatform(Seq(Build.Scala3))

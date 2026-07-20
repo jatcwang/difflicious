@@ -6,22 +6,24 @@ Run id: 01ARZ3NDEKTSV4RRFFQ69G5FAV
 Test id: 01ARZ3NDEKTSV4RRFFQ69G5FAW
 Location: /workspace/OrderSuite.scala:37
 Difflicious diff result: different
-Summary: 6 non-ignored change(s).
+Summary: 6 non-ignored change(s), 1 ignored subtree(s).
 
 Differences:
 1. $.customer.email - changed
    obtained: "alice@old.example"
    expected: "alice@example.com"
 
-2. $.shipping.city - changed
+2. $.customer.loyaltyTier - ignored
+
+3. $.shipping.city - changed
    obtained: "London"
    expected: "Bristol"
 
-3. $.lines[0].quantity - changed
+4. $.lines[0].quantity - changed
    obtained: 1
    expected: 2
 
-4. $.lines[1] - obtained_only (OrderLine)
+5. $.lines[1] - obtained_only (OrderLine)
    obtained:
       OrderLine(
         sku: "SKU-OLD",
@@ -30,9 +32,9 @@ Differences:
         unitCents: 499
       )
 
-5. $.status - changed
+6. $.status - changed
    obtained: "processing"
    expected: "shipped"
 
-6. $.notes[0] - expected_only
+7. $.notes[0] - expected_only
    expected: "Leave with reception"
