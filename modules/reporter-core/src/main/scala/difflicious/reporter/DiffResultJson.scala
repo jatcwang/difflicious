@@ -1,13 +1,12 @@
 package difflicious.reporter
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import difflicious.DiffResult
+import difflicious.DiffResult.MapResult
 import difflicious.DiffResult.ValueResult
 import difflicious.PairType
 import difflicious.utils.TypeName
 
-import scala.annotation.nowarn
 import scala.collection.immutable.ListMap
 
 object DiffResultJson {
@@ -16,106 +15,26 @@ object DiffResultJson {
   implicit lazy val diffResultJsonValueCodec: JsonValueCodec[DiffResult] = new NullCodec[DiffResult] {
     override def decodeValue(in: JsonReader, default: DiffResult): DiffResult =
       readDiffResultType(in) match {
-        case "list" => listResultCodec.decodeValue(in, null)
-        case "record" => recordResultCodec.decodeValue(in, null)
-        case "map" => mapResultCodec.decodeValue(in, null)
-        case "mismatchType" => mismatchTypeResultCodec.decodeValue(in, null)
-        case "value" => valueResultCodec.decodeValue(in, null)
+        case "list" => readListResult(in)
+        case "record" => readRecordResult(in)
+        case "map" => readMapResult(in)
+        case "mismatchType" => readMismatchTypeResult(in)
+        case "value" => readValueResult(in)
         case other => in.decodeError(s"Unknown DiffResult type '$other'")
       }
 
     override def encodeValue(value: DiffResult, out: JsonWriter): Unit =
       value match {
-        case value: DiffResult.ListResult => listResultCodec.encodeValue(value, out)
-        case value: DiffResult.RecordResult => recordResultCodec.encodeValue(value, out)
-        case value: DiffResult.MapResult => mapResultCodec.encodeValue(value, out)
-        case value: DiffResult.MismatchTypeResult => mismatchTypeResultCodec.encodeValue(value, out)
-        case value: ValueResult => valueResultCodec.encodeValue(value, out)
+        case value: DiffResult.ListResult => writeListResult(value, out)
+        case value: DiffResult.RecordResult => writeRecordResult(value, out)
+        case value: DiffResult.MapResult => writeMapResult(value, out)
+        case value: DiffResult.MismatchTypeResult => writeMismatchTypeResult(value, out)
+        case value: ValueResult => writeValueResult(value, out)
       }
   }
 
   def toJsonString(result: DiffResult, config: WriterConfig = WriterConfig): String =
     writeToString(result, config)
-
-  private implicit val typeNameCodec: JsonValueCodec[TypeName.SomeTypeName] = new NullCodec[TypeName.SomeTypeName] {
-    override def decodeValue(in: JsonReader, default: TypeName.SomeTypeName): TypeName.SomeTypeName = readTypeName(in)
-    override def encodeValue(value: TypeName.SomeTypeName, out: JsonWriter): Unit = writeTypeName(value, out)
-  }
-
-  private implicit val pairTypeCodec: JsonValueCodec[PairType] = new NullCodec[PairType] {
-    override def decodeValue(in: JsonReader, default: PairType): PairType = readPairType(in)
-    override def encodeValue(value: PairType, out: JsonWriter): Unit = out.writeVal(pairTypeString(value))
-  }
-
-  private implicit lazy val recordFieldsCodec: JsonValueCodec[ListMap[String, DiffResult]] =
-    new NullCodec[ListMap[String, DiffResult]] {
-      override def decodeValue(in: JsonReader, default: ListMap[String, DiffResult]): ListMap[String, DiffResult] =
-        readRecordFields(in)
-      override def encodeValue(value: ListMap[String, DiffResult], out: JsonWriter): Unit =
-        writeRecordFields(value, out)
-    }
-
-  @nowarn("msg=match may not be exhaustive")
-  private lazy val listResultCodec: JsonValueCodec[DiffResult.ListResult] =
-    JsonCodecMaker.make[DiffResult.ListResult](
-      CodecMakerConfig
-        .withAdtLeafClassNameMapper(_ => "list")
-        .withAlwaysEmitDiscriminator(true)
-        .withTransientEmpty(false)
-        .withRequireCollectionFields(true),
-    )
-
-  @nowarn("msg=match may not be exhaustive")
-  private lazy val recordResultCodec: JsonValueCodec[DiffResult.RecordResult] =
-    JsonCodecMaker.make[DiffResult.RecordResult](
-      CodecMakerConfig
-        .withAdtLeafClassNameMapper(_ => "record")
-        .withAlwaysEmitDiscriminator(true)
-        .withTransientEmpty(false)
-        .withRequireCollectionFields(true),
-    )
-
-  @nowarn("msg=match may not be exhaustive")
-  private lazy val mapResultCodec: JsonValueCodec[DiffResult.MapResult] =
-    JsonCodecMaker.make[DiffResult.MapResult](
-      CodecMakerConfig
-        .withAdtLeafClassNameMapper(_ => "map")
-        .withAlwaysEmitDiscriminator(true)
-        .withTransientEmpty(false)
-        .withRequireCollectionFields(true),
-    )
-
-  @nowarn("msg=match may not be exhaustive")
-  private lazy val derivedMismatchTypeResultCodec: JsonValueCodec[DiffResult.MismatchTypeResult] =
-    JsonCodecMaker.make[DiffResult.MismatchTypeResult](
-      CodecMakerConfig
-        .withAdtLeafClassNameMapper(_ => "mismatchType")
-        .withAlwaysEmitDiscriminator(true)
-        .withTransientEmpty(false)
-        .withRequireCollectionFields(true),
-    )
-
-  private lazy val mismatchTypeResultCodec: JsonValueCodec[DiffResult.MismatchTypeResult] =
-    new NullCodec[DiffResult.MismatchTypeResult] {
-      override def decodeValue(in: JsonReader, default: DiffResult.MismatchTypeResult): DiffResult.MismatchTypeResult =
-        derivedMismatchTypeResultCodec.decodeValue(in, default)
-
-      override def encodeValue(value: DiffResult.MismatchTypeResult, out: JsonWriter): Unit =
-        writeObject(out) {
-          writeStringField(out, "type", "mismatchType")
-          writeDiffResultField(out, "obtained", value.obtained)
-          writeTypeNameField(out, "obtainedTypeName", value.obtainedTypeName)
-          writeDiffResultField(out, "expected", value.expected)
-          writeTypeNameField(out, "expectedTypeName", value.expectedTypeName)
-          writeCommonFields(out, value)
-        }
-    }
-
-  private lazy val valueResultCodec: JsonValueCodec[ValueResult] =
-    new NullCodec[ValueResult] {
-      override def decodeValue(in: JsonReader, default: ValueResult): ValueResult = readValueResult(in)
-      override def encodeValue(value: ValueResult, out: JsonWriter): Unit = writeValueResult(value, out)
-    }
 
   private abstract class NullCodec[A <: AnyRef] extends JsonValueCodec[A] {
     override def nullValue: A = null.asInstanceOf[A]
@@ -159,6 +78,162 @@ object DiffResultJson {
     requireField(in, long, "long")
     requireField(in, typeArguments, "typeArguments")
     TypeName[Any](long = long, short = short, typeArguments = typeArguments)
+  }
+
+  private def readListResult(in: JsonReader): DiffResult.ListResult = {
+    expect(in, '{')
+
+    var resultType: String = null
+    var typeName: TypeName.SomeTypeName = null
+    var items: Vector[DiffResult] = null
+    var pairType: PairType = null
+    var isIgnored = false
+    var hasIsIgnored = false
+    var isOk = false
+    var hasIsOk = false
+
+    readFields(in) {
+      case "type" => resultType = in.readString(null)
+      case "typeName" => typeName = readTypeName(in)
+      case "items" => items = readArray(in)(diffResultJsonValueCodec.decodeValue(_, null))
+      case "pairType" => pairType = readPairType(in)
+      case "isIgnored" =>
+        isIgnored = in.readBoolean()
+        hasIsIgnored = true
+      case "isOk" =>
+        isOk = in.readBoolean()
+        hasIsOk = true
+      case _ => in.skip()
+    }
+
+    requireResultType(in, resultType, "list")
+    requireField(in, typeName, "typeName")
+    requireField(in, items, "items")
+    requireField(in, pairType, "pairType")
+    requireField(in, hasIsIgnored, "isIgnored")
+    requireField(in, hasIsOk, "isOk")
+    DiffResult.ListResult(typeName, items, pairType, isIgnored, isOk)
+  }
+
+  private def readRecordResult(in: JsonReader): DiffResult.RecordResult = {
+    expect(in, '{')
+
+    var resultType: String = null
+    var typeName: TypeName.SomeTypeName = null
+    var fields: ListMap[String, DiffResult] = null
+    var pairType: PairType = null
+    var isIgnored = false
+    var hasIsIgnored = false
+    var isOk = false
+    var hasIsOk = false
+
+    readFields(in) {
+      case "type" => resultType = in.readString(null)
+      case "typeName" => typeName = readTypeName(in)
+      case "fields" => fields = readRecordFields(in)
+      case "pairType" => pairType = readPairType(in)
+      case "isIgnored" =>
+        isIgnored = in.readBoolean()
+        hasIsIgnored = true
+      case "isOk" =>
+        isOk = in.readBoolean()
+        hasIsOk = true
+      case _ => in.skip()
+    }
+
+    requireResultType(in, resultType, "record")
+    requireField(in, typeName, "typeName")
+    requireField(in, fields, "fields")
+    requireField(in, pairType, "pairType")
+    requireField(in, hasIsIgnored, "isIgnored")
+    requireField(in, hasIsOk, "isOk")
+    DiffResult.RecordResult(typeName, fields, pairType, isIgnored, isOk)
+  }
+
+  private def readMapResult(in: JsonReader): DiffResult.MapResult = {
+    expect(in, '{')
+
+    var resultType: String = null
+    var typeName: TypeName.SomeTypeName = null
+    var entries: Vector[MapResult.Entry] = null
+    var pairType: PairType = null
+    var isIgnored = false
+    var hasIsIgnored = false
+    var isOk = false
+    var hasIsOk = false
+
+    readFields(in) {
+      case "type" => resultType = in.readString(null)
+      case "typeName" => typeName = readTypeName(in)
+      case "entries" => entries = readArray(in)(readMapEntry)
+      case "pairType" => pairType = readPairType(in)
+      case "isIgnored" =>
+        isIgnored = in.readBoolean()
+        hasIsIgnored = true
+      case "isOk" =>
+        isOk = in.readBoolean()
+        hasIsOk = true
+      case _ => in.skip()
+    }
+
+    requireResultType(in, resultType, "map")
+    requireField(in, typeName, "typeName")
+    requireField(in, entries, "entries")
+    requireField(in, pairType, "pairType")
+    requireField(in, hasIsIgnored, "isIgnored")
+    requireField(in, hasIsOk, "isOk")
+    DiffResult.MapResult(typeName, entries, pairType, isIgnored, isOk)
+  }
+
+  private def readMapEntry(in: JsonReader): MapResult.Entry = {
+    expect(in, '{')
+    var key: String = null
+    var value: DiffResult = null
+
+    readFields(in) {
+      case "key" => key = in.readString(null)
+      case "value" => value = diffResultJsonValueCodec.decodeValue(in, null)
+      case _ => in.skip()
+    }
+
+    requireField(in, key, "key")
+    requireField(in, value, "value")
+    MapResult.Entry(key, value)
+  }
+
+  private def readMismatchTypeResult(in: JsonReader): DiffResult.MismatchTypeResult = {
+    expect(in, '{')
+
+    var resultType: String = null
+    var obtained: DiffResult = null
+    var obtainedTypeName: TypeName.SomeTypeName = null
+    var expected: DiffResult = null
+    var expectedTypeName: TypeName.SomeTypeName = null
+    var pairType: PairType = null
+    var isIgnored = false
+    var hasIsIgnored = false
+
+    readFields(in) {
+      case "type" => resultType = in.readString(null)
+      case "obtained" => obtained = diffResultJsonValueCodec.decodeValue(in, null)
+      case "obtainedTypeName" => obtainedTypeName = readTypeName(in)
+      case "expected" => expected = diffResultJsonValueCodec.decodeValue(in, null)
+      case "expectedTypeName" => expectedTypeName = readTypeName(in)
+      case "pairType" => pairType = readPairType(in)
+      case "isIgnored" =>
+        isIgnored = in.readBoolean()
+        hasIsIgnored = true
+      case _ => in.skip()
+    }
+
+    requireResultType(in, resultType, "mismatchType")
+    requireField(in, obtained, "obtained")
+    requireField(in, obtainedTypeName, "obtainedTypeName")
+    requireField(in, expected, "expected")
+    requireField(in, expectedTypeName, "expectedTypeName")
+    requireField(in, pairType, "pairType")
+    requireField(in, hasIsIgnored, "isIgnored")
+    DiffResult.MismatchTypeResult(obtained, obtainedTypeName, expected, expectedTypeName, pairType, isIgnored)
   }
 
   private def readRecordFields(in: JsonReader): ListMap[String, DiffResult] = {
@@ -279,6 +354,11 @@ object DiffResultJson {
   private def requireField(in: JsonReader, seen: Boolean, name: String): Unit =
     if (!seen) in.requiredFieldError(name)
 
+  private def requireResultType(in: JsonReader, actual: String, expected: String): Unit = {
+    requireField(in, actual, "type")
+    if (actual != expected) in.decodeError(s"Expected DiffResult type '$expected' but found '$actual'")
+  }
+
   private def writeTypeNameField(out: JsonWriter, fieldName: String, typeName: TypeName.SomeTypeName): Unit = {
     out.writeKey(fieldName)
     writeTypeName(typeName, out)
@@ -291,12 +371,52 @@ object DiffResultJson {
       writeArrayField(out, "typeArguments", typeName.typeArguments)(writeTypeName)
     }
 
+  private def writeListResult(result: DiffResult.ListResult, out: JsonWriter): Unit =
+    writeObject(out) {
+      writeStringField(out, "type", "list")
+      writeTypeNameField(out, "typeName", result.typeName)
+      writeArrayField(out, "items", result.items)((value, out) => diffResultJsonValueCodec.encodeValue(value, out))
+      writeCommonFields(out, result)
+    }
+
+  private def writeRecordResult(result: DiffResult.RecordResult, out: JsonWriter): Unit =
+    writeObject(out) {
+      writeStringField(out, "type", "record")
+      writeTypeNameField(out, "typeName", result.typeName)
+      out.writeKey("fields")
+      writeRecordFields(result.fields, out)
+      writeCommonFields(out, result)
+    }
+
+  private def writeMapResult(result: DiffResult.MapResult, out: JsonWriter): Unit =
+    writeObject(out) {
+      writeStringField(out, "type", "map")
+      writeTypeNameField(out, "typeName", result.typeName)
+      writeArrayField(out, "entries", result.entries) { (entry, out) =>
+        writeObject(out) {
+          writeStringField(out, "key", entry.key)
+          writeDiffResultField(out, "value", entry.value)
+        }
+      }
+      writeCommonFields(out, result)
+    }
+
   private def writeRecordFields(fields: ListMap[String, DiffResult], out: JsonWriter): Unit =
     writeArray(out, fields) { case ((name, value), out) =>
       writeObject(out) {
         writeStringField(out, "name", name)
         writeDiffResultField(out, "value", value)
       }
+    }
+
+  private def writeMismatchTypeResult(result: DiffResult.MismatchTypeResult, out: JsonWriter): Unit =
+    writeObject(out) {
+      writeStringField(out, "type", "mismatchType")
+      writeDiffResultField(out, "obtained", result.obtained)
+      writeTypeNameField(out, "obtainedTypeName", result.obtainedTypeName)
+      writeDiffResultField(out, "expected", result.expected)
+      writeTypeNameField(out, "expectedTypeName", result.expectedTypeName)
+      writeCommonFields(out, result)
     }
 
   private def writeValueResult(result: ValueResult, out: JsonWriter): Unit =

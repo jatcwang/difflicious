@@ -65,11 +65,11 @@ lazy val root = project
       )
     },
     checkCliDependency := Def.uncached {
-      val cliModules = update.value.allModules.filter(_.name == "difflicious-cli_2.13")
+      val cliModules = update.value.allModules.filter(_.name == "difflicious-cli_3")
       assert(!(diffliciousViewer / aggregate).value, "diffliciousViewer should run only once for an aggregate project")
       assert(
         cliModules.exists(_.revision == sys.props("plugin.version")),
-        s"expected difflicious-cli_2.13 at the plugin version, got $cliModules",
+        s"expected difflicious-cli_3 at the plugin version, got $cliModules",
       )
     },
     checkSharedRunId := Def.uncached {

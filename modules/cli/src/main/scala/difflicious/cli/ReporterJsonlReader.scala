@@ -98,8 +98,6 @@ object ReporterJsonlReader {
           fileName = record.fileName,
           filePath = record.filePath,
           lineNumber = record.lineNumber,
-          durationMillis = record.durationMillis,
-          timeStamp = record.timeStamp,
         ),
       ),
     )

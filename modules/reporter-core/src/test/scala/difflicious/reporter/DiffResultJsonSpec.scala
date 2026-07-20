@@ -341,8 +341,6 @@ class DiffResultJsonSpec extends FunSuite {
         |  "fileName": "ExampleSuite.scala",
         |  "filePath": "/workspace/ExampleSuite.scala",
         |  "lineNumber": 37,
-        |  "durationMillis": 12,
-        |  "timeStamp": 123,
         |  "diffResult": {
         |    "type": "value",
         |    "valueType": "both",
