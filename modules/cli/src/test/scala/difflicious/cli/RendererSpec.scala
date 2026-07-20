@@ -51,8 +51,6 @@ class RendererSpec extends FunSuite with SnapshotAssertions {
               fileName = "OrderSuite.scala",
               filePath = "/workspace/OrderSuite.scala",
               lineNumber = 37,
-              durationMillis = Some(12L),
-              timeStamp = 123L,
             ),
           ),
         ),

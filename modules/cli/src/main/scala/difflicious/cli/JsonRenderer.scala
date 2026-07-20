@@ -207,7 +207,5 @@ object JsonRenderer {
       "fileName" -> Json.fromString(metadata.fileName),
       "filePath" -> Json.fromString(metadata.filePath),
       "lineNumber" -> Json.fromInt(metadata.lineNumber),
-      "durationMillis" -> metadata.durationMillis.fold(Json.Null)(Json.fromLong),
-      "timeStamp" -> Json.fromLong(metadata.timeStamp),
     )
 }

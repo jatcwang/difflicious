@@ -1,6 +1,6 @@
 ---
 id: cli
-title: Diff Viewer CLI/TUI
+title: Diff Viewer UI / CLI
 sidebar_label: Diff Viewer UI / CLI
 ---
 

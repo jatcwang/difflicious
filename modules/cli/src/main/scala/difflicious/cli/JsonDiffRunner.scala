@@ -16,8 +16,6 @@ final case class DiffRunMetadata(
   fileName: String,
   filePath: String,
   lineNumber: Int,
-  durationMillis: Option[Long],
-  timeStamp: Long,
 ) {
   def displayName: String =
     (suiteClassName.toVector ++ testHierarchy).mkString(" / ")

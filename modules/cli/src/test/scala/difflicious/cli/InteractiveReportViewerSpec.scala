@@ -747,8 +747,6 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
             fileName = s"$suiteName.scala",
             filePath = s"/workspace/$suiteName.scala",
             lineNumber = 37,
-            durationMillis = Some(12L),
-            timeStamp = 123L,
           ),
         ),
       )

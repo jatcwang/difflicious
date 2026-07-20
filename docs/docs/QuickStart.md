@@ -34,9 +34,9 @@ To perform diffs with Difflicious, you will need to derive some `Differs`
 ```scala mdoc:silent
 import munit.FunSuite
 import difflicious.Differ
-import difflicious.munit.MUnitDiff.*
+import difflicious.munit.MUnitDiffliciousSuite
 
-class ExampleTest extends FunSuite {
+class ExampleTest extends FunSuite with MUnitDiffliciousSuite {
 
   // Derive Differs for case class and sealed traits 
   implicit val personDiffer: Differ[Person] = Differ.derived[Person]

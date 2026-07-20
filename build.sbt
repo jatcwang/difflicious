@@ -47,7 +47,6 @@ inThisBuild(
       ),
     ),
     commands ++= Build.createBuildCommands(projectMatrixModules.flatMap(_.projectRefs)),
-    tpolecatDefaultOptionsMode := (if (sys.env.contains("CI")) CiMode else DevMode),
     useReadableConsoleGit,
   ),
 )
@@ -97,8 +96,12 @@ lazy val sbtPlugin = project
       (LocalProject("circe") / publishLocal).value
       (LocalProject("core3") / publishLocal).value
       (LocalProject("reporterCore3") / publishLocal).value
+      (LocalProject("circe3") / publishLocal).value
+      (LocalProject("munit3") / publishLocal).value
       (LocalProject("scalatest3") / publishLocal).value
+      (LocalProject("weaver3") / publishLocal).value
       (LocalProject("cli") / publishLocal).value
+      (LocalProject("cli3") / publishLocal).value
       scriptedDependencies.value
     },
     scriptedBufferLog := false,
@@ -136,7 +139,7 @@ lazy val core = projectMatrix
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
-  .dependsOn(core)
+  .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-munit",
@@ -176,7 +179,7 @@ lazy val scalatest = projectMatrix
 
 lazy val weaver = projectMatrix
   .in(file("modules/weaver"))
-  .dependsOn(core)
+  .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-weaver",
