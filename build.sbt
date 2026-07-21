@@ -225,6 +225,7 @@ lazy val circe = projectMatrix
 lazy val reporterCore = projectMatrix
   .in(file("modules/reporter-core"))
   .dependsOn(core)
+  .enablePlugins(ShadingPlugin)
   .settings(commonSettings)
   .settings(
     name := "difflicious-reporter-core",
@@ -232,6 +233,13 @@ lazy val reporterCore = projectMatrix
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
     ),
+    shadedDependencies +=
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
+    shadingRules += ShadingRule.moveUnder(
+      "com.github.plokhotnyuk.jsoniter_scala",
+      "difflicious.internal.shaded",
+    ),
+    validNamespaces += "difflicious",
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-parser" % circeVersion,
       "org.scalameta" %%% "munit" % munitVersion,

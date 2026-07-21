@@ -1,6 +1,6 @@
 package difflicious.reporter
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import difflicious.DiffResult
 
@@ -25,6 +25,9 @@ final case class DiffResultTestDetails(
 )
 
 object DiffResultTestDetails {
+  def fromJsonString(json: String): DiffResultTestDetails =
+    readFromString(json)
+
   @nowarn("msg=match may not be exhaustive")
   implicit lazy val jsonValueCodec: JsonValueCodec[DiffResultTestDetails] = {
     implicit val diffResultJsonValueCodec: JsonValueCodec[DiffResult] =

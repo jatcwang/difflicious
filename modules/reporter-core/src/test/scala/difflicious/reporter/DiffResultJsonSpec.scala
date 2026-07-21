@@ -353,7 +353,7 @@ class DiffResultJsonSpec extends FunSuite {
         |  }
         |}""".stripMargin
 
-    val record = readFromString[DiffResultTestDetails](json)
+    val record = DiffResultTestDetails.fromJsonString(json)
 
     assertEquals(record.runId, "01ARZ3NDEKTSV4RRFFQ69G5FAV")
     assertEquals(record.testId, "01ARZ3NDEKTSV4RRFFQ69G5FAW")
