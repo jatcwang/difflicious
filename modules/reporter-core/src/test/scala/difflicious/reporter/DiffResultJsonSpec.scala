@@ -16,11 +16,7 @@ class DiffResultJsonSpec extends FunSuite {
   private implicit val diffResultCodec: JsonValueCodec[DiffResult] =
     DiffResultJson.diffResultJsonValueCodec
 
-  private val intTypeName = TypeName[Int](
-    long = "scala.Int",
-    short = "Int",
-    typeArguments = Nil,
-  )
+  private val intTypeName = TypeName[Int]
 
   private val listTypeName = TypeName[List[Int]](
     long = "scala.collection.immutable.List",
@@ -35,7 +31,8 @@ class DiffResultJsonSpec extends FunSuite {
   )
 
   test("writes and reads ValueResult.Both") {
-    val result: DiffResult = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
+    val result: DiffResult =
+      ValueResult.Both(intTypeName, "1", "2", isSame = false, isIgnored = false)
 
     assertWritesAndReads(
       result,
@@ -43,6 +40,7 @@ class DiffResultJsonSpec extends FunSuite {
         """{
           |  "type": "value",
           |  "valueType": "both",
+          |  "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |  "obtained": "1",
           |  "expected": "2",
           |  "isSame": false,
@@ -55,7 +53,7 @@ class DiffResultJsonSpec extends FunSuite {
   }
 
   test("writes and reads ValueResult.ObtainedOnly") {
-    val result: DiffResult = ValueResult.ObtainedOnly("extra", isIgnored = false)
+    val result: DiffResult = ValueResult.ObtainedOnly(intTypeName, "extra", isIgnored = false)
 
     assertWritesAndReads(
       result,
@@ -63,6 +61,7 @@ class DiffResultJsonSpec extends FunSuite {
         """{
           |  "type": "value",
           |  "valueType": "obtainedOnly",
+          |  "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |  "obtained": "extra",
           |  "pairType": "obtainedOnly",
           |  "isIgnored": false,
@@ -73,7 +72,7 @@ class DiffResultJsonSpec extends FunSuite {
   }
 
   test("writes and reads ValueResult.ExpectedOnly") {
-    val result: DiffResult = ValueResult.ExpectedOnly("missing", isIgnored = false)
+    val result: DiffResult = ValueResult.ExpectedOnly(intTypeName, "missing", isIgnored = false)
 
     assertWritesAndReads(
       result,
@@ -81,6 +80,7 @@ class DiffResultJsonSpec extends FunSuite {
         """{
           |  "type": "value",
           |  "valueType": "expectedOnly",
+          |  "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |  "expected": "missing",
           |  "pairType": "expectedOnly",
           |  "isIgnored": false,
@@ -94,8 +94,8 @@ class DiffResultJsonSpec extends FunSuite {
     val result = DiffResult.ListResult(
       typeName = listTypeName,
       items = Vector(
-        ValueResult.Both("1", "1", isSame = true, isIgnored = false),
-        ValueResult.Both("2", "3", isSame = false, isIgnored = false),
+        ValueResult.Both(intTypeName, "1", "1", isSame = true, isIgnored = false),
+        ValueResult.Both(intTypeName, "2", "3", isSame = false, isIgnored = false),
       ),
       pairType = PairType.Both,
       isIgnored = false,
@@ -121,6 +121,7 @@ class DiffResultJsonSpec extends FunSuite {
         |    {
         |      "type": "value",
         |      "valueType": "both",
+        |      "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |      "obtained": "1",
         |      "expected": "1",
         |      "isSame": true,
@@ -131,6 +132,7 @@ class DiffResultJsonSpec extends FunSuite {
         |    {
         |      "type": "value",
         |      "valueType": "both",
+        |      "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |      "obtained": "2",
         |      "expected": "3",
         |      "isSame": false,
@@ -150,8 +152,8 @@ class DiffResultJsonSpec extends FunSuite {
     val result = DiffResult.RecordResult(
       typeName = personTypeName,
       fields = ListMap(
-        "name" -> ValueResult.Both("Alice", "Bob", isSame = false, isIgnored = false),
-        "age" -> ValueResult.Both("30", "30", isSame = true, isIgnored = false),
+        "name" -> ValueResult.Both(intTypeName, "Alice", "Bob", isSame = false, isIgnored = false),
+        "age" -> ValueResult.Both(intTypeName, "30", "30", isSame = true, isIgnored = false),
       ),
       pairType = PairType.Both,
       isIgnored = false,
@@ -173,6 +175,7 @@ class DiffResultJsonSpec extends FunSuite {
         |      "value": {
         |        "type": "value",
         |        "valueType": "both",
+        |        "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |        "obtained": "Alice",
         |        "expected": "Bob",
         |        "isSame": false,
@@ -186,6 +189,7 @@ class DiffResultJsonSpec extends FunSuite {
         |      "value": {
         |        "type": "value",
         |        "valueType": "both",
+        |        "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |        "obtained": "30",
         |        "expected": "30",
         |        "isSame": true,
@@ -213,11 +217,11 @@ class DiffResultJsonSpec extends FunSuite {
       entries = Vector(
         MapResult.Entry(
           key = "a",
-          value = ValueResult.Both("1", "1", isSame = true, isIgnored = false),
+          value = ValueResult.Both(intTypeName, "1", "1", isSame = true, isIgnored = false),
         ),
         MapResult.Entry(
           key = "b",
-          value = ValueResult.ExpectedOnly("2", isIgnored = false),
+          value = ValueResult.ExpectedOnly(intTypeName, "2", isIgnored = false),
         ),
       ),
       pairType = PairType.Both,
@@ -251,6 +255,7 @@ class DiffResultJsonSpec extends FunSuite {
         |      "value": {
         |        "type": "value",
         |        "valueType": "both",
+        |        "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |        "obtained": "1",
         |        "expected": "1",
         |        "isSame": true,
@@ -264,6 +269,7 @@ class DiffResultJsonSpec extends FunSuite {
         |      "value": {
         |        "type": "value",
         |        "valueType": "expectedOnly",
+        |        "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |        "expected": "2",
         |        "pairType": "expectedOnly",
         |        "isIgnored": false,
@@ -280,9 +286,9 @@ class DiffResultJsonSpec extends FunSuite {
 
   test("writes and reads MismatchTypeResult") {
     val result = DiffResult.MismatchTypeResult(
-      obtained = ValueResult.ObtainedOnly("1", isIgnored = false),
+      obtained = ValueResult.ObtainedOnly(intTypeName, "1", isIgnored = false),
       obtainedTypeName = intTypeName,
-      expected = ValueResult.ExpectedOnly("true", isIgnored = false),
+      expected = ValueResult.ExpectedOnly(intTypeName, "true", isIgnored = false),
       expectedTypeName = TypeName[Boolean](long = "scala.Boolean", short = "Boolean", typeArguments = Nil),
       pairType = PairType.Both,
       isIgnored = false,
@@ -295,6 +301,7 @@ class DiffResultJsonSpec extends FunSuite {
         |  "obtained": {
         |    "type": "value",
         |    "valueType": "obtainedOnly",
+        |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |    "obtained": "1",
         |    "pairType": "obtainedOnly",
         |    "isIgnored": false,
@@ -308,6 +315,7 @@ class DiffResultJsonSpec extends FunSuite {
         |  "expected": {
         |    "type": "value",
         |    "valueType": "expectedOnly",
+        |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |    "expected": "true",
         |    "pairType": "expectedOnly",
         |    "isIgnored": false,
@@ -344,6 +352,7 @@ class DiffResultJsonSpec extends FunSuite {
         |  "diffResult": {
         |    "type": "value",
         |    "valueType": "both",
+        |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
         |    "obtained": "1",
         |    "expected": "2",
         |    "isSame": false,
@@ -357,7 +366,10 @@ class DiffResultJsonSpec extends FunSuite {
 
     assertEquals(record.runId, "01ARZ3NDEKTSV4RRFFQ69G5FAV")
     assertEquals(record.testId, "01ARZ3NDEKTSV4RRFFQ69G5FAW")
-    assertEquals(record.diffResult, ValueResult.Both("1", "2", isSame = false, isIgnored = false))
+    assertEquals(
+      record.diffResult,
+      ValueResult.Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
+    )
   }
 
   private def assertWritesAndReads(result: DiffResult, expectedJson: Json): Unit = {

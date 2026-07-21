@@ -188,7 +188,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
   ): String = {
     val testText = leafText(testName, testHierarchy)
     val hierarchy = if (testHierarchy.isEmpty) Vector(testName) else testHierarchy
-    val diffResult = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
+    val diffResult = ValueResult.Both(difflicious.utils.TypeName[Int], "1", "2", isSame = false, isIgnored = false)
     val fields = Vector(
       "runId" -> Json.fromString(runId),
       "testId" -> Json.fromString(testId),

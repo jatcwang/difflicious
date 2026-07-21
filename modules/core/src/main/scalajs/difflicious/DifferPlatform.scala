@@ -3,6 +3,7 @@ package difflicious
 import org.scalajs.dom
 import org.scalajs.dom.intl.NumberFormatOptions
 import difflicious.differ.NumericDiffer
+import difflicious.utils.TypeName
 
 trait DifferPlatform {
 
@@ -15,11 +16,14 @@ trait DifferPlatform {
   )
 
   implicit val doubleDiffer: NumericDiffer[Double] = {
-    NumericDiffer.make[Double](doubleFormatter.format)
+    NumericDiffer.make[Double](doubleFormatter.format, TypeName[Double]("scala.Double", "Double", Nil))
   }
 
   implicit val floatDiffer: NumericDiffer[Float] = {
-    NumericDiffer.make[Float](f => doubleFormatter.format(f.toDouble))
+    NumericDiffer.make[Float](
+      f => doubleFormatter.format(f.toDouble),
+      TypeName[Float]("scala.Float", "Float", Nil),
+    )
   }
 
 }

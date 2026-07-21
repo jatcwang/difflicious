@@ -58,11 +58,11 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
   def oneOf[A](case0: OneOfDiffer.Case[A, ?], otherCases: OneOfDiffer.Case[A, ?]*): OneOfDiffer[A] =
     new OneOfDiffer[A]((case0 +: otherCases).toVector, isIgnored = false, differTypeName = "OneOfDiffer")
 
-  def useEquals[T](valueToString: T => String): EqualsDiffer[T] =
-    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString)
+  def useEquals[T](valueToString: T => String)(implicit typeName: TypeName[T]): EqualsDiffer[T] =
+    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString, typeName = typeName)
 
   /** A Differ that always return an Ignored result. Useful when you can't really diff something */
-  def alwaysIgnore[T]: AlwaysIgnoreDiffer[T] = new AlwaysIgnoreDiffer[T]
+  def alwaysIgnore[T](implicit typeName: TypeName[T]): AlwaysIgnoreDiffer[T] = new AlwaysIgnoreDiffer[T](typeName)
 
   implicit def optionDiffer[T](implicit valueDiffer: Differ[T]): Differ[Option[T]] =
     new OneOfDiffer[Option[T]](
@@ -133,16 +133,37 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       differTypeName = "OneOfDiffer",
     )
 
-  implicit val stringDiffer: ValueDiffer[String] = useEquals[String](str => s""""$str"""")
-  implicit val charDiffer: ValueDiffer[Char] = useEquals[Char](c => s"'$c'")
-  implicit val booleanDiffer: ValueDiffer[Boolean] = useEquals[Boolean](_.toString)
+  implicit val stringDiffer: ValueDiffer[String] =
+    new EqualsDiffer[String](
+      isIgnored = false,
+      valueToString = str => s""""$str"""",
+      typeName = simpleTypeName[String]("java.lang.String", "String"),
+    )
+  implicit val charDiffer: ValueDiffer[Char] =
+    new EqualsDiffer[Char](
+      isIgnored = false,
+      valueToString = c => s"'$c'",
+      typeName = simpleTypeName[Char]("scala.Char", "Char"),
+    )
+  implicit val booleanDiffer: ValueDiffer[Boolean] =
+    new EqualsDiffer[Boolean](
+      isIgnored = false,
+      valueToString = _.toString,
+      typeName = simpleTypeName[Boolean]("scala.Boolean", "Boolean"),
+    )
 
-  implicit val intDiffer: NumericDiffer[Int] = NumericDiffer.make[Int](_.toString)
-  implicit val shortDiffer: NumericDiffer[Short] = NumericDiffer.make[Short](_.toString)
-  implicit val byteDiffer: NumericDiffer[Byte] = NumericDiffer.make[Byte](_.toString)
-  implicit val longDiffer: NumericDiffer[Long] = NumericDiffer.make[Long](_.toString)
-  implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] = NumericDiffer.make[BigDecimal](_.toString)
-  implicit val bigIntDiffer: NumericDiffer[BigInt] = NumericDiffer.make[BigInt](_.toString)
+  implicit val intDiffer: NumericDiffer[Int] =
+    NumericDiffer.make[Int](_.toString, simpleTypeName("scala.Int", "Int"))
+  implicit val shortDiffer: NumericDiffer[Short] =
+    NumericDiffer.make[Short](_.toString, simpleTypeName("scala.Short", "Short"))
+  implicit val byteDiffer: NumericDiffer[Byte] =
+    NumericDiffer.make[Byte](_.toString, simpleTypeName("scala.Byte", "Byte"))
+  implicit val longDiffer: NumericDiffer[Long] =
+    NumericDiffer.make[Long](_.toString, simpleTypeName("scala.Long", "Long"))
+  implicit val bigDecimalDiffer: NumericDiffer[BigDecimal] =
+    NumericDiffer.make[BigDecimal](_.toString, simpleTypeName("scala.math.BigDecimal", "BigDecimal"))
+  implicit val bigIntDiffer: NumericDiffer[BigInt] =
+    NumericDiffer.make[BigInt](_.toString, simpleTypeName("scala.math.BigInt", "BigInt"))
 
   implicit def mapDiffer[M[_, _], K, V](implicit
     keyDiffer: ValueDiffer[K],
@@ -199,5 +220,8 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       short = short,
       typeArguments = Nil,
     )
+
+  private def simpleTypeName[A](long: String, short: String): TypeName[A] =
+    TypeName[A](long = long, short = short, typeArguments = Nil)
 
 }

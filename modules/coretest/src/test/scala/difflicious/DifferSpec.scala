@@ -77,6 +77,13 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     )
   }
 
+  test("EqualsDiffer: captures the statically known type name") {
+    assertEquals(
+      EqClass.differ.diff(EqClass(1), EqClass(2)).typeName.withTypeParamsLong,
+      difflicious.utils.TypeName[EqClass].withTypeParamsLong,
+    )
+  }
+
   test("EqualsDiffer: ObtainedOnly#isOk should always be false") {
     assertEquals(EqClass.differ.diff(DiffInput.ObtainedOnly(EqClass(1))).isOk, false)
   }
@@ -978,10 +985,18 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     assertIsOkIfIgnoredProp(NewInt.differ)
   }
 
+  test("TransformedDiffer: captures the input type name rather than the underlying type name") {
+    assertEquals(
+      NewInt.differ.diff(NewInt(1), NewInt(2)).typeName.withTypeParamsLong,
+      difflicious.utils.TypeName[NewInt].withTypeParamsLong,
+    )
+  }
+
   test("Differ.alwaysIgnore: Always returns ignored result") {
     assertEquals(
       AlwaysIgnoreClass.differ.diff(AlwaysIgnoreClass(1), AlwaysIgnoreClass(2)),
       DiffResult.ValueResult.Both(
+        difflicious.utils.TypeName[AlwaysIgnoreClass],
         "[ALWAYS IGNORED]",
         "[ALWAYS IGNORED]",
         isSame = true,
@@ -994,6 +1009,7 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
     assertEquals(
       AlwaysIgnoreClass.differ.unignore.diff(AlwaysIgnoreClass(1), AlwaysIgnoreClass(2)): DiffResult,
       DiffResult.ValueResult.Both(
+        difflicious.utils.TypeName[AlwaysIgnoreClass],
         "[ALWAYS IGNORED]",
         "[ALWAYS IGNORED]",
         isSame = true,

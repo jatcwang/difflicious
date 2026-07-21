@@ -102,7 +102,7 @@ object JsonRenderer {
         withCommon(
           kind = "value",
           result = result,
-          typeName = None,
+          typeName = Some(result.typeName),
           extra = Vector(
             "obtained" -> Json.fromString(result.obtained),
             "expected" -> Json.fromString(result.expected),
@@ -114,7 +114,7 @@ object JsonRenderer {
         withCommon(
           kind = "value",
           result = result,
-          typeName = None,
+          typeName = Some(result.typeName),
           extra = Vector(
             "obtained" -> Json.fromString(result.obtained),
           ),
@@ -124,7 +124,7 @@ object JsonRenderer {
         withCommon(
           kind = "value",
           result = result,
-          typeName = None,
+          typeName = Some(result.typeName),
           extra = Vector(
             "expected" -> Json.fromString(result.expected),
           ),
@@ -152,7 +152,7 @@ object JsonRenderer {
       "path" -> Json.fromString(change.path.render),
       "kind" -> Json.fromString(change.kind.name),
       "pairType" -> Json.fromString(DiffResultInspector.pairTypeName(change.pairType)),
-      "typeName" -> change.typeName.fold(Json.Null)(Json.fromString),
+      "typeName" -> Json.fromString(change.typeName),
       "obtained" -> change.obtained.fold(Json.Null)(Json.fromString),
       "expected" -> change.expected.fold(Json.Null)(Json.fromString),
       "isIgnored" -> Json.fromBoolean(change.isIgnored),

@@ -1,14 +1,15 @@
 package difflicious
 
 import difflicious.DiffResult.ValueResult
+import difflicious.utils.TypeName
 
 /** A Differ that always return an Ignored result. Useful when you can't really diff a type
   */
-final class AlwaysIgnoreDiffer[T] extends Differ[T] {
+final class AlwaysIgnoreDiffer[T](typeName: TypeName[T]) extends Differ[T] {
   override type R = ValueResult
 
   override def diff(inputs: DiffInput[T]): ValueResult =
-    ValueResult.Both("[ALWAYS IGNORED]", "[ALWAYS IGNORED]", isSame = true, isIgnored = true)
+    ValueResult.Both(typeName, "[ALWAYS IGNORED]", "[ALWAYS IGNORED]", isSame = true, isIgnored = true)
 
   override protected def configureIgnored(newIgnored: Boolean): Differ[T] = this
 

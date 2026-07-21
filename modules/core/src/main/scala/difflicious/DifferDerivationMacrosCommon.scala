@@ -366,9 +366,14 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
   private def deriveSingleton[A: Type]: MIO[Expr[Differ[A]]] =
     MIO.pure {
       val label = Expr(scala.reflect.NameTransformer.decode(Type[A].shortName).stripSuffix(".type"))
+      val typeName = staticTypeName[A]
       Expr.quote {
         val valueToString: Any => String = Function.const(Expr.splice(label))
-        Differ.useEquals[A](valueToString.asInstanceOf[A => String]): Differ[A]
+        new difflicious.differ.EqualsDiffer[A](
+          isIgnored = false,
+          valueToString = valueToString.asInstanceOf[A => String],
+          typeName = Expr.splice(typeName).asInstanceOf[TypeName[A]],
+        ): Differ[A]
       }
     }
 

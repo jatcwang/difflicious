@@ -16,7 +16,10 @@ private[difflicious] object TypeNameMacros {
     import q.reflect.*
 
     def typeNameParts(tpe: TypeRepr): (String, String, List[TypeRepr]) = {
-      val dealiased = tpe.dealias
+      val originalSymbol = typeSymbol(tpe)
+      val dealiased =
+        if (originalSymbol != Symbol.noSymbol && originalSymbol.flags.is(Flags.Opaque)) tpe
+        else tpe.dealias
       val symbol = typeSymbol(dealiased)
       val long = decodedName(if (symbol == Symbol.noSymbol) dealiased.show else symbol.fullName)
       val short = decodedName(if (symbol == Symbol.noSymbol) dealiased.show else symbol.name)

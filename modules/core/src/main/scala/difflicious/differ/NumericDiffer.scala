@@ -1,13 +1,15 @@
 package difflicious.differ
 
 import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.utils.TypeName
 
-final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToString: T => String)
+final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToString: T => String, typeName: TypeName[T])
     extends ValueDiffer[T] {
 
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
     case DiffInput.Both(obtained, expected) => {
       DiffResult.ValueResult.Both(
+        typeName,
         valueToString(obtained),
         valueToString(expected),
         isSame = numeric.equiv(obtained, expected),
@@ -15,13 +17,13 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToStr
       )
     }
     case DiffInput.ObtainedOnly(obtained) =>
-      DiffResult.ValueResult.ObtainedOnly(valueToString(obtained), isIgnored = isIgnored)
+      DiffResult.ValueResult.ObtainedOnly(typeName, valueToString(obtained), isIgnored = isIgnored)
     case DiffInput.ExpectedOnly(expected) =>
-      DiffResult.ValueResult.ExpectedOnly(valueToString(expected), isIgnored = isIgnored)
+      DiffResult.ValueResult.ExpectedOnly(typeName, valueToString(expected), isIgnored = isIgnored)
   }
 
   override def configureIgnored(newIgnored: Boolean): NumericDiffer[T] =
-    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, valueToString = valueToString)
+    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, valueToString = valueToString, typeName = typeName)
 
   override def configurePath(
     step: String,
@@ -38,6 +40,6 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToStr
 }
 
 object NumericDiffer {
-  def make[T](valueToString: T => String)(implicit numeric: Numeric[T]): NumericDiffer[T] =
-    new NumericDiffer[T](isIgnored = false, numeric = numeric, valueToString = valueToString)
+  def make[T](valueToString: T => String, typeName: TypeName[T])(implicit numeric: Numeric[T]): NumericDiffer[T] =
+    new NumericDiffer[T](isIgnored = false, numeric = numeric, valueToString = valueToString, typeName = typeName)
 }

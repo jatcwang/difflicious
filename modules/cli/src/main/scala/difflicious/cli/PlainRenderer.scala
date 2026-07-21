@@ -81,15 +81,13 @@ object PlainRenderer {
     builder.append(change.path.render)
     builder.append(" - ")
     builder.append(change.kind.name)
-    change.typeName.foreach { typeName =>
-      builder.append(" (")
-      builder.append(typeName)
-      builder.append(")")
-    }
+    builder.append(" (")
+    builder.append(change.typeName)
+    builder.append(")")
     builder.append('\n')
 
     change.obtained.foreach { obtained =>
-      if (change.kind == ChangeKind.ObtainedOnly && change.typeName.nonEmpty)
+      if (change.kind == ChangeKind.ObtainedOnly)
         appendStructuredValue(builder, "obtained", obtained)
       else {
         builder.append("   obtained: ")

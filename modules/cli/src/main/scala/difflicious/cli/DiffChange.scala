@@ -6,7 +6,7 @@ final case class DiffChange(
   path: DiffPath,
   kind: ChangeKind,
   pairType: PairType,
-  typeName: Option[String],
+  typeName: String,
   obtained: Option[String],
   expected: Option[String],
   isIgnored: Boolean,
