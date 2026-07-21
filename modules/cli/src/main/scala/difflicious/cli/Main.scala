@@ -59,7 +59,7 @@ object Main {
   private def selectReport(config: CliConfig, report: DiffReport): Either[String, SelectedReport] =
     config.testId match {
       case None =>
-        Right(SelectedReport(report, initialTuiIndex = 0))
+        Right(SelectedReport(report, initialTuiIndex = 0, openInitialTuiResult = false))
 
       case Some(testId) if testId.trim.isEmpty =>
         Left("Test id cannot be empty.")
@@ -68,13 +68,15 @@ object Main {
         config.mode match {
           case RunMode.Tui =>
             DiffRunSelector.firstMatchingIndex(report, testId) match {
-              case Some(index) => Right(SelectedReport(report, initialTuiIndex = index))
+              case Some(index) =>
+                Right(SelectedReport(report, initialTuiIndex = index, openInitialTuiResult = true))
               case None => Left(s"No diff failure matched test id '$testId'.")
             }
 
           case RunMode.NonInteractive(_) =>
             val matches = DiffRunSelector.matchingRuns(report, testId)
-            if (matches.nonEmpty) Right(SelectedReport(DiffReport(matches), initialTuiIndex = 0))
+            if (matches.nonEmpty)
+              Right(SelectedReport(DiffReport(matches), initialTuiIndex = 0, openInitialTuiResult = false))
             else Left(s"No diff failure matched test id '$testId'.")
         }
     }
@@ -89,7 +91,12 @@ object Main {
 
     config.mode match {
       case RunMode.Tui =>
-        tuiRunner.run(report, config.color, selectedReport.initialTuiIndex)
+        tuiRunner.run(
+          report,
+          config.color,
+          selectedReport.initialTuiIndex,
+          selectedReport.openInitialTuiResult,
+        )
 
       case RunMode.NonInteractive(OutputFormat.Json) =>
         stdout.println(JsonRenderer.renderReportString(report))
@@ -99,5 +106,9 @@ object Main {
     }
   }
 
-  private final case class SelectedReport(report: DiffReport, initialTuiIndex: Int)
+  private final case class SelectedReport(
+    report: DiffReport,
+    initialTuiIndex: Int,
+    openInitialTuiResult: Boolean,
+  )
 }

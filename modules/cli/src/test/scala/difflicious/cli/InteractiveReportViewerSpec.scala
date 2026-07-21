@@ -59,6 +59,17 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.assertSnapshot("selected-report-result")
   }
 
+  test("requested initial result opens without showing the test finder") {
+    val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
+    val testDriver = TestDriver(makeViewerState(report, color = false, initialIndex = 0, openInitialResult = true))
+
+    assert(testDriver.render.exists(_.contains("ExampleSuite")))
+    assert(!testDriver.render.exists(_.contains("Search: ")))
+
+    testDriver.pressKey(TerminalKey.Escape)
+    assert(testDriver.render.exists(_.contains("Search: ")))
+  }
+
   snapshotTest("hotkey popup renders session keymap labels") {
     val customKeymap = TerminalKeymap.default.copy(
       search = TerminalKeymap.bind(TerminalKey.Search, TerminalKeymap.char('x')),
@@ -122,7 +133,12 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     val report =
       DiffReport(
         Vector(
-          diffRun("AnotherSuite", "deep order invoice snapshot has nested differences", runId = NewestRunId),
+          diffRun(
+            "AnotherSuite",
+            "deep order invoice snapshot has nested differences across adjustments discounts taxes shipping and payments",
+            runId = NewestRunId,
+          ),
+          diffRun("AnotherSuite", "customer credit is applied to the invoice", runId = NewestRunId),
           diffRun("ComplexSuite", "list of case class values has a missing whole value", runId = OtherRunId),
         ),
       )
@@ -1025,6 +1041,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     color: Boolean,
     keymap: TerminalKeymap = TerminalKeymap.default,
     initialIndex: Int = 0,
+    openInitialResult: Boolean = false,
   ): InteractiveReportViewerState =
     InteractiveReportViewerState.initial(
       report = report,
@@ -1033,6 +1050,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       height = TerminalHeight,
       keymap = keymap,
       initialIndex = initialIndex,
+      openInitialResult = openInitialResult,
       zoneId = SnapshotZoneId,
     )
 

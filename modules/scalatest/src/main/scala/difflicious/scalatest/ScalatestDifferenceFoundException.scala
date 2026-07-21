@@ -1,15 +1,16 @@
 package difflicious.scalatest
 
-import difflicious.{DiffResult, DiffResultPrinter}
-import difflicious.reporter.DifferenceFound
+import difflicious.DiffResult
+import difflicious.reporter.{DifferenceFound, UlidGenerator}
 import org.scalactic.source.Position
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
 final class ScalatestDifferenceFoundException(
   val diffResult: DiffResult,
+  override val testId: String = UlidGenerator.Default.generate(),
 )(implicit pos: Position)
     extends TestFailedException(
-      (_: StackDepthException) => Some(DiffResultPrinter.consoleOutput(diffResult, 0).render),
+      (_: StackDepthException) => Some(DifferenceFound.message(testId, diffResult)),
       None,
       pos,
       None,
@@ -21,6 +22,9 @@ final class ScalatestDifferenceFoundException(
 }
 
 private[scalatest] object ScalatestDiffAssertions {
-  def failWithDiffResult(diffResult: DiffResult)(implicit pos: Position): Nothing =
-    throw new ScalatestDifferenceFoundException(diffResult)
+  def failWithDiffResult(
+    diffResult: DiffResult,
+    testId: String = UlidGenerator.Default.generate(),
+  )(implicit pos: Position): Nothing =
+    throw new ScalatestDifferenceFoundException(diffResult, testId)
 }
