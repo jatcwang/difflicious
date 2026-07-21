@@ -97,7 +97,7 @@ object ConfigureMacro {
           collectPathElements(rest, q"$relationship.path" :: acc)
         }
         case q"$func[$superType]($rest).subType[$subType]" => {
-          val superTypeTpe = rest.tpe.dealias
+          val superTypeTpe = rest.tpe.widen.dealias
           val subTypeTpe = subType.tpe.dealias
 
           if (subTypeTpe <:< superTypeTpe) {

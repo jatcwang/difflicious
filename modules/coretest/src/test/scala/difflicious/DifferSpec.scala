@@ -131,12 +131,24 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
   }
 
   test("OneOfDiffer: a modified differ cannot use equals") {
-    val differ = Differ[Option[CC]]
+    val differ = Differ.oneOf[Sealed](
+      difflicious.differ.OneOfDiffer.caseOf[Sealed, Sealed.Sub1](
+        typeName = difflicious.utils.TypeName[Sealed.Sub1],
+        extract = {
+          case value: Sealed.Sub1 => Some(value)
+          case _ => None
+        },
+        differ = Differ.derived[Sealed.Sub1],
+      ),
+    )
     assert(differ.canUseEquals)
     assertEquals(differ.ignore.canUseEquals, false)
-    assertEquals(differ.ignoreAt(value => value).canUseEquals, false)
-    assertEquals(differ.configure(value => value)(_.ignore).canUseEquals, false)
-    assertEquals(differ.replace[Option[CC]](value => value)(differ.ignore).canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.subType[Sealed.Sub1]).canUseEquals, false)
+    assertEquals(differ.configure(_.subType[Sealed.Sub1])(_.ignore).canUseEquals, false)
+    assertEquals(
+      differ.replace[Sealed.Sub1](_.subType[Sealed.Sub1])(Differ.derived[Sealed.Sub1]).canUseEquals,
+      false,
+    )
   }
 
   test("MapDiffer: a modified differ cannot use equals") {
