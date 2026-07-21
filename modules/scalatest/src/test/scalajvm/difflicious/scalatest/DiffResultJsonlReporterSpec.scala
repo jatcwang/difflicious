@@ -5,6 +5,7 @@ import difflicious.DiffResult.ValueResult
 import difflicious.reporter.DiffResultJsonlWriter
 import difflicious.reporter.DiffliciousResultDefaults
 import difflicious.reporter.Ulid
+import difflicious.utils.TypeName
 import io.circe.Json
 import io.circe.parser.parse
 import munit.FunSuite
@@ -22,9 +23,10 @@ class DiffResultJsonlReporterSpec extends FunSuite {
   private val TestId = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
   private val SecondTestId = "01ARZ3NDEKTSV4RRFFQ69G5FAX"
   private val ZeroRunDirectory = DiffliciousResultDefaults.ZeroUlid
+  private val intTypeName = TypeName[Int]
 
   test("assertion failure is a ScalaTest difference exception") {
-    val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
+    val result = ValueResult.Both(intTypeName, "1", "2", isSame = false, isIgnored = false)
     implicit val pos: Position = Position("ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)
 
     val failure = intercept[ScalatestDifferenceFoundException] {
@@ -76,6 +78,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
+          |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |    "obtained": "obtained",
           |    "expected": "expected",
           |    "isSame": false,
@@ -123,6 +126,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
+          |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |    "obtained": "obtained",
           |    "expected": "expected",
           |    "isSame": false,
@@ -138,7 +142,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
   test("keeps interleaved suite scopes independent") {
     val outputDir = Files.createTempDirectory("difflicious-scalatest-interleaved-scopes-jsonl")
     val reporter = zeroRunReporter(outputDir)
-    val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
+    val result = ValueResult.Both(intTypeName, "1", "2", isSame = false, isIgnored = false)
     val suiteA = NameInfo("SuiteA", "suite-a", Some("example.SuiteA"), None)
     val suiteB = NameInfo("SuiteB", "suite-b", Some("example.SuiteB"), None)
     val suiteAFailure = differenceFoundException(result, "SuiteA.scala", "/workspace/SuiteA.scala", 11, TestId)
@@ -217,6 +221,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
+          |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |    "obtained": "1",
           |    "expected": "2",
           |    "isSame": false,
@@ -248,6 +253,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
+          |    "typeName": {"short": "Int", "long": "scala.Int", "typeArguments": []},
           |    "obtained": "1",
           |    "expected": "2",
           |    "isSame": false,
@@ -262,7 +268,8 @@ class DiffResultJsonlReporterSpec extends FunSuite {
 
   private final class DiffSuite(testId: String) extends AnyFunSuite {
     test("testDiffFailure") {
-      val result = ValueResult.Both("obtained", "expected", isSame = false, isIgnored = false)
+      val result =
+        ValueResult.Both(intTypeName, "obtained", "expected", isSame = false, isIgnored = false)
       implicit val pos: Position = Position("DiffSuite.scala", "/workspace/DiffSuite.scala", 41)
 
       ScalatestDiffAssertions.failWithDiffResult(result, testId)
@@ -273,7 +280,8 @@ class DiffResultJsonlReporterSpec extends FunSuite {
     "outer scope" - {
       "inner scope" - {
         "leaf failure" in {
-          val result = ValueResult.Both("obtained", "expected", isSame = false, isIgnored = false)
+          val result =
+            ValueResult.Both(intTypeName, "obtained", "expected", isSame = false, isIgnored = false)
           implicit val pos: Position =
             Position("NestedDiffSuite.scala", "/workspace/NestedDiffSuite.scala", 64)
 

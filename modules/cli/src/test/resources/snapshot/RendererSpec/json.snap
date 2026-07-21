@@ -14,7 +14,7 @@
       "path" : "$.customer.email",
       "kind" : "changed",
       "pairType" : "both",
-      "typeName" : null,
+      "typeName" : "String",
       "obtained" : "\"alice@old.example\"",
       "expected" : "\"alice@example.com\"",
       "isIgnored" : false,
@@ -25,7 +25,7 @@
       "path" : "$.customer.loyaltyTier",
       "kind" : "ignored",
       "pairType" : "both",
-      "typeName" : null,
+      "typeName" : "String",
       "obtained" : null,
       "expected" : null,
       "isIgnored" : true,
@@ -36,7 +36,7 @@
       "path" : "$.shipping.city",
       "kind" : "changed",
       "pairType" : "both",
-      "typeName" : null,
+      "typeName" : "String",
       "obtained" : "\"London\"",
       "expected" : "\"Bristol\"",
       "isIgnored" : false,
@@ -47,7 +47,7 @@
       "path" : "$.lines[0].quantity",
       "kind" : "changed",
       "pairType" : "both",
-      "typeName" : null,
+      "typeName" : "Int",
       "obtained" : "1",
       "expected" : "2",
       "isIgnored" : false,
@@ -69,7 +69,7 @@
       "path" : "$.status",
       "kind" : "changed",
       "pairType" : "both",
-      "typeName" : null,
+      "typeName" : "String",
       "obtained" : "\"processing\"",
       "expected" : "\"shipped\"",
       "isIgnored" : false,
@@ -80,7 +80,7 @@
       "path" : "$.notes[0]",
       "kind" : "expected_only",
       "pairType" : "expected_only",
-      "typeName" : null,
+      "typeName" : "String",
       "obtained" : null,
       "expected" : "\"Leave with reception\"",
       "isIgnored" : false,
@@ -106,7 +106,11 @@
           "pairType" : "both",
           "isIgnored" : false,
           "isOk" : true,
-          "typeName" : null,
+          "typeName" : {
+            "short" : "String",
+            "long" : "java.lang.String",
+            "withTypeParamsLong" : "java.lang.String"
+          },
           "obtained" : "\"ORD-1042\"",
           "expected" : "\"ORD-1042\"",
           "isSame" : true
@@ -132,7 +136,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"CUS-7\"",
                 "expected" : "\"CUS-7\"",
                 "isSame" : true
@@ -145,7 +153,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"Alice\"",
                 "expected" : "\"Alice\"",
                 "isSame" : true
@@ -158,7 +170,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : false,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"alice@old.example\"",
                 "expected" : "\"alice@example.com\"",
                 "isSame" : false
@@ -171,7 +187,11 @@
                 "pairType" : "both",
                 "isIgnored" : true,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"gold\"",
                 "expected" : "\"platinum\"",
                 "isSame" : false
@@ -200,7 +220,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"10 Market Street\"",
                 "expected" : "\"10 Market Street\"",
                 "isSame" : true
@@ -213,7 +237,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : false,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"London\"",
                 "expected" : "\"Bristol\"",
                 "isSame" : false
@@ -226,7 +254,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"UK\"",
                 "expected" : "\"UK\"",
                 "isSame" : true
@@ -239,7 +271,11 @@
                 "pairType" : "both",
                 "isIgnored" : false,
                 "isOk" : true,
-                "typeName" : null,
+                "typeName" : {
+                  "short" : "String",
+                  "long" : "java.lang.String",
+                  "withTypeParamsLong" : "java.lang.String"
+                },
                 "obtained" : "\"EC1A 1BB\"",
                 "expected" : "\"EC1A 1BB\"",
                 "isSame" : true
@@ -279,7 +315,11 @@
                     "pairType" : "both",
                     "isIgnored" : false,
                     "isOk" : true,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "String",
+                      "long" : "java.lang.String",
+                      "withTypeParamsLong" : "java.lang.String"
+                    },
                     "obtained" : "\"SKU-RED\"",
                     "expected" : "\"SKU-RED\"",
                     "isSame" : true
@@ -292,7 +332,11 @@
                     "pairType" : "both",
                     "isIgnored" : false,
                     "isOk" : true,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "String",
+                      "long" : "java.lang.String",
+                      "withTypeParamsLong" : "java.lang.String"
+                    },
                     "obtained" : "\"Red travel mug\"",
                     "expected" : "\"Red travel mug\"",
                     "isSame" : true
@@ -305,7 +349,11 @@
                     "pairType" : "both",
                     "isIgnored" : false,
                     "isOk" : false,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "Int",
+                      "long" : "scala.Int",
+                      "withTypeParamsLong" : "scala.Int"
+                    },
                     "obtained" : "1",
                     "expected" : "2",
                     "isSame" : false
@@ -318,7 +366,11 @@
                     "pairType" : "both",
                     "isIgnored" : false,
                     "isOk" : true,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "Int",
+                      "long" : "scala.Int",
+                      "withTypeParamsLong" : "scala.Int"
+                    },
                     "obtained" : "1899",
                     "expected" : "1899",
                     "isSame" : true
@@ -344,7 +396,11 @@
                     "pairType" : "obtained_only",
                     "isIgnored" : false,
                     "isOk" : false,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "String",
+                      "long" : "java.lang.String",
+                      "withTypeParamsLong" : "java.lang.String"
+                    },
                     "obtained" : "\"SKU-OLD\""
                   }
                 },
@@ -355,7 +411,11 @@
                     "pairType" : "obtained_only",
                     "isIgnored" : false,
                     "isOk" : false,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "String",
+                      "long" : "java.lang.String",
+                      "withTypeParamsLong" : "java.lang.String"
+                    },
                     "obtained" : "\"Discontinued lid\""
                   }
                 },
@@ -366,7 +426,11 @@
                     "pairType" : "obtained_only",
                     "isIgnored" : false,
                     "isOk" : false,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "Int",
+                      "long" : "scala.Int",
+                      "withTypeParamsLong" : "scala.Int"
+                    },
                     "obtained" : "1"
                   }
                 },
@@ -377,7 +441,11 @@
                     "pairType" : "obtained_only",
                     "isIgnored" : false,
                     "isOk" : false,
-                    "typeName" : null,
+                    "typeName" : {
+                      "short" : "Int",
+                      "long" : "scala.Int",
+                      "withTypeParamsLong" : "scala.Int"
+                    },
                     "obtained" : "499"
                   }
                 }
@@ -393,7 +461,11 @@
           "pairType" : "both",
           "isIgnored" : false,
           "isOk" : false,
-          "typeName" : null,
+          "typeName" : {
+            "short" : "String",
+            "long" : "java.lang.String",
+            "withTypeParamsLong" : "java.lang.String"
+          },
           "obtained" : "\"processing\"",
           "expected" : "\"shipped\"",
           "isSame" : false
@@ -417,7 +489,11 @@
               "pairType" : "expected_only",
               "isIgnored" : false,
               "isOk" : false,
-              "typeName" : null,
+              "typeName" : {
+                "short" : "String",
+                "long" : "java.lang.String",
+                "withTypeParamsLong" : "java.lang.String"
+              },
               "expected" : "\"Leave with reception\""
             }
           ]

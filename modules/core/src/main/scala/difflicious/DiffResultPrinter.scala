@@ -96,8 +96,8 @@ object DiffResultPrinter {
                 obtainedStr.overlay(colorObtained) ++ " -> " ++ expectedStr.overlay(colorExpected)
               }
             }
-            case ValueResult.ObtainedOnly(obtained, _) => fansi.Str(obtained).overlay(colorObtained)
-            case ValueResult.ExpectedOnly(expected, _) => fansi.Str(expected).overlay(colorExpected)
+            case ValueResult.ObtainedOnly(_, obtained, _) => fansi.Str(obtained).overlay(colorObtained)
+            case ValueResult.ExpectedOnly(_, expected, _) => fansi.Str(expected).overlay(colorExpected)
           }
       }
   }

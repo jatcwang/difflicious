@@ -23,6 +23,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
   private val TerminalWidth = 100
   private val TerminalHeight = 40
   private val SnapshotZoneId = ZoneId.of("Europe/Paris")
+  private val intTypeName = TypeName[Int]
 
   snapshotTest("multiple-run report opens the test finder") {
     val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
@@ -766,7 +767,13 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
         fields = ListMap.from(
           (1 to 30).map { index =>
             s"field$index" -> DiffResult.ValueResult
-              .Both(index.toString, (index + 1).toString, isSame = false, isIgnored = false)
+              .Both(
+                intTypeName,
+                index.toString,
+                (index + 1).toString,
+                isSame = false,
+                isIgnored = false,
+              )
           },
         ),
         pairType = PairType.Both,
@@ -788,7 +795,8 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       DiffResult.RecordResult(
         typeName = TypeName[Any]("difflicious.cli.Branch", "Branch", Nil),
         fields = ListMap(
-          "nested" -> DiffResult.ValueResult.Both("1", "2", isSame = false, isIgnored = false),
+          "nested" -> DiffResult.ValueResult
+            .Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
         ),
         pairType = PairType.Both,
         isIgnored = false,
@@ -821,9 +829,12 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       DiffResult.RecordResult(
         typeName = TypeName[Any]("difflicious.cli.FieldSearchFixture", "FieldSearchFixture", Nil),
         fields = ListMap(
-          "firstName" -> DiffResult.ValueResult.Both("Ada", "Grace", isSame = false, isIgnored = false),
-          "age" -> DiffResult.ValueResult.Both("1", "2", isSame = false, isIgnored = false),
-          "lastName" -> DiffResult.ValueResult.Both("Lovelace", "Hopper", isSame = false, isIgnored = false),
+          "firstName" -> DiffResult.ValueResult
+            .Both(intTypeName, "Ada", "Grace", isSame = false, isIgnored = false),
+          "age" -> DiffResult.ValueResult
+            .Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
+          "lastName" -> DiffResult.ValueResult
+            .Both(intTypeName, "Lovelace", "Hopper", isSame = false, isIgnored = false),
         ),
         pairType = PairType.Both,
         isIgnored = false,
@@ -840,8 +851,10 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
           "fulfillment" -> DiffResult.RecordResult(
             typeName = TypeName[Any]("difflicious.cli.Fulfillment", "Fulfillment", Nil),
             fields = ListMap(
-              "firstName" -> DiffResult.ValueResult.Both("Ada", "Grace", isSame = false, isIgnored = false),
-              "lastName" -> DiffResult.ValueResult.Both("Lovelace", "Hopper", isSame = false, isIgnored = false),
+              "firstName" -> DiffResult.ValueResult
+                .Both(intTypeName, "Ada", "Grace", isSame = false, isIgnored = false),
+              "lastName" -> DiffResult.ValueResult
+                .Both(intTypeName, "Lovelace", "Hopper", isSame = false, isIgnored = false),
             ),
             pairType = PairType.Both,
             isIgnored = false,
@@ -866,8 +879,10 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
               "contact" -> DiffResult.RecordResult(
                 typeName = TypeName[Any]("difflicious.cli.Contact", "Contact", Nil),
                 fields = ListMap(
-                  "firstName" -> DiffResult.ValueResult.Both("Ada", "Grace", isSame = false, isIgnored = false),
-                  "lastName" -> DiffResult.ValueResult.Both("Lovelace", "Hopper", isSame = false, isIgnored = false),
+                  "firstName" -> DiffResult.ValueResult
+                    .Both(intTypeName, "Ada", "Grace", isSame = false, isIgnored = false),
+                  "lastName" -> DiffResult.ValueResult
+                    .Both(intTypeName, "Lovelace", "Hopper", isSame = false, isIgnored = false),
                 ),
                 pairType = PairType.Both,
                 isIgnored = false,
@@ -897,11 +912,13 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
         entries = Vector(
           DiffResult.MapResult.Entry(
             "\"targetKey\"",
-            DiffResult.ValueResult.Both("left", "right", isSame = false, isIgnored = false),
+            DiffResult.ValueResult
+              .Both(intTypeName, "left", "right", isSame = false, isIgnored = false),
           ),
           DiffResult.MapResult.Entry(
             "\"otherKey\"",
-            DiffResult.ValueResult.Both("same", "same", isSame = true, isIgnored = false),
+            DiffResult.ValueResult
+              .Both(intTypeName, "same", "same", isSame = true, isIgnored = false),
           ),
         ),
         pairType = PairType.Both,
@@ -916,10 +933,13 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       DiffResult.RecordResult(
         typeName = TypeName[Any]("difflicious.cli.ColorFixture", "ColorFixture", Nil),
         fields = ListMap(
-          "changed" -> DiffResult.ValueResult.Both("1", "2", isSame = false, isIgnored = false),
-          "obtained" -> DiffResult.ValueResult.ObtainedOnly("left", isIgnored = false),
-          "expected" -> DiffResult.ValueResult.ExpectedOnly("right", isIgnored = false),
-          "ignored" -> DiffResult.ValueResult.Both("old", "new", isSame = false, isIgnored = true),
+          "changed" -> DiffResult.ValueResult
+            .Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
+          "obtained" -> DiffResult.ValueResult.ObtainedOnly(intTypeName, "left", isIgnored = false),
+          "expected" -> DiffResult.ValueResult
+            .ExpectedOnly(intTypeName, "right", isIgnored = false),
+          "ignored" -> DiffResult.ValueResult
+            .Both(intTypeName, "old", "new", isSame = false, isIgnored = true),
         ),
         pairType = PairType.Both,
         isIgnored = false,
@@ -936,7 +956,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
           "actualOnly" -> DiffResult.RecordResult(
             typeName = TypeName[Any]("difflicious.cli.ActualOnlyRecord", "ActualOnlyRecord", Nil),
             fields = ListMap(
-              "name" -> DiffResult.ValueResult.ObtainedOnly("Ada", isIgnored = false),
+              "name" -> DiffResult.ValueResult.ObtainedOnly(intTypeName, "Ada", isIgnored = false),
             ),
             pairType = PairType.ObtainedOnly,
             isIgnored = false,
@@ -945,7 +965,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
           "expectedOnly" -> DiffResult.RecordResult(
             typeName = TypeName[Any]("difflicious.cli.ExpectedOnlyRecord", "ExpectedOnlyRecord", Nil),
             fields = ListMap(
-              "name" -> DiffResult.ValueResult.ExpectedOnly("Grace", isIgnored = false),
+              "name" -> DiffResult.ValueResult.ExpectedOnly(intTypeName, "Grace", isIgnored = false),
             ),
             pairType = PairType.ExpectedOnly,
             isIgnored = false,
@@ -964,7 +984,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       DiffResult.RecordResult(
         typeName = TypeName[Any]("difflicious.cli.RootOnlyRecord", "RootOnlyRecord", Nil),
         fields = ListMap(
-          "name" -> DiffResult.ValueResult.ObtainedOnly("Ada", isIgnored = false),
+          "name" -> DiffResult.ValueResult.ObtainedOnly(intTypeName, "Ada", isIgnored = false),
         ),
         pairType = PairType.ObtainedOnly,
         isIgnored = false,
@@ -978,8 +998,10 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       DiffResult.RecordResult(
         typeName = TypeName[Any]("difflicious.cli.PaddedRecord", "PaddedRecord", Nil),
         fields = ListMap(
-          "a" -> DiffResult.ValueResult.Both("1", "2", isSame = false, isIgnored = false),
-          "longField" -> DiffResult.ValueResult.Both("3", "4", isSame = false, isIgnored = false),
+          "a" -> DiffResult.ValueResult
+            .Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
+          "longField" -> DiffResult.ValueResult
+            .Both(intTypeName, "3", "4", isSame = false, isIgnored = false),
         ),
         pairType = PairType.Both,
         isIgnored = false,
@@ -997,7 +1019,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
           List(TypeName[Any]("difflicious.cli.Item", "Item", Nil)),
         ),
         items = Vector(
-          DiffResult.ValueResult.Both("1", "2", isSame = false, isIgnored = false),
+          DiffResult.ValueResult.Both(intTypeName, "1", "2", isSame = false, isIgnored = false),
         ),
         pairType = PairType.Both,
         isIgnored = false,

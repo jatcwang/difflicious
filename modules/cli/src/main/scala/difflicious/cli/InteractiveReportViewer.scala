@@ -2334,11 +2334,11 @@ object InteractiveReportViewer extends TuiRunner {
         case result: DiffResult.MapResult => formatTypeName(result.typeName, typeNameDisplay)
         case result: DiffResult.MismatchTypeResult =>
           s"${formatTypeName(result.obtainedTypeName, typeNameDisplay)} != ${formatTypeName(result.expectedTypeName, typeNameDisplay)}"
-        case DiffResult.ValueResult.Both(obtained, expected, isSame, _) =>
+        case DiffResult.ValueResult.Both(_, obtained, expected, isSame, _) =>
           if (isSame) obtained else s"$obtained -> $expected"
-        case DiffResult.ValueResult.ObtainedOnly(obtained, _) =>
+        case DiffResult.ValueResult.ObtainedOnly(_, obtained, _) =>
           s"+ $obtained"
-        case DiffResult.ValueResult.ExpectedOnly(expected, _) =>
+        case DiffResult.ValueResult.ExpectedOnly(_, expected, _) =>
           s"- $expected"
       }
 

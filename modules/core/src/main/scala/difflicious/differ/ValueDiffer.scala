@@ -1,6 +1,7 @@
 package difflicious.differ
 
 import difflicious.{Differ, DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
+import difflicious.utils.TypeName
 
 /** Differ where the error diagnostic output is just string values. Simple types where a string representation is enough
   * for diagnostics purposes should use Differ.useEquals (EqualsDiffer is a subtype of this trait). For example, Differ
@@ -27,7 +28,7 @@ trait ValueDiffer[T] extends Differ[T] {
     op: ConfigureOp.PairBy[?],
   ): Either[ConfigureError, ValueDiffer[T]]
 
-  final def contramap[S](transformFunc: S => T): TransformedDiffer[S, T] = {
-    new TransformedDiffer(this, transformFunc)
+  final def contramap[S](transformFunc: S => T)(implicit typeName: TypeName[S]): TransformedDiffer[S, T] = {
+    new TransformedDiffer(this, transformFunc, typeName)
   }
 }

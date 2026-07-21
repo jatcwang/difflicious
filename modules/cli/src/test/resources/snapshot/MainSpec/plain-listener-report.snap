@@ -9,7 +9,7 @@ Difflicious diff result: different
 Summary: 1 non-ignored change(s).
 
 Differences:
-1. $ - changed
+1. $ - changed (Int)
    obtained: 1
    expected: 2
 

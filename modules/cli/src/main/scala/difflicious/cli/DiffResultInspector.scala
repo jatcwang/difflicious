@@ -36,21 +36,21 @@ object DiffResultInspector {
             result.items.zipWithIndex.flatMap { case (item, index) =>
               collect(item, path / DiffPath.Index(index))
             }
-          else Vector(subtreeChange(result, path, typeName = Some(result.typeName.short)))
+          else Vector(subtreeChange(result, path, typeName = result.typeName.short))
 
         case result: DiffResult.RecordResult =>
           if (result.pairType == PairType.Both)
             orderedFields(result.fields).flatMap { case (fieldName, value) =>
               collect(value, path / DiffPath.Field(fieldName))
             }
-          else Vector(subtreeChange(result, path, typeName = Some(result.typeName.short)))
+          else Vector(subtreeChange(result, path, typeName = result.typeName.short))
 
         case result: DiffResult.MapResult =>
           if (result.pairType == PairType.Both)
             result.entries.flatMap { case Entry(key, value) =>
               collect(value, path / DiffPath.Field(decodeMapKey(key)))
             }
-          else Vector(subtreeChange(result, path, typeName = Some(result.typeName.short)))
+          else Vector(subtreeChange(result, path, typeName = result.typeName.short))
 
         case result: DiffResult.MismatchTypeResult =>
           Vector(
@@ -58,7 +58,7 @@ object DiffResultInspector {
               path = path,
               kind = ChangeKind.TypeMismatch,
               pairType = result.pairType,
-              typeName = Some(s"${result.obtainedTypeName.short} != ${result.expectedTypeName.short}"),
+              typeName = s"${result.obtainedTypeName.short} != ${result.expectedTypeName.short}",
               obtained = Some(plainRender(result.obtained)),
               expected = Some(plainRender(result.expected)),
               isIgnored = result.isIgnored,
@@ -82,7 +82,7 @@ object DiffResultInspector {
             path = path,
             kind = ChangeKind.Changed,
             pairType = value.pairType,
-            typeName = None,
+            typeName = value.typeName.short,
             obtained = Some(value.obtained),
             expected = Some(value.expected),
             isIgnored = value.isIgnored,
@@ -97,7 +97,7 @@ object DiffResultInspector {
             path = path,
             kind = ChangeKind.ObtainedOnly,
             pairType = value.pairType,
-            typeName = None,
+            typeName = value.typeName.short,
             obtained = Some(value.obtained),
             expected = None,
             isIgnored = value.isIgnored,
@@ -112,7 +112,7 @@ object DiffResultInspector {
             path = path,
             kind = ChangeKind.ExpectedOnly,
             pairType = value.pairType,
-            typeName = None,
+            typeName = value.typeName.short,
             obtained = None,
             expected = Some(value.expected),
             isIgnored = value.isIgnored,
@@ -135,7 +135,7 @@ object DiffResultInspector {
       rendered = plainRender(result),
     )
 
-  private def subtreeChange(result: DiffResult, path: DiffPath, typeName: Option[String]): DiffChange = {
+  private def subtreeChange(result: DiffResult, path: DiffPath, typeName: String): DiffChange = {
     val kind =
       result.pairType match {
         case PairType.ObtainedOnly => ChangeKind.ObtainedOnly
@@ -157,14 +157,14 @@ object DiffResultInspector {
     )
   }
 
-  private def resultTypeName(result: DiffResult): Option[String] =
+  private def resultTypeName(result: DiffResult): String =
     result match {
-      case result: DiffResult.ListResult => Some(result.typeName.short)
-      case result: DiffResult.RecordResult => Some(result.typeName.short)
-      case result: DiffResult.MapResult => Some(result.typeName.short)
+      case result: DiffResult.ListResult => result.typeName.short
+      case result: DiffResult.RecordResult => result.typeName.short
+      case result: DiffResult.MapResult => result.typeName.short
       case result: DiffResult.MismatchTypeResult =>
-        Some(s"${result.obtainedTypeName.short} != ${result.expectedTypeName.short}")
-      case _: DiffResult.ValueResult => None
+        s"${result.obtainedTypeName.short} != ${result.expectedTypeName.short}"
+      case result: DiffResult.ValueResult => result.typeName.short
     }
 
   private def orderedFields(fields: ListMap[String, DiffResult]): Vector[(String, DiffResult)] =

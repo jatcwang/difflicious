@@ -261,6 +261,7 @@ object DiffResultJson {
 
     var resultType: String = null
     var valueType: String = null
+    var typeName: TypeName.SomeTypeName = null
     var obtained: String = null
     var expected: String = null
     var isSame = false
@@ -271,6 +272,7 @@ object DiffResultJson {
     readFields(in) {
       case "type" => resultType = in.readString(null)
       case "valueType" => valueType = in.readString(null)
+      case "typeName" => typeName = readTypeName(in)
       case "obtained" => obtained = in.readString(null)
       case "expected" => expected = in.readString(null)
       case "isSame" =>
@@ -285,6 +287,7 @@ object DiffResultJson {
     requireField(in, resultType, "type")
     if (resultType != "value") in.decodeError(s"Expected DiffResult type 'value' but found '$resultType'")
     requireField(in, valueType, "valueType")
+    requireField(in, typeName, "typeName")
     requireField(in, hasIsIgnored, "isIgnored")
 
     valueType match {
@@ -292,13 +295,13 @@ object DiffResultJson {
         requireField(in, obtained, "obtained")
         requireField(in, expected, "expected")
         requireField(in, hasIsSame, "isSame")
-        ValueResult.Both(obtained, expected, isSame, isIgnored)
+        ValueResult.Both(typeName, obtained, expected, isSame, isIgnored)
       case "obtainedOnly" =>
         requireField(in, obtained, "obtained")
-        ValueResult.ObtainedOnly(obtained, isIgnored)
+        ValueResult.ObtainedOnly(typeName, obtained, isIgnored)
       case "expectedOnly" =>
         requireField(in, expected, "expected")
-        ValueResult.ExpectedOnly(expected, isIgnored)
+        ValueResult.ExpectedOnly(typeName, expected, isIgnored)
       case other => in.decodeError(s"Unknown DiffResult valueType '$other'")
     }
   }
@@ -425,6 +428,7 @@ object DiffResultJson {
         writeObject(out) {
           writeStringField(out, "type", "value")
           writeStringField(out, "valueType", "both")
+          writeTypeNameField(out, "typeName", result.typeName)
           writeStringField(out, "obtained", result.obtained)
           writeStringField(out, "expected", result.expected)
           writeBooleanField(out, "isSame", result.isSame)
@@ -434,6 +438,7 @@ object DiffResultJson {
         writeObject(out) {
           writeStringField(out, "type", "value")
           writeStringField(out, "valueType", "obtainedOnly")
+          writeTypeNameField(out, "typeName", result.typeName)
           writeStringField(out, "obtained", result.obtained)
           writeCommonFields(out, result)
         }
@@ -441,6 +446,7 @@ object DiffResultJson {
         writeObject(out) {
           writeStringField(out, "type", "value")
           writeStringField(out, "valueType", "expectedOnly")
+          writeTypeNameField(out, "typeName", result.typeName)
           writeStringField(out, "expected", result.expected)
           writeCommonFields(out, result)
         }

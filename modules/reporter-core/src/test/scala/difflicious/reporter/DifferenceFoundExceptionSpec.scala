@@ -5,7 +5,8 @@ import munit.FunSuite
 
 class DifferenceFoundExceptionSpec extends FunSuite {
   test("difference exception message contains its test id") {
-    val result = ValueResult.Both("obtained", "expected", isSame = false, isIgnored = false)
+    val result =
+      ValueResult.Both(difflicious.utils.TypeName[Int], "obtained", "expected", isSame = false, isIgnored = false)
     val exception = DifferenceFoundException(
       diffResult = result,
       fileName = "ExampleSuite.scala",

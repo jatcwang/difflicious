@@ -1,17 +1,21 @@
 package difflicious.differ
 
 import difflicious.{ConfigureError, ConfigureOp, ConfigurePath, DiffInput, DiffResult}
+import difflicious.utils.TypeName
 
 /** A Differ that transforms any input of diff method and pass it to its underlying Differ. See
   * [[ValueDiffer.contramap]]
   */
-class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T => U) extends ValueDiffer[T] {
-  override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = underlyingDiffer.diff(inputs.map(transformFunc))
+class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T => U, typeName: TypeName[T])
+    extends ValueDiffer[T] {
+  override def diff(inputs: DiffInput[T]): DiffResult.ValueResult =
+    underlyingDiffer.diff(inputs.map(transformFunc)).withTypeName(typeName)
 
   override def configureIgnored(newIgnored: Boolean): TransformedDiffer[T, U] = {
     new TransformedDiffer[T, U](
       underlyingDiffer.configureIgnored(newIgnored),
       transformFunc,
+      typeName,
     )
   }
 
@@ -24,6 +28,7 @@ class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T
       new TransformedDiffer(
         newUnderlyingDiffer,
         transformFunc,
+        typeName,
       )
     }
   }
@@ -36,6 +41,7 @@ class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T
       new TransformedDiffer(
         newUnderlyingDiffer,
         transformFunc,
+        typeName,
       )
     }
   }

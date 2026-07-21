@@ -63,20 +63,33 @@ object DiffResult {
     override def isOk: Boolean = isIgnored
   }
 
-  sealed trait ValueResult extends DiffResult
+  sealed trait ValueResult extends DiffResult {
+    def typeName: SomeTypeName
+
+    private[difflicious] def withTypeName(typeName: SomeTypeName): ValueResult
+  }
 
   object ValueResult {
-    final case class Both(obtained: String, expected: String, isSame: Boolean, isIgnored: Boolean) extends ValueResult {
+    final case class Both(
+      typeName: SomeTypeName,
+      obtained: String,
+      expected: String,
+      isSame: Boolean,
+      isIgnored: Boolean,
+    ) extends ValueResult {
       override def pairType: PairType = PairType.Both
       override def isOk: Boolean = isIgnored || isSame
+      override private[difflicious] def withTypeName(typeName: SomeTypeName): ValueResult = copy(typeName = typeName)
     }
-    final case class ObtainedOnly(obtained: String, isIgnored: Boolean) extends ValueResult {
+    final case class ObtainedOnly(typeName: SomeTypeName, obtained: String, isIgnored: Boolean) extends ValueResult {
       override def pairType: PairType = PairType.ObtainedOnly
       override def isOk: Boolean = false
+      override private[difflicious] def withTypeName(typeName: SomeTypeName): ValueResult = copy(typeName = typeName)
     }
-    final case class ExpectedOnly(expected: String, isIgnored: Boolean) extends ValueResult {
+    final case class ExpectedOnly(typeName: SomeTypeName, expected: String, isIgnored: Boolean) extends ValueResult {
       override def pairType: PairType = PairType.ExpectedOnly
       override def isOk: Boolean = false
+      override private[difflicious] def withTypeName(typeName: SomeTypeName): ValueResult = copy(typeName = typeName)
     }
   }
 

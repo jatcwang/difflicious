@@ -2,17 +2,17 @@ Difflicious diff result: different
 Summary: 6 non-ignored change(s), 1 ignored subtree(s).
 
 Differences:
-1. $.customer.email - changed
+1. $.customer.email - changed (String)
    obtained: "alice@old.example"
    expected: "alice@example.com"
 
-2. $.customer.loyaltyTier - ignored
+2. $.customer.loyaltyTier - ignored (String)
 
-3. $.shipping.city - changed
+3. $.shipping.city - changed (String)
    obtained: "London"
    expected: "Bristol"
 
-4. $.lines[0].quantity - changed
+4. $.lines[0].quantity - changed (Int)
    obtained: 1
    expected: 2
 
@@ -25,9 +25,9 @@ Differences:
         unitCents: 499
       )
 
-6. $.status - changed
+6. $.status - changed (String)
    obtained: "processing"
    expected: "shipped"
 
-7. $.notes[0] - expected_only
+7. $.notes[0] - expected_only (String)
    expected: "Leave with reception"
