@@ -9,9 +9,26 @@ import scala.collection.immutable.ListMap
 trait Differ[T] extends ConfigureMethods[T] {
   type R <: DiffResult
 
+  /** True when callers may use `obtained == expected` as a positive fast path before building a full diff. */
+  def canUseEquals: Boolean
+
   def diff(inputs: DiffInput[T]): R
 
   final def diff(obtained: T, expected: T): R = diff(DiffInput.Both(obtained, expected))
+
+  /** A more optimized way to generate DiffResult only when necessary.
+    *
+    * Returns None (i.e. avoid generating DiffResult) iff:
+    *   1. This Differ's canUseEquals is true AND
+    *   2. obtained.equals(expected) == true
+    *
+    * In all other cases, calculate and return DiffResult.
+    *
+    * In general, if a Differ is modified in any way, its canUseEquals will be set to false
+    */
+  final def equalsOrDiff(obtained: T, expected: T): Option[R] =
+    if (canUseEquals && obtained == expected) None
+    else Some(diff(obtained, expected))
 
   /** Attempt to change the configuration of this Differ. If successful, a new differ with the updated configuration
     * will be returned.
@@ -55,11 +72,18 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
 
   def apply[A](implicit differ: Differ[A]): Differ[A] = differ
 
-  def oneOf[A](case0: OneOfDiffer.Case[A, ?], otherCases: OneOfDiffer.Case[A, ?]*): OneOfDiffer[A] =
-    new OneOfDiffer[A]((case0 +: otherCases).toVector, isIgnored = false, differTypeName = "OneOfDiffer")
+  def oneOf[A](case0: OneOfDiffer.Case[A, ?], otherCases: OneOfDiffer.Case[A, ?]*): OneOfDiffer[A] = {
+    val cases = (case0 +: otherCases).toVector
+    new OneOfDiffer[A](
+      cases = cases,
+      isIgnored = false,
+      differTypeName = "OneOfDiffer",
+      canUseEqualsValue = cases.forall(_.canUseEquals),
+    )
+  }
 
   def useEquals[T](valueToString: T => String)(implicit typeName: TypeName[T]): EqualsDiffer[T] =
-    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString, typeName = typeName)
+    new EqualsDiffer[T](isIgnored = false, valueToString = valueToString, typeName = typeName, canUseEquals = true)
 
   /** A Differ that always return an Ignored result. Useful when you can't really diff something */
   def alwaysIgnore[T](implicit typeName: TypeName[T]): AlwaysIgnoreDiffer[T] = new AlwaysIgnoreDiffer[T](typeName)
@@ -94,6 +118,7 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       ),
       isIgnored = false,
       differTypeName = "OneOfDiffer",
+      canUseEqualsValue = valueDiffer.canUseEquals,
     )
 
   implicit def eitherDiffer[A, B](implicit
@@ -131,6 +156,7 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       ),
       isIgnored = false,
       differTypeName = "OneOfDiffer",
+      canUseEqualsValue = leftDiffer.canUseEquals && rightDiffer.canUseEquals,
     )
 
   implicit val stringDiffer: ValueDiffer[String] =
@@ -138,18 +164,21 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       isIgnored = false,
       valueToString = str => s""""$str"""",
       typeName = simpleTypeName[String]("java.lang.String", "String"),
+      canUseEquals = true,
     )
   implicit val charDiffer: ValueDiffer[Char] =
     new EqualsDiffer[Char](
       isIgnored = false,
       valueToString = c => s"'$c'",
       typeName = simpleTypeName[Char]("scala.Char", "Char"),
+      canUseEquals = true,
     )
   implicit val booleanDiffer: ValueDiffer[Boolean] =
     new EqualsDiffer[Boolean](
       isIgnored = false,
       valueToString = _.toString,
       typeName = simpleTypeName[Boolean]("scala.Boolean", "Boolean"),
+      canUseEquals = true,
     )
 
   implicit val intDiffer: NumericDiffer[Int] =
@@ -177,6 +206,7 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       valueDiffer = valueDiffer,
       typeName = typeName,
       asMap = asMap,
+      canUseEqualsValue = keyDiffer.canUseEquals && valueDiffer.canUseEquals,
     )
   }
 
@@ -212,6 +242,7 @@ object Differ extends DifferTupleInstances with DifferGen with DifferPlatform wi
       fieldDiffers = fields,
       isIgnored = false,
       typeName = typeName,
+      canUseEqualsValue = fields.values.forall { case (_, differ) => differ.canUseEquals },
     )
 
   private def recordCaseTypeName(long: String, short: String): TypeName.SomeTypeName =

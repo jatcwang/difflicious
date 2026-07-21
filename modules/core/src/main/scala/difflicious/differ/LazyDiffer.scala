@@ -8,7 +8,22 @@ import difflicious.*
 final class LazyDiffer[T](mkDiffer: => Differ[T]) extends Differ[T] {
   override type R = DiffResult
 
-  private lazy val underlying: Differ[T] = mkDiffer
+  @volatile private var initializingUnderlying: Boolean = false
+  private lazy val underlying: Differ[T] = {
+    initializingUnderlying = true
+    try mkDiffer
+    finally initializingUnderlying = false
+  }
+  private var evaluatingCanUseEquals: Boolean = false
+
+  override def canUseEquals: Boolean = {
+    if (initializingUnderlying || evaluatingCanUseEquals) false
+    else {
+      evaluatingCanUseEquals = true
+      try underlying.canUseEquals
+      finally evaluatingCanUseEquals = false
+    }
+  }
 
   override def diff(inputs: DiffInput[T]): DiffResult =
     underlying.diff(inputs)

@@ -8,6 +8,7 @@ final class OneOfDiffer[A](
   cases: Vector[OneOfDiffer.Case[A, ?]],
   isIgnored: Boolean,
   differTypeName: String,
+  canUseEqualsValue: => Boolean,
 ) extends Differ[A] {
   import OneOfDiffer.*
 
@@ -19,6 +20,7 @@ final class OneOfDiffer[A](
   )
 
   override type R = DiffResult
+  override lazy val canUseEquals: Boolean = canUseEqualsValue
 
   override def diff(inputs: DiffInput[A]): DiffResult = inputs match {
     case DiffInput.ObtainedOnly(obtained) =>
@@ -49,6 +51,7 @@ final class OneOfDiffer[A](
       cases = cases.map(_.configureRawOrThrow(ConfigurePath.current, ConfigureOp.SetIgnored(newIgnored))),
       isIgnored = newIgnored,
       differTypeName = differTypeName,
+      canUseEqualsValue = false,
     )
 
   override def configurePath(
@@ -63,6 +66,7 @@ final class OneOfDiffer[A](
             cases = cases.updated(idx, updatedCase),
             isIgnored = isIgnored,
             differTypeName = differTypeName,
+            canUseEqualsValue = false,
           )
         }
       case None =>
@@ -99,6 +103,8 @@ object OneOfDiffer {
     differ: Differ[B],
   ) {
     def id: String = typeName.short
+
+    def canUseEquals: Boolean = differ.canUseEquals
 
     private[difflicious] def diff(inputs: DiffInput[A]): DiffResult =
       differ.diff(

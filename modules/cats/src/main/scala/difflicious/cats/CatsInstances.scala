@@ -42,6 +42,7 @@ trait CatsInstances {
     valueDiffer = valueDiffer,
     typeName = typeName.copy(long = "cats.data.NonEmptyMap", short = "NonEmptyMap"),
     asMap = nonEmptyMapAsMap,
+    canUseEqualsValue = keyDiffer.canUseEquals && valueDiffer.canUseEquals,
   )
 
   implicit def nonEmptyListDiffer[A](implicit

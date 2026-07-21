@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.differ.LazyDiffer
+import difflicious.differ.{LazyDiffer, RecordDiffer}
 import difflicious.ConfigureError.InvalidConfigureOp
 import munit.ScalaCheckSuite
 import difflicious.testutils.*
@@ -8,7 +8,7 @@ import difflicious.testtypes.*
 import difflicious.implicits.*
 import difflicious.internal.EitherGetSyntax.*
 
-import scala.collection.immutable.HashSet
+import scala.collection.immutable.{HashSet, ListMap}
 
 class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
   test("NumericDiffer: configure fails if path is not terminal") {
@@ -56,6 +56,131 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  dd: $I[IGNORED]$X
          |)""".stripMargin,
     )
+  }
+
+  test("Differ#canUseEquals is true for unconfigured built-in differs") {
+    assert(Differ[Int].canUseEquals)
+    assert(Differ[Double].canUseEquals)
+    assert(Differ[Float].canUseEquals)
+    assert(Differ[CC].canUseEquals)
+    assert(Differ[(String, CC)].canUseEquals)
+    assert(Differ[Option[CC]].canUseEquals)
+    assert(Differ[Either[String, CC]].canUseEquals)
+    assert(Differ[List[CC]].canUseEquals)
+    assert(Differ[Set[CC]].canUseEquals)
+    assert(Differ.mapDiffer[Map, MapKey, CC].canUseEquals)
+  }
+
+  test("Differ#equalsOrDiff skips the diff only when equality is a valid fast path") {
+    val differ = Differ[Int]
+    assertEquals(differ.equalsOrDiff(1, 1), None)
+    assert(differ.equalsOrDiff(1, 2).exists(result => !result.isOk))
+    assert(differ.ignore.equalsOrDiff(1, 1).exists(_.isOk))
+  }
+
+  test("Differ#canUseEquals is false for recursive derived differs") {
+    assertEquals(Differ.derived[RecursiveDerivedNode].canUseEquals, false)
+    assertEquals(Differ.derivedDeep[RecursiveDerivedDeepNode].canUseEquals, false)
+  }
+
+  test("NumericDiffer: a modified differ cannot use equals") {
+    assert(Differ[Int].canUseEquals)
+    assertEquals(Differ[Int].ignore.canUseEquals, false)
+    assertEquals(Differ[Int].ignore.unignore.canUseEquals, false)
+  }
+
+  test("EqualsDiffer: a modified differ cannot use equals") {
+    assert(EqClass.differ.canUseEquals)
+    assertEquals(EqClass.differ.ignore.canUseEquals, false)
+  }
+
+  test("LazyDiffer: a modified differ cannot use equals") {
+    val differ = new LazyDiffer[CC](Differ[CC])
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.dd).canUseEquals, false)
+    assertEquals(differ.configure(_.dd)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Double](_.dd)(Differ[Double]).canUseEquals, false)
+  }
+
+  test("ProductDiffer: a modified differ cannot use equals") {
+    val differ = Differ[CC]
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.dd).canUseEquals, false)
+    assertEquals(differ.configure(_.dd)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Double](_.dd)(Differ[Double]).canUseEquals, false)
+  }
+
+  test("RecordDiffer: a modified differ cannot use equals") {
+    val typeName = difflicious.utils.TypeName[CC]
+    val differ = new RecordDiffer[CC](
+      fieldDiffers = ListMap(
+        "i" -> (((value: CC) => value.i), Differ[Int].asInstanceOf[Differ[Any]]),
+      ),
+      isIgnored = false,
+      typeName = typeName,
+      canUseEqualsValue = true,
+    )
+
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.i).canUseEquals, false)
+    assertEquals(differ.configure(_.i)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Int](_.i)(Differ[Int]).canUseEquals, false)
+  }
+
+  test("OneOfDiffer: a modified differ cannot use equals") {
+    val differ = Differ[Option[CC]]
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(value => value).canUseEquals, false)
+    assertEquals(differ.configure(value => value)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Option[CC]](value => value)(differ.ignore).canUseEquals, false)
+  }
+
+  test("MapDiffer: a modified differ cannot use equals") {
+    val differ = Differ[Map[String, CC]]
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.each.dd).canUseEquals, false)
+    assertEquals(differ.configure(_.each.dd)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Double](_.each.dd)(Differ[Double]).canUseEquals, false)
+  }
+
+  test("SeqDiffer: a modified differ cannot use equals") {
+    val differ = Differ[List[CC]]
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.each.dd).canUseEquals, false)
+    assertEquals(differ.configure(_.each.dd)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Double](_.each.dd)(Differ[Double]).canUseEquals, false)
+    assertEquals(differ.pairBy(_.i).canUseEquals, false)
+    assertEquals(differ.pairByIndex.canUseEquals, false)
+  }
+
+  test("SetDiffer: a modified differ cannot use equals") {
+    val differ = Differ[Set[CC]]
+    assert(differ.canUseEquals)
+    assertEquals(differ.ignore.canUseEquals, false)
+    assertEquals(differ.ignoreAt(_.each.dd).canUseEquals, false)
+    assertEquals(differ.configure(_.each.dd)(_.ignore).canUseEquals, false)
+    assertEquals(differ.replace[Double](_.each.dd)(Differ[Double]).canUseEquals, false)
+    assertEquals(differ.pairBy(_.i).canUseEquals, false)
+  }
+
+  test("TransformedDiffer: a modified differ cannot use equals") {
+    assertEquals(NewInt.differ.ignore.canUseEquals, false)
+  }
+
+  test("AlwaysIgnoreDiffer: a modified differ cannot use equals") {
+    assertEquals(AlwaysIgnoreClass.differ.unignore.canUseEquals, false)
+  }
+
+  test("Differ#canUseEquals is false when a derived differ uses a customized child differ") {
+    assertEquals(Differ[NewInt].canUseEquals, false)
+    assertEquals(SealedWithCustom.differ.canUseEquals, false)
+    assertEquals(Differ[List[SealedWithCustom]].canUseEquals, false)
   }
 
   test("EqualsDiffer: return Both/ObtainedOnly/ExpectedOnly depending on whether both sides are present in diff") {

@@ -13,6 +13,8 @@ final class JsonObjectDiffer private[difflicious] (
 ) extends Differ[JsonObject] {
   override type R = MapResult
 
+  override def canUseEquals: Boolean = underlying.canUseEquals
+
   override def diff(inputs: DiffInput[JsonObject]): MapResult =
     underlying.diff(inputs.map(jsonObject => VectorMap.from(jsonObject.toIterable)))
 
@@ -43,6 +45,8 @@ final class JsonObjectDiffer private[difflicious] (
 
 final class JsonDiffer private[difflicious] (underlying: OneOfDiffer[Json]) extends Differ[Json] {
   override type R = DiffResult
+
+  override def canUseEquals: Boolean = underlying.canUseEquals
 
   override def diff(inputs: DiffInput[Json]): DiffResult =
     underlying.diff(inputs)
@@ -121,15 +125,14 @@ object JsonDiffer {
         valueDiffer = valueDiffer,
         typeName = typeName,
         asMap = JsonDiffer.vectorMapLike,
+        canUseEqualsValue = Differ.stringDiffer.canUseEquals && valueDiffer.canUseEquals,
       ),
     )
 
   private[difflicious] def jsonObjectDiffer(valueDiffer: Differ[Json]): JsonObjectDiffer =
     jsonObjectDiffer(valueDiffer, JsonDiffer.jsonObjectTypeName)
 
-  private[difflicious] lazy val underlyingOneOfDifferForJson: OneOfDiffer[Json] = {
-    val recursiveDiffer = new LazyDiffer[Json](underlyingOneOfDifferForJson)
-
+  private def underlyingOneOfDifferForJson(recursiveDiffer: Differ[Json]): OneOfDiffer[Json] =
     Differ.oneOf[Json](
       OneOfDiffer.caseOf[Json, Unit](
         typeName = JsonDiffer.jsonNullTypeName,
@@ -166,6 +169,12 @@ object JsonDiffer {
         differ = JsonDiffer.jsonObjectDiffer(recursiveDiffer, JsonDiffer.jsonObjectCaseTypeName),
       ),
     )
+
+  private[difflicious] lazy val defaultJsonDiffer: Differ[Json] = {
+    lazy val recursiveDiffer: Differ[Json] = new LazyDiffer[Json](
+      new JsonDiffer(underlyingOneOfDifferForJson(recursiveDiffer)),
+    )
+    recursiveDiffer
   }
 
   private def configureOrThrow[A](configured: Either[ConfigureError, Differ[A]]): Differ[A] =

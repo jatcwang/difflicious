@@ -373,6 +373,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
           isIgnored = false,
           valueToString = valueToString.asInstanceOf[A => String],
           typeName = Expr.splice(typeName).asInstanceOf[TypeName[A]],
+          canUseEquals = true,
         ): Differ[A]
       }
     }
@@ -416,10 +417,12 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
           val typeName = staticTypeName[A]
 
           Expr.quote {
+            val fieldDiffers = Expr.splice(fieldsExpr)
             new ProductDiffer[A](
-              Expr.splice(fieldsExpr),
-              false,
-              Expr.splice(typeName),
+              fieldDiffers = fieldDiffers,
+              isIgnored = false,
+              typeName = Expr.splice(typeName),
+              canUseEqualsValue = fieldDiffers.forall(_._2.canUseEquals),
             ): Differ[A]
           }
         }
@@ -453,10 +456,12 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
           implicit val caseExprType: Type[OneOfDiffer.Case[A, Any]] = oneOfCaseAnyType[A]
           val casesExpr = vectorExpr[OneOfDiffer.Case[A, Any]](cases)
           Expr.quote {
+            val cases = Expr.splice(casesExpr)
             new OneOfDiffer[A](
-              Expr.splice(casesExpr),
-              false,
-              "OneOfDiffer",
+              cases = cases,
+              isIgnored = false,
+              differTypeName = "OneOfDiffer",
+              canUseEqualsValue = cases.forall(_.canUseEquals),
             ): Differ[A]
           }
         }
@@ -570,13 +575,16 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
 
     Expr.quote {
       type Container[X, Y] = A
+      val runtimeKeyDiffer = Expr.splice(keyDiffer)
+      val runtimeValueDiffer = Expr.splice(valueDiffer)
 
       new difflicious.differ.MapDiffer[Container, Key, Value](
         isIgnored = false,
-        keyDiffer = Expr.splice(keyDiffer),
-        valueDiffer = Expr.splice(valueDiffer),
+        keyDiffer = runtimeKeyDiffer,
+        valueDiffer = runtimeValueDiffer,
         typeName = Expr.splice(typeName),
         asMap = Expr.splice(asMap).asInstanceOf[difflicious.utils.MapLike[Container]],
+        canUseEqualsValue = runtimeKeyDiffer.canUseEquals && runtimeValueDiffer.canUseEquals,
       )
     }
   }

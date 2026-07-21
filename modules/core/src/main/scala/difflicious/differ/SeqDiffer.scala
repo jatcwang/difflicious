@@ -15,8 +15,10 @@ final class SeqDiffer[F[_], A](
   itemDiffer: Differ[A],
   typeName: SomeTypeName,
   asSeq: SeqLike[F],
+  canUseEqualsValue: => Boolean,
 ) extends Differ[F[A]] {
   override type R = ListResult
+  override lazy val canUseEquals: Boolean = canUseEqualsValue
 
   override def diff(inputs: DiffInput[F[A]]): R = inputs.map(asSeq.asSeq) match {
     case DiffInput.Both(actual, expected) => {
@@ -88,6 +90,7 @@ final class SeqDiffer[F[_], A](
       itemDiffer = itemDiffer,
       typeName = typeName,
       asSeq = asSeq,
+      canUseEqualsValue = false,
     )
 
   override def configurePath(
@@ -103,6 +106,7 @@ final class SeqDiffer[F[_], A](
           itemDiffer = newItemDiffer,
           typeName = typeName,
           asSeq = asSeq,
+          canUseEqualsValue = false,
         )
       }
     } else Left(ConfigureError.NonExistentField(nextPath, "SeqDiffer"))
@@ -117,6 +121,7 @@ final class SeqDiffer[F[_], A](
             itemDiffer = itemDiffer,
             typeName = typeName,
             asSeq = asSeq,
+            canUseEqualsValue = false,
           ),
         )
       case m: PairBy.ByFunc[?, ?] =>
@@ -127,6 +132,7 @@ final class SeqDiffer[F[_], A](
             itemDiffer = itemDiffer,
             typeName = typeName,
             asSeq = asSeq,
+            canUseEqualsValue = false,
           ),
         )
     }
@@ -143,6 +149,7 @@ object SeqDiffer {
     itemDiffer = itemDiffer,
     typeName = typeName,
     asSeq = asSeq,
+    canUseEqualsValue = itemDiffer.canUseEquals,
   )
 
   // Given two lists of item, find "matching" items using te provided function

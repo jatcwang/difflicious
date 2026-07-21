@@ -6,9 +6,10 @@ import org.scalactic.source.Position
 trait ScalatestDiff {
   implicit class DifferExtensions[A](differ: Differ[A]) {
     def assertNoDiff(obtained: A, expected: A)(implicit pos: Position): Unit = {
-      val result = differ.diff(obtained, expected)
-      if (!result.isOk)
-        ScalatestDiffAssertions.failWithDiffResult(result)
+      differ.equalsOrDiff(obtained, expected).foreach { result =>
+        if (!result.isOk)
+          ScalatestDiffAssertions.failWithDiffResult(result)
+      }
     }
   }
 }

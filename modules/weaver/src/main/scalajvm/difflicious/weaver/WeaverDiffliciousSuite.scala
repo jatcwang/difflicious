@@ -8,10 +8,11 @@ import weaver.Expectations.Helpers.success
 trait WeaverDiffliciousSuite[F[_]] extends FSuite[F] {
   implicit class DifferExtensions[A](differ: Differ[A]) {
     def assertNoDiff(obtained: A, expected: A): Expectations = {
-      val result = differ.diff(obtained, expected)
-      if (!result.isOk)
-        throw DifferenceFoundException(result, "", "", 0)
-      else success
+      differ.equalsOrDiff(obtained, expected) match {
+        case Some(result) if !result.isOk =>
+          throw DifferenceFoundException(result, "", "", 0)
+        case _ => success
+      }
     }
   }
 

@@ -7,8 +7,12 @@ import difflicious.utils.TypeName
 /** Differ where the two values are compared by using the equals method. If the two values aren't equal, then we use the
   * provided valueToString function to output the diagnostic output.
   */
-final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, typeName: TypeName[T])
-    extends ValueDiffer[T] {
+final class EqualsDiffer[T](
+  isIgnored: Boolean,
+  valueToString: T => String,
+  typeName: TypeName[T],
+  override val canUseEquals: Boolean,
+) extends ValueDiffer[T] {
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
     case DiffInput.Both(obtained, expected) =>
       DiffResult.ValueResult
@@ -26,7 +30,12 @@ final class EqualsDiffer[T](isIgnored: Boolean, valueToString: T => String, type
   }
 
   override def configureIgnored(newIgnored: Boolean): EqualsDiffer[T] =
-    new EqualsDiffer[T](isIgnored = newIgnored, valueToString = valueToString, typeName = typeName)
+    new EqualsDiffer[T](
+      isIgnored = newIgnored,
+      valueToString = valueToString,
+      typeName = typeName,
+      canUseEquals = false,
+    )
 
   override def configurePath(
     step: String,

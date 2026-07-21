@@ -8,6 +8,8 @@ object testtypes extends ScalaVersionDependentTestTypes {
 
   // Dummy differ that fails when any of its method is called. For tests where we just need a Differ[T]
   def dummyDiffer[T]: Differ[T] = new Differ[T] {
+    override val canUseEquals: Boolean = false
+
     override def diff(inputs: DiffInput[T]): R = sys.error("diff on dummyDiffer")
 
     override def configureIgnored(newIgnored: Boolean): Differ[T] =
