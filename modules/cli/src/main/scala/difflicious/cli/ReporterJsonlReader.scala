@@ -1,6 +1,5 @@
 package difflicious.cli
 
-import com.github.plokhotnyuk.jsoniter_scala.core.readFromString
 import difflicious.reporter.DiffResultTestDetails
 
 import java.io.InputStream
@@ -76,7 +75,7 @@ object ReporterJsonlReader {
     traverseWithBuilder(lines)(decodeLine)
 
   private def decodeLine(line: JsonlLine): Either[String, DiffRun] =
-    try Right(toRun(readFromString[DiffResultTestDetails](line.text)))
+    try Right(toRun(DiffResultTestDetails.fromJsonString(line.text)))
     catch {
       case NonFatal(error) =>
         Left(s"${line.source}:${line.number}: invalid Difflicious JSONL record: ${error.getMessage}")

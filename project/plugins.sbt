@@ -10,6 +10,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
 addSbtPlugin("com.siriusxm" % "sbt-snapshot4s" % "0.2.11")
+addSbtPlugin("io.get-coursier" % "sbt-shading" % "2.1.5")
 
 Compile / unmanagedSourceDirectories ++= {
   val dir = (ThisBuild / baseDirectory).value.getParentFile / "modules" / "sbt-plugin" / "src" / "main"
