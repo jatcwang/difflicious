@@ -24,6 +24,7 @@ object TupleDifferInstancesGen {
          |  ),
          |  isIgnored = false,
          |  typeName = typeName,
+         |  canUseEqualsValue = ${(1 to tupleSize).map(t => s"a${t}Diff.canUseEquals").mkString(" && ")},
          |)
          |""".stripMargin
       }

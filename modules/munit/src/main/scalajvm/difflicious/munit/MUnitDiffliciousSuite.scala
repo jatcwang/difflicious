@@ -11,14 +11,15 @@ import scala.util.{Failure, Try}
 trait MUnitDiffliciousSuite extends Suite {
   implicit class DifferExtensions[A](differ: Differ[A]) {
     def assertNoDiff(obtained: A, expected: A)(implicit loc: Location): Unit = {
-      val result = differ.diff(obtained, expected)
-      if (!result.isOk)
-        throw DifferenceFoundException(
-          diffResult = result,
-          fileName = loc.filename,
-          filePath = loc.path,
-          lineNumber = loc.line,
-        )
+      differ.equalsOrDiff(obtained, expected).foreach { result =>
+        if (!result.isOk)
+          throw DifferenceFoundException(
+            diffResult = result,
+            fileName = loc.filename,
+            filePath = loc.path,
+            lineNumber = loc.line,
+          )
+      }
     }
   }
 

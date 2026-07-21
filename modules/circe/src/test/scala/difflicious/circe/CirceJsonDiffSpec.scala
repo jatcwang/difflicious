@@ -9,6 +9,10 @@ import munit.FunSuite
 
 class CirceJsonDiffSpec extends FunSuite {
 
+  test("Json: recursive differ cannot use the equals fast path") {
+    assertEquals(Differ[Json].canUseEquals, false)
+  }
+
   test("Json: diffs same-case object values") {
     assertConsoleDiffOutput(
       Differ[Json],

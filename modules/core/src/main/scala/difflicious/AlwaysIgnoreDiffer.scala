@@ -8,6 +8,8 @@ import difflicious.utils.TypeName
 final class AlwaysIgnoreDiffer[T](typeName: TypeName[T]) extends Differ[T] {
   override type R = ValueResult
 
+  override val canUseEquals: Boolean = false
+
   override def diff(inputs: DiffInput[T]): ValueResult =
     ValueResult.Both(typeName, "[ALWAYS IGNORED]", "[ALWAYS IGNORED]", isSame = true, isIgnored = true)
 

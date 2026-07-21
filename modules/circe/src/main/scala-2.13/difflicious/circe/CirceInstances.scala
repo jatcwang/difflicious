@@ -5,7 +5,7 @@ import difflicious.utils.Eachable0
 import io.circe.{Json, JsonObject}
 
 trait CirceInstances {
-  implicit val jsonDiffer: Differ[Json] = new JsonDiffer(JsonDiffer.underlyingOneOfDifferForJson)
+  implicit val jsonDiffer: Differ[Json] = JsonDiffer.defaultJsonDiffer
   implicit val jsonObjectDiffer: Differ[JsonObject] = JsonDiffer.jsonObjectDiffer(jsonDiffer)
 
   implicit val jsonNullSubTypeRelationship: DifferSubTypeRelationship[Json, JNull] =

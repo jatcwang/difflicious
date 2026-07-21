@@ -42,6 +42,7 @@ trait DifferTimeInstancesPlatform {
       isIgnored = false,
       valueToString = _.toString,
       typeName = TypeName[T](s"java.time.$shortName", shortName, Nil),
+      canUseEquals = true,
     )
 
 }

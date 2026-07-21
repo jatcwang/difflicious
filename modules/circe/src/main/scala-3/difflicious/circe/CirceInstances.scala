@@ -5,7 +5,7 @@ import difflicious.utils.Eachable0
 import io.circe.{Json, JsonObject}
 
 trait CirceInstances {
-  given jsonDiffer: Differ[Json] = new JsonDiffer(JsonDiffer.underlyingOneOfDifferForJson)
+  given jsonDiffer: Differ[Json] = JsonDiffer.defaultJsonDiffer
   given jsonObjectDiffer: Differ[JsonObject] = JsonDiffer.jsonObjectDiffer(jsonDiffer)
 
   given jsonNullSubTypeRelationship: DifferSubTypeRelationship[Json, JNull] =

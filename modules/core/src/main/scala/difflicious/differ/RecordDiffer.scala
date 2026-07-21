@@ -10,8 +10,10 @@ final class RecordDiffer[T](
   fieldDiffers: ListMap[String, (T => Any, Differ[Any])],
   isIgnored: Boolean,
   typeName: SomeTypeName,
+  canUseEqualsValue: => Boolean,
 ) extends Differ[T] {
   override type R = DiffResult.RecordResult
+  override lazy val canUseEquals: Boolean = canUseEqualsValue
 
   override def diff(inputs: DiffInput[T]): R = inputs match {
     case DiffInput.Both(obtained, expected) => {
@@ -68,7 +70,12 @@ final class RecordDiffer[T](
   }
 
   override def configureIgnored(newIgnored: Boolean): Differ[T] =
-    new RecordDiffer[T](fieldDiffers = fieldDiffers, isIgnored = newIgnored, typeName = typeName)
+    new RecordDiffer[T](
+      fieldDiffers = fieldDiffers,
+      isIgnored = newIgnored,
+      typeName = typeName,
+      canUseEqualsValue = false,
+    )
 
   override def configurePath(
     step: String,
@@ -84,6 +91,7 @@ final class RecordDiffer[T](
             fieldDiffers = fieldDiffers.updated(step, (getter, newFieldDiffer)),
             isIgnored = isIgnored,
             typeName = typeName,
+            canUseEqualsValue = false,
           )
         }
       }

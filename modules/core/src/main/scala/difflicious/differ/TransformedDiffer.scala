@@ -8,6 +8,8 @@ import difflicious.utils.TypeName
   */
 class TransformedDiffer[T, U](underlyingDiffer: ValueDiffer[U], transformFunc: T => U, typeName: TypeName[T])
     extends ValueDiffer[T] {
+  override val canUseEquals: Boolean = false
+
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult =
     underlyingDiffer.diff(inputs.map(transformFunc)).withTypeName(typeName)
 

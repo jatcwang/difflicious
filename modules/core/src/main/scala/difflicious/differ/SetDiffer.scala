@@ -13,8 +13,10 @@ final class SetDiffer[F[_], A](
   matchFunc: A => Any,
   typeName: SomeTypeName,
   asSet: SetLike[F],
+  canUseEqualsValue: => Boolean,
 ) extends Differ[F[A]] {
   override type R = ListResult
+  override lazy val canUseEquals: Boolean = canUseEqualsValue
 
   override def diff(inputs: DiffInput[F[A]]): R = inputs.map(asSet.asSet) match {
     case DiffInput.ObtainedOnly(actual) =>
@@ -56,6 +58,7 @@ final class SetDiffer[F[_], A](
       matchFunc = matchFunc,
       typeName = typeName,
       asSet = asSet,
+      canUseEqualsValue = false,
     )
 
   override def configurePath(
@@ -71,6 +74,7 @@ final class SetDiffer[F[_], A](
           matchFunc = matchFunc,
           typeName = typeName,
           asSet = asSet,
+          canUseEqualsValue = false,
         )
       }
     } else Left(ConfigureError.NonExistentField(nextPath, "SetDiffer"))
@@ -86,6 +90,7 @@ final class SetDiffer[F[_], A](
             matchFunc = m.func.asInstanceOf[A => Any],
             typeName = typeName,
             asSet = asSet,
+            canUseEqualsValue = false,
           ),
         )
     }
@@ -102,6 +107,7 @@ object SetDiffer {
     matchFunc = identity,
     typeName = typeName,
     asSet = asSet,
+    canUseEqualsValue = itemDiffer.canUseEquals,
   )
 
 }

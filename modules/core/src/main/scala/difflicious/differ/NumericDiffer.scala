@@ -3,8 +3,13 @@ package difflicious.differ
 import difflicious.{DiffResult, ConfigureOp, ConfigureError, ConfigurePath, DiffInput}
 import difflicious.utils.TypeName
 
-final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToString: T => String, typeName: TypeName[T])
-    extends ValueDiffer[T] {
+final class NumericDiffer[T](
+  isIgnored: Boolean,
+  numeric: Numeric[T],
+  valueToString: T => String,
+  typeName: TypeName[T],
+  override val canUseEquals: Boolean,
+) extends ValueDiffer[T] {
 
   override def diff(inputs: DiffInput[T]): DiffResult.ValueResult = inputs match {
     case DiffInput.Both(obtained, expected) => {
@@ -23,7 +28,13 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToStr
   }
 
   override def configureIgnored(newIgnored: Boolean): NumericDiffer[T] =
-    new NumericDiffer[T](isIgnored = newIgnored, numeric = numeric, valueToString = valueToString, typeName = typeName)
+    new NumericDiffer[T](
+      isIgnored = newIgnored,
+      numeric = numeric,
+      valueToString = valueToString,
+      typeName = typeName,
+      canUseEquals = false,
+    )
 
   override def configurePath(
     step: String,
@@ -41,5 +52,11 @@ final class NumericDiffer[T](isIgnored: Boolean, numeric: Numeric[T], valueToStr
 
 object NumericDiffer {
   def make[T](valueToString: T => String, typeName: TypeName[T])(implicit numeric: Numeric[T]): NumericDiffer[T] =
-    new NumericDiffer[T](isIgnored = false, numeric = numeric, valueToString = valueToString, typeName = typeName)
+    new NumericDiffer[T](
+      isIgnored = false,
+      numeric = numeric,
+      valueToString = valueToString,
+      typeName = typeName,
+      canUseEquals = true,
+    )
 }

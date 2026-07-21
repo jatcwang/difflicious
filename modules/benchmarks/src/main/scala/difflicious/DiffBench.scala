@@ -27,25 +27,54 @@ class DiffBench {
     Set(Dog("rex", 2.0)),
   )
 
+  val bigDifferent = Big(
+    12,
+    "asdfa",
+    Map(Key("a", 1) -> Dog("fido", 3.5)),
+    Vector(Dog("spot", 7.0)),
+    Set(Dog("rex", 3.0)),
+  )
+
   @Benchmark
-  def usingDiff(bh: Blackhole): Unit = {
-    bh.consume(Big.diff.diff(big, bigClone))
+  def usingDiffer(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.diff(big, bigClone))
   }
 
   @Benchmark
-  def usingDiffObtainedOnly(bh: Blackhole): Unit = {
-    bh.consume(Big.diff.diff(DiffInput.ObtainedOnly(big)))
+  def usingEqualsOrDiff(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.equalsOrDiff(big, bigClone))
   }
 
   @Benchmark
-  def usingDiffExpectedOnly(bh: Blackhole): Unit = {
-    bh.consume(Big.diff.diff(DiffInput.ExpectedOnly(bigClone)))
+  def usingDifferDifferent(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.diff(big, bigDifferent))
   }
 
   @Benchmark
-  def usingEquals(bh: Blackhole): Unit = {
+  def usingEqualsOrDiffDifferent(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.equalsOrDiff(big, bigDifferent))
+  }
+
+  @Benchmark
+  def usingDifferObtainedOnly(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.diff(DiffInput.ObtainedOnly(big)))
+  }
+
+  @Benchmark
+  def usingDifferExpectedOnly(bh: Blackhole): Unit = {
+    bh.consume(Big.differ.diff(DiffInput.ExpectedOnly(bigClone)))
+  }
+
+  @Benchmark
+  def usingPlainEquals(bh: Blackhole): Unit = {
     bh.consume(big == bigClone)
   }
+
+  @Benchmark
+  def usingPlainEqualsDifferent(bh: Blackhole): Unit = {
+    bh.consume(big == bigDifferent)
+  }
+
 }
 
 final case class Big(
@@ -57,7 +86,7 @@ final case class Big(
 )
 
 object Big {
-  implicit val diff: Differ[Big] = Differ.derived[Big]
+  implicit val differ: Differ[Big] = Differ.derived[Big]
 }
 
 final case class Dog(
@@ -66,7 +95,7 @@ final case class Dog(
 )
 
 object Dog {
-  implicit val diff: Differ[Dog] = Differ.derived[Dog]
+  implicit val differ: Differ[Dog] = Differ.derived[Dog]
 }
 
 final case class Key(
@@ -75,5 +104,5 @@ final case class Key(
 )
 
 object Key {
-  implicit val diff: ValueDiffer[Key] = Differ.useEquals[Key](_.toString)
+  implicit val differ: ValueDiffer[Key] = Differ.useEquals[Key](_.toString)
 }

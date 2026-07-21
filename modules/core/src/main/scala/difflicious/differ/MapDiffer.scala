@@ -15,8 +15,10 @@ class MapDiffer[M[_, _], K, V](
   valueDiffer: Differ[V],
   typeName: SomeTypeName,
   asMap: MapLike[M],
+  canUseEqualsValue: => Boolean,
 ) extends Differ[M[K, V]] {
   override type R = MapResult
+  override lazy val canUseEquals: Boolean = canUseEqualsValue
 
   override def diff(inputs: DiffInput[M[K, V]]): R = inputs.map(asMap.asMap) match {
     case DiffInput.Both(obtained, expected) =>
@@ -83,6 +85,7 @@ class MapDiffer[M[_, _], K, V](
       valueDiffer = valueDiffer,
       typeName = typeName,
       asMap = asMap,
+      canUseEqualsValue = false,
     )
   }
 
@@ -99,6 +102,7 @@ class MapDiffer[M[_, _], K, V](
           valueDiffer = newValueDiffer,
           typeName = typeName,
           asMap = asMap,
+          canUseEqualsValue = false,
         )
       }
     } else
