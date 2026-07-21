@@ -3,9 +3,9 @@
 ║                                                                                                  ║
 ║   ▾ 01CRZ3NDEKTSV4RRFFQ69G5FAV (2018-10-04 10:38:46)                                             ║
 ║     ▾ ex[43ma[49mmple.A[43mnother[49mSuite                                                                       ║
-║ >       deep order invoice snapshot has nested differences                                     < ║
-║                                                                                                  ║
-║                                                                                                  ║
+║ >       · customer credit is applied to the invoice                                            < ║
+║         · deep order invoice snapshot has nested differences across adjustments discounts taxes  ║
+║           shipping and payments                                                                  ║
 ║                                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -15,14 +15,6 @@
 │ Line: 37                                                                                         │
 │ File: /workspace/AnotherSuite.scala                                                              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
-
-
 
 
 

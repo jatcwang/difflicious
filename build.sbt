@@ -10,12 +10,12 @@ val munitVersion = "1.3.4"
 val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.16"
-val declineVersion = "2.4.1"
+val declineVersion = "2.6.2"
 val jlineVersion = "3.30.15"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.1"
-val jsoniterScalaVersion = "2.38.4"
+val jsoniterScalaVersion = "2.38.17"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
@@ -47,7 +47,6 @@ inThisBuild(
       ),
     ),
     commands ++= Build.createBuildCommands(projectMatrixModules.flatMap(_.projectRefs)),
-    tpolecatDefaultOptionsMode := (if (sys.env.contains("CI")) CiMode else DevMode),
     useReadableConsoleGit,
   ),
 )
@@ -61,18 +60,19 @@ lazy val projectMatrixModules =
   Seq(core, coretest, munit, scalatest, weaver, cats, circe, reporterCore, cli, benchmarks, docs)
 
 lazy val allModules =
-  projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("diffliciousSbtPlugin")
+  projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("sbtPlugin")
 
 lazy val difflicious = Project("difflicious", file("."))
   .aggregate(allModules: _*)
   .settings(commonSettings, noPublishSettings)
 
-lazy val diffliciousSbtPlugin = project
+lazy val sbtPlugin = project
   .in(file("modules/sbt-plugin"))
   .enablePlugins(SbtPlugin, ScriptedPlugin)
+  .settings(selfHostedDiffliciousViewerSettings)
   .settings(
     name := "sbt-difflicious",
-    sbtPlugin := true,
+    sbt.Keys.sbtPlugin := true,
     addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
     scalaVersion := Build.Scala212,
     crossScalaVersions := Seq(Build.Scala212, Build.Scala3),
@@ -83,10 +83,25 @@ lazy val diffliciousSbtPlugin = project
       }
     },
     versionScheme := Some("early-semver"),
+    Compile / resourceGenerators += Def.task {
+      val output = (Compile / resourceManaged).value / "sbt-difflicious.properties"
+      val properties = new java.util.Properties()
+      properties.put("version", version.value)
+      IO.write(properties, "sbt-difflicious properties", output)
+      Seq(output)
+    }.taskValue,
     scriptedDependencies := {
+      (LocalProject("core") / publishLocal).value
+      (LocalProject("reporterCore") / publishLocal).value
+      (LocalProject("circe") / publishLocal).value
       (LocalProject("core3") / publishLocal).value
       (LocalProject("reporterCore3") / publishLocal).value
+      (LocalProject("circe3") / publishLocal).value
+      (LocalProject("munit3") / publishLocal).value
       (LocalProject("scalatest3") / publishLocal).value
+      (LocalProject("weaver3") / publishLocal).value
+      (LocalProject("cli") / publishLocal).value
+      (LocalProject("cli3") / publishLocal).value
       scriptedDependencies.value
     },
     scriptedBufferLog := false,
@@ -124,7 +139,7 @@ lazy val core = projectMatrix
 
 lazy val munit = projectMatrix
   .in(file("modules/munit"))
-  .dependsOn(core)
+  .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-munit",
@@ -164,7 +179,7 @@ lazy val scalatest = projectMatrix
 
 lazy val weaver = projectMatrix
   .in(file("modules/weaver"))
-  .dependsOn(core)
+  .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-weaver",
@@ -245,17 +260,20 @@ lazy val cli = projectMatrix
     Compile / run / fork := true,
     Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
     Compile / run / connectInput := true,
+    Test / skip := !isScala3.value,
   )
-  .jvmPlatform(Seq(Build.Scala3))
+  .jvmPlatform(Seq(Build.Scala213, Build.Scala3))
 
-lazy val cliPlayground = projectMatrix
-  .in(file("modules/cli-playground"))
-  .dependsOn(scalatest, cats)
+lazy val example = projectMatrix
+  .in(file("modules/example"))
+  .dependsOn(scalatest, munit, weaver, cats)
   .settings(commonSettings, noPublishSettings)
   .settings(
-    name := "difflicious-cli-playground",
+    name := "example",
     libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
+      "org.typelevel" %%% "weaver-cats" % weaverVersion % Test,
     ),
   )
   .jvmPlatform(Seq(Build.Scala3))
@@ -367,7 +385,18 @@ lazy val benchmarkCompile = projectMatrix
   )
   .jvmPlatform(scalaCrossVersions)
 
-lazy val commonSettings = Seq(
+lazy val selfHostedDiffliciousViewerSettings = Seq(
+  diffliciousCliAutoDependency := false,
+  diffliciousViewer := Def.inputTaskDyn {
+    val parsedArguments = sbt.complete.DefaultParsers.spaceDelimited("<arg>").parsed
+    val arguments = (diffliciousViewerAdditionalArguments.value ++ parsedArguments)
+      .map(argument => '"' + argument.replace("\\", "\\\\").replace("\"", "\\\"") + '"')
+      .mkString(" ", " ", "")
+    (Global / clientJob).toTask(s" cli/Compile/run$arguments").map(_ => ())
+  }.evaluated,
+)
+
+lazy val commonSettings = selfHostedDiffliciousViewerSettings ++ Seq(
   versionScheme := Some("early-semver"),
   nativeConfig ~= { config =>
     // Avoid GNU ld executable-stack warnings from Scala Native runtime assembly objects.

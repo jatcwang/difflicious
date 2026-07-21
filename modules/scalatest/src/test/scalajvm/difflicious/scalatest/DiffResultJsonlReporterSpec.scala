@@ -1,222 +1,51 @@
 package difflicious.scalatest
 
+import difflicious.DiffResult
 import difflicious.DiffResult.ValueResult
+import difflicious.reporter.DiffResultJsonlWriter
 import difflicious.reporter.DiffliciousResultDefaults
-import difflicious.reporter.UlidGenerator
+import difflicious.reporter.Ulid
 import io.circe.Json
 import io.circe.parser.parse
 import munit.FunSuite
 import org.scalactic.source.Position
 import org.scalatest.Args
 import org.scalatest.events.{NameInfo, Ordinal, ScopeOpened, TestFailed}
-import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import java.time.Instant
 import scala.jdk.CollectionConverters._
 
 class DiffResultJsonlReporterSpec extends FunSuite {
-  private val RunId = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
   private val TestId = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
   private val SecondTestId = "01ARZ3NDEKTSV4RRFFQ69G5FAX"
-  private val ZeroRunDirectory = "19700101_000000"
+  private val ZeroRunDirectory = DiffliciousResultDefaults.ZeroUlid
 
-  test("assertion failure carries diff result cause") {
+  test("assertion failure is a ScalaTest difference exception") {
     val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
     implicit val pos: Position = Position("ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)
 
-    val failure = intercept[TestFailedException] {
+    val failure = intercept[ScalatestDifferenceFoundException] {
       ScalatestDiffAssertions.failWithDiffResult(result)
     }
 
-    assertEquals(
-      Option(failure.getCause).collect { case diffFailure: DiffTestFailure => diffFailure },
-      Some(DiffTestFailure(result, "ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)),
-    )
+    assert(Ulid.isValid(failure.testId))
+    assert(failure.getMessage.startsWith(s"Test id: ${failure.testId}\n"))
+    assert(failure.getMessage.contains("1"))
+    assert(failure.getMessage.contains("2"))
+    assertEquals(failure.diffResult, result)
+    assertEquals(failure.fileName, "ExampleSuite.scala")
+    assertEquals(failure.filePath, "/workspace/ExampleSuite.scala")
+    assertEquals(failure.lineNumber, 37)
+    assertEquals(failure.getCause, null)
     assertEquals(failure.payload, None)
-  }
-
-  test("writes one JSONL file per suite for diff failures") {
-    val outputDir = Files.createTempDirectory("difflicious-scalatest-jsonl")
-    val reporter = zeroRunReporter(outputDir)
-    val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
-    val diffFailure = DiffTestFailure(result, "ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)
-
-    reporter(
-      TestFailed(
-        ordinal = new Ordinal(0),
-        message = "diff failed",
-        suiteName = "ExampleSuite",
-        suiteId = "example.ExampleSuite",
-        suiteClassName = Some("example.ExampleSuite"),
-        testName = "compares values",
-        testText = "compares values",
-        recordedEvents = IndexedSeq.empty,
-        analysis = IndexedSeq.empty,
-        throwable = Some(testFailedException(diffFailure)),
-        duration = Some(12L),
-        formatter = None,
-        location = None,
-        rerunner = None,
-        payload = None,
-        threadName = "main",
-        timeStamp = 123L,
-      ),
-    )
-
-    val outputFile = outputDir.resolve(ZeroRunDirectory).resolve("example.ExampleSuite.jsonl")
-    val lines = Files.readAllLines(outputFile, StandardCharsets.UTF_8)
-
-    assertEquals(lines.size, 1)
-    assertJsonl(
-      lines,
-      parseJson(
-        """{
-          |  "runId": "00000000000000000000000000",
-          |  "testId": "01ARZ3NDEKTSV4RRFFQ69G5FAW",
-          |  "suiteName": "ExampleSuite",
-          |  "suiteId": "example.ExampleSuite",
-          |  "suiteClassName": "example.ExampleSuite",
-          |  "testName": "compares values",
-          |  "testText": "compares values",
-          |  "testHierarchy": [
-          |    "compares values"
-          |  ],
-          |  "fileName": "ExampleSuite.scala",
-          |  "filePath": "/workspace/ExampleSuite.scala",
-          |  "lineNumber": 37,
-          |  "durationMillis": 12,
-          |  "timeStamp": 123,
-          |  "diffResult": {
-          |    "type": "value",
-          |    "valueType": "both",
-          |    "obtained": "1",
-          |    "expected": "2",
-          |    "isSame": false,
-          |    "pairType": "both",
-          |    "isIgnored": false,
-          |    "isOk": false
-          |  }
-          |}""".stripMargin,
-      ),
-    )
-  }
-
-  test("writes configured run id") {
-    val outputDir = Files.createTempDirectory("difflicious-scalatest-jsonl-test-run-id")
-    val reporter = new DiffResultJsonlReporter(outputDir.toString, RunId, deterministicUlidGenerator())
-    val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
-    val diffFailure = DiffTestFailure(result, "ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)
-
-    reporter(
-      TestFailed(
-        ordinal = new Ordinal(0),
-        message = "diff failed",
-        suiteName = "ExampleSuite",
-        suiteId = "example.ExampleSuite",
-        suiteClassName = Some("example.ExampleSuite"),
-        testName = "compares values",
-        testText = "compares values",
-        recordedEvents = IndexedSeq.empty,
-        analysis = IndexedSeq.empty,
-        throwable = Some(testFailedException(diffFailure)),
-        duration = Some(12L),
-        formatter = None,
-        location = None,
-        rerunner = None,
-        payload = None,
-        threadName = "main",
-        timeStamp = 123L,
-      ),
-    )
-
-    val outputFile = outputDir.resolve(RunId).resolve("example.ExampleSuite.jsonl")
-    val line = Files.readAllLines(outputFile, StandardCharsets.UTF_8).get(0)
-
-    assertEquals(jsonStringField(line, "runId"), RunId)
-  }
-
-  test("uses a timestamp directory when run id is zero") {
-    val timestamp = Instant.parse("2026-07-15T10:15:10.987Z").toEpochMilli
-
-    assertEquals(
-      DiffResultJsonlReporter.directoryNameForRun(DiffliciousResultDefaults.ZeroUlid, timestamp),
-      "20260715_101510",
-    )
-  }
-
-  test("writes null JSON fields for absent optional ScalaTest metadata") {
-    val outputDir = Files.createTempDirectory("difflicious-scalatest-jsonl-null-options")
-    val reporter = zeroRunReporter(outputDir)
-    val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
-    val diffFailure = DiffTestFailure(result, "ExampleSuite.scala", "/workspace/ExampleSuite.scala", 37)
-
-    reporter(
-      TestFailed(
-        ordinal = new Ordinal(0),
-        message = "diff failed",
-        suiteName = "ExampleSuite",
-        suiteId = "example/ExampleSuite",
-        suiteClassName = None,
-        testName = "compares values",
-        testText = "compares values",
-        recordedEvents = IndexedSeq.empty,
-        analysis = IndexedSeq.empty,
-        throwable = Some(testFailedException(diffFailure)),
-        duration = None,
-        formatter = None,
-        location = None,
-        rerunner = None,
-        payload = None,
-        threadName = "main",
-        timeStamp = 123L,
-      ),
-    )
-
-    val outputFile = outputDir.resolve(ZeroRunDirectory).resolve("example_ExampleSuite.jsonl")
-    val lines = Files.readAllLines(outputFile, StandardCharsets.UTF_8)
-
-    assertEquals(lines.size, 1)
-    assertJsonl(
-      lines,
-      parseJson(
-        """{
-          |  "runId": "00000000000000000000000000",
-          |  "testId": "01ARZ3NDEKTSV4RRFFQ69G5FAW",
-          |  "suiteName": "ExampleSuite",
-          |  "suiteId": "example/ExampleSuite",
-          |  "suiteClassName": null,
-          |  "testName": "compares values",
-          |  "testText": "compares values",
-          |  "testHierarchy": [
-          |    "compares values"
-          |  ],
-          |  "fileName": "ExampleSuite.scala",
-          |  "filePath": "/workspace/ExampleSuite.scala",
-          |  "lineNumber": 37,
-          |  "durationMillis": null,
-          |  "timeStamp": 123,
-          |  "diffResult": {
-          |    "type": "value",
-          |    "valueType": "both",
-          |    "obtained": "1",
-          |    "expected": "2",
-          |    "isSame": false,
-          |    "pairType": "both",
-          |    "isIgnored": false,
-          |    "isOk": false
-          |  }
-          |}""".stripMargin,
-      ),
-    )
   }
 
   test("captures diff assertion failures from ScalaTest events") {
     val outputDir = Files.createTempDirectory("difflicious-scalatest-run-jsonl")
-    val suite = new DiffSuite
+    val suite = new DiffSuite(TestId)
     val status = suite.run(None, Args(zeroRunReporter(outputDir)))
 
     status.waitUntilCompleted()
@@ -244,8 +73,6 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "fileName": "DiffSuite.scala",
           |  "filePath": "/workspace/DiffSuite.scala",
           |  "lineNumber": 41,
-          |  "durationMillis": 0,
-          |  "timeStamp": 0,
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
@@ -263,7 +90,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
 
   test("captures nested ScalaTest scopes in hierarchy") {
     val outputDir = Files.createTempDirectory("difflicious-scalatest-freespec-jsonl")
-    val suite = new NestedDiffSuite
+    val suite = new NestedDiffSuite(TestId)
     val status = suite.run(None, Args(zeroRunReporter(outputDir)))
 
     status.waitUntilCompleted()
@@ -293,8 +120,6 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "fileName": "NestedDiffSuite.scala",
           |  "filePath": "/workspace/NestedDiffSuite.scala",
           |  "lineNumber": 64,
-          |  "durationMillis": 0,
-          |  "timeStamp": 0,
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
@@ -316,8 +141,9 @@ class DiffResultJsonlReporterSpec extends FunSuite {
     val result = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
     val suiteA = NameInfo("SuiteA", "suite-a", Some("example.SuiteA"), None)
     val suiteB = NameInfo("SuiteB", "suite-b", Some("example.SuiteB"), None)
-    val suiteAFailure = DiffTestFailure(result, "SuiteA.scala", "/workspace/SuiteA.scala", 11)
-    val suiteBFailure = DiffTestFailure(result, "SuiteB.scala", "/workspace/SuiteB.scala", 22)
+    val suiteAFailure = differenceFoundException(result, "SuiteA.scala", "/workspace/SuiteA.scala", 11, TestId)
+    val suiteBFailure =
+      differenceFoundException(result, "SuiteB.scala", "/workspace/SuiteB.scala", 22, SecondTestId)
 
     reporter(ScopeOpened(new Ordinal(0), "scope A", suiteA))
     reporter(ScopeOpened(new Ordinal(1), "scope B", suiteB))
@@ -332,7 +158,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
         testText = "leaf A",
         recordedEvents = IndexedSeq.empty,
         analysis = IndexedSeq.empty,
-        throwable = Some(testFailedException(suiteAFailure)),
+        throwable = Some(suiteAFailure),
         duration = None,
         formatter = None,
         location = None,
@@ -353,7 +179,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
         testText = "leaf B",
         recordedEvents = IndexedSeq.empty,
         analysis = IndexedSeq.empty,
-        throwable = Some(testFailedException(suiteBFailure)),
+        throwable = Some(suiteBFailure),
         duration = None,
         formatter = None,
         location = None,
@@ -388,8 +214,6 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "fileName": "SuiteA.scala",
           |  "filePath": "/workspace/SuiteA.scala",
           |  "lineNumber": 11,
-          |  "durationMillis": null,
-          |  "timeStamp": 123,
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
@@ -421,8 +245,6 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |  "fileName": "SuiteB.scala",
           |  "filePath": "/workspace/SuiteB.scala",
           |  "lineNumber": 22,
-          |  "durationMillis": null,
-          |  "timeStamp": 124,
           |  "diffResult": {
           |    "type": "value",
           |    "valueType": "both",
@@ -438,16 +260,16 @@ class DiffResultJsonlReporterSpec extends FunSuite {
     )
   }
 
-  private final class DiffSuite extends AnyFunSuite {
+  private final class DiffSuite(testId: String) extends AnyFunSuite {
     test("testDiffFailure") {
       val result = ValueResult.Both("obtained", "expected", isSame = false, isIgnored = false)
       implicit val pos: Position = Position("DiffSuite.scala", "/workspace/DiffSuite.scala", 41)
 
-      ScalatestDiffAssertions.failWithDiffResult(result)
+      ScalatestDiffAssertions.failWithDiffResult(result, testId)
     }
   }
 
-  private final class NestedDiffSuite extends AnyFreeSpec {
+  private final class NestedDiffSuite(testId: String) extends AnyFreeSpec {
     "outer scope" - {
       "inner scope" - {
         "leaf failure" in {
@@ -455,53 +277,33 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           implicit val pos: Position =
             Position("NestedDiffSuite.scala", "/workspace/NestedDiffSuite.scala", 64)
 
-          ScalatestDiffAssertions.failWithDiffResult(result)
+          ScalatestDiffAssertions.failWithDiffResult(result, testId)
         }
       }
     }
   }
 
-  private def testFailedException(diffFailure: DiffTestFailure): TestFailedException =
-    new TestFailedException("diff failed", diffFailure, 0)
-
-  private def jsonStringField(line: String, fieldName: String): String = {
-    val prefix = "\"" + fieldName + "\":\""
-    val start = line.indexOf(prefix)
-    assert(start >= 0, s"Could not find JSON string field $fieldName in $line")
-    val valueStart = start + prefix.length
-    val valueEnd = line.indexOf('"', valueStart)
-    assert(valueEnd >= valueStart, s"Could not read JSON string field $fieldName in $line")
-    line.substring(valueStart, valueEnd)
+  private def differenceFoundException(
+    result: DiffResult,
+    fileName: String,
+    filePath: String,
+    lineNumber: Int,
+    testId: String,
+  ): ScalatestDifferenceFoundException = {
+    implicit val pos: Position = Position(fileName, filePath, lineNumber)
+    new ScalatestDifferenceFoundException(result, testId)
   }
 
   private def zeroRunReporter(outputDir: Path): DiffResultJsonlReporter =
     new DiffResultJsonlReporter(
-      outputDir.toString,
-      DiffliciousResultDefaults.ZeroUlid,
-      deterministicUlidGenerator(),
+      new DiffResultJsonlWriter(
+        outputDir.toString,
+        DiffliciousResultDefaults.ZeroUlid,
+      ),
     )
 
   private def assertJsonl(lines: java.util.List[String], expected: Json*): Unit =
-    assertEquals(lines.asScala.map(line => normalizeScalatestFields(parseJson(line))).toSeq, expected)
-
-  private def normalizeScalatestFields(json: Json): Json = {
-    val suiteName = json.hcursor.get[String]("suiteName").toOption
-
-    if (suiteName.exists(_.startsWith("DiffResultJsonlReporterSpec$")))
-      json.mapObject(
-        _.add("durationMillis", Json.fromInt(0))
-          .add("timeStamp", Json.fromInt(0)),
-      )
-    else json
-  }
-
-  private def deterministicUlidGenerator(): UlidGenerator = new UlidGenerator {
-    private val testIds = Iterator(TestId, SecondTestId)
-
-    override def generate(): String =
-      if (testIds.hasNext) testIds.next()
-      else fail("Deterministic ULID generator exhausted")
-  }
+    assertEquals(lines.asScala.map(parseJson).toSeq, expected)
 
   private def parseJson(value: String): Json =
     parse(value).fold(error => fail(s"Invalid JSON: ${error.message}"), identity)

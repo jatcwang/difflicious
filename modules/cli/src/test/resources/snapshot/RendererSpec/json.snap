@@ -7,7 +7,7 @@
     "typeMismatches" : 0,
     "obtainedOnly" : 1,
     "expectedOnly" : 1,
-    "ignored" : 0
+    "ignored" : 1
   },
   "changes" : [
     {
@@ -20,6 +20,17 @@
       "isIgnored" : false,
       "isOk" : false,
       "rendered" : "\"alice@old.example\" -> \"alice@example.com\""
+    },
+    {
+      "path" : "$.customer.loyaltyTier",
+      "kind" : "ignored",
+      "pairType" : "both",
+      "typeName" : null,
+      "obtained" : null,
+      "expected" : null,
+      "isIgnored" : true,
+      "isOk" : true,
+      "rendered" : "[IGNORED]"
     },
     {
       "path" : "$.shipping.city",
@@ -158,12 +169,12 @@
               "value" : {
                 "kind" : "value",
                 "pairType" : "both",
-                "isIgnored" : false,
+                "isIgnored" : true,
                 "isOk" : true,
                 "typeName" : null,
                 "obtained" : "\"gold\"",
-                "expected" : "\"gold\"",
-                "isSame" : true
+                "expected" : "\"platinum\"",
+                "isSame" : false
               }
             }
           ]

@@ -21,8 +21,6 @@ final case class DiffResultTestDetails(
   fileName: String,
   filePath: String,
   lineNumber: Int,
-  durationMillis: Option[Long],
-  timeStamp: Long,
   diffResult: DiffResult,
 )
 

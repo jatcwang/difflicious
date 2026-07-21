@@ -1,8 +1,8 @@
 package difflicious.cli
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import difflicious.DiffResult.ValueResult
-import difflicious.reporter.DiffResultTestDetails
+import difflicious.reporter.DiffResultJson
+import io.circe.Json
 import io.circe.parser.parse
 import munit.FunSuite
 import snapshot4s.generated.*
@@ -27,7 +27,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--plain", report.toString),
+      List("--plain", "-d", report.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -56,7 +56,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--json", directory.toString),
+      List("--json", "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -90,7 +90,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--json", "--test-id", OtherTestId, directory.toString),
+      List("--json", "--test-id", OtherTestId, "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -134,7 +134,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val tuiRunner = new RecordingTuiRunner
 
     val exitCode = Main.run(
-      List("--interactive", "--no-color", "--test-id", OtherTestId, directory.toString),
+      List("--interactive", "--no-color", "--test-id", OtherTestId, "-d", directory.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -146,6 +146,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     assertEquals(error.toString(StandardCharsets.UTF_8.name()), "")
     assertEquals(tuiRunner.calls.size, 1)
     assertEquals(tuiRunner.calls.head.initialIndex, 1)
+    assertEquals(tuiRunner.calls.head.openInitialResult, true)
     assertEquals(tuiRunner.calls.head.color, false)
     assertEquals(tuiRunner.calls.head.report.runs.size, 2)
     assertEquals(tuiRunner.calls.head.report.runs(1).metadata.map(_.runId), Some(ExampleRunId))
@@ -158,7 +159,7 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     val error = new ByteArrayOutputStream
 
     val exitCode = Main.run(
-      List("--plain", "--test-id", "missing-test", report.toString),
+      List("--plain", "--test-id", "missing-test", "-d", report.toString),
       emptyStdin,
       printStream(output),
       printStream(error),
@@ -187,24 +188,24 @@ class MainSpec extends FunSuite with SnapshotAssertions {
   ): String = {
     val testText = leafText(testName, testHierarchy)
     val hierarchy = if (testHierarchy.isEmpty) Vector(testName) else testHierarchy
-    val record = DiffResultTestDetails(
-      runId = runId,
-      testId = testId,
-      suiteName = suiteName,
-      suiteId = suiteId,
-      suiteClassName = Some(suiteId),
-      testName = testName,
-      testText = testText,
-      testHierarchy = hierarchy,
-      fileName = "ExampleSuite.scala",
-      filePath = filePath,
-      lineNumber = lineNumber,
-      durationMillis = Some(12L),
-      timeStamp = 123L,
-      diffResult = ValueResult.Both("1", "2", isSame = false, isIgnored = false),
+    val diffResult = ValueResult.Both("1", "2", isSame = false, isIgnored = false)
+    val fields = Vector(
+      "runId" -> Json.fromString(runId),
+      "testId" -> Json.fromString(testId),
+      "suiteName" -> Json.fromString(suiteName),
+      "suiteId" -> Json.fromString(suiteId),
+      "suiteClassName" -> Json.fromString(suiteId),
+      "testName" -> Json.fromString(testName),
+      "testText" -> Json.fromString(testText),
+      "testHierarchy" -> Json.fromValues(hierarchy.map(Json.fromString)),
+      "fileName" -> Json.fromString("ExampleSuite.scala"),
+      "filePath" -> Json.fromString(filePath),
+      "lineNumber" -> Json.fromInt(lineNumber),
+      "diffResult" -> parse(DiffResultJson.toJsonString(diffResult)).fold(error => throw error, identity),
     )
+    val record = Json.fromFields(fields)
 
-    writeToString(record) + System.lineSeparator()
+    record.noSpaces + System.lineSeparator()
   }
 
   private def leafText(testName: String, testHierarchy: Vector[String]): String =
@@ -222,9 +223,14 @@ private object MainSpec {
   final class RecordingTuiRunner extends TuiRunner {
     var calls: Vector[TuiCall] = Vector.empty
 
-    override def run(report: DiffReport, color: Boolean, initialIndex: Int): Unit =
-      calls = calls :+ TuiCall(report, color, initialIndex)
+    override def run(report: DiffReport, color: Boolean, initialIndex: Int, openInitialResult: Boolean): Unit =
+      calls = calls :+ TuiCall(report, color, initialIndex, openInitialResult)
   }
 
-  final case class TuiCall(report: DiffReport, color: Boolean, initialIndex: Int)
+  final case class TuiCall(
+    report: DiffReport,
+    color: Boolean,
+    initialIndex: Int,
+    openInitialResult: Boolean,
+  )
 }

@@ -12,9 +12,11 @@ import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDate, ZoneId}
 import scala.util.control.NonFatal
 
+// When modifying the UI, consider regenerating the TUI screenshots after snapshots are updated (scripts/render-cli-screenshots.mjs)
 private[cli] sealed trait TerminalKey
 
 private[cli] object TerminalKey {
+  case object Escape extends TerminalKey
   case object Quit extends TerminalKey
   case object Open extends TerminalKey
   case object Next extends TerminalKey
@@ -42,6 +44,7 @@ private[cli] sealed trait SearchKey
 
 private[cli] object SearchKey {
   case object Cancel extends SearchKey
+  case object Quit extends SearchKey
   case object Submit extends SearchKey
   case object Up extends SearchKey
   case object Down extends SearchKey
@@ -53,6 +56,7 @@ private[cli] object SearchKey {
 }
 
 private[cli] final case class TerminalKeymap(
+  escape: TerminalKeymap.Binding,
   quit: TerminalKeymap.Binding,
   open: TerminalKeymap.Binding,
   next: TerminalKeymap.Binding,
@@ -78,6 +82,7 @@ private[cli] final case class TerminalKeymap(
 
   private val bindings: Vector[TerminalKeymap.Binding] =
     Vector(
+      escape,
       quit,
       open,
       next,
@@ -173,7 +178,8 @@ private[cli] object TerminalKeymap {
     import TerminalKey._
 
     TerminalKeymap(
-      quit = bind(Quit, code(27, "escape"), code(3, "ctrl-c"), code(4, "ctrl-d")),
+      escape = bind(Escape, code(27, "escape")),
+      quit = bind(Quit, code(3, "ctrl-c"), code(4, "ctrl-d")),
       open = bind(Open, code(10, "enter"), code(13, "enter"), char('o')),
       next = bind(Next, escape("[B", "down"), char('j')),
       previous = bind(Previous, escape("[A", "up"), char('k')),
@@ -220,13 +226,18 @@ private[cli] trait TerminalSession {
 }
 
 private[cli] trait TuiRunner {
-  def run(report: DiffReport, color: Boolean, initialIndex: Int): Unit
+  def run(report: DiffReport, color: Boolean, initialIndex: Int, openInitialResult: Boolean): Unit
 }
 
 object InteractiveReportViewer extends TuiRunner {
   private val SearchCandidateRows = 6
 
-  override def run(report: DiffReport, color: Boolean, initialIndex: Int = 0): Unit = {
+  override def run(
+    report: DiffReport,
+    color: Boolean,
+    initialIndex: Int = 0,
+    openInitialResult: Boolean = false,
+  ): Unit = {
     var terminal: Terminal = null
     var originalAttributes: Attributes = null
     var session: JLineTerminalSession = null
@@ -236,7 +247,7 @@ object InteractiveReportViewer extends TuiRunner {
       originalAttributes = terminal.enterRawMode()
       session = new JLineTerminalSession(terminal, TerminalKeymap.default)
       session.enterFullscreen()
-      runSession(report, session, color, initialIndex)
+      runSession(report, session, color, initialIndex, openInitialResult)
     } finally {
       if (session != null) ignoreNonFatal(session.exitFullscreen())
       if (terminal != null && originalAttributes != null) ignoreNonFatal(terminal.setAttributes(originalAttributes))
@@ -250,6 +261,9 @@ object InteractiveReportViewer extends TuiRunner {
       case NonFatal(_) => ()
     }
 
+  private final case class ParsedTerminalKey(key: TerminalKey, nextIndex: Int)
+  private final case class ParsedSearchKey(key: SearchKey, nextIndex: Int)
+
   private[cli] final case class InteractiveReportViewerState(
     color: Boolean,
     width: Int,
@@ -257,6 +271,7 @@ object InteractiveReportViewer extends TuiRunner {
     keymap: TerminalKeymap,
     zoneId: ZoneId,
     screen: TerminalScreen,
+    exitArmed: Boolean,
   ) {
     def handleInput(inputs: Vector[Int]): InteractiveReportViewerState = {
       var model = this
@@ -265,7 +280,7 @@ object InteractiveReportViewer extends TuiRunner {
       while (index < inputs.length && !model.isTerminated) {
         model.screen match {
           case screen if screen.showHelpPopup =>
-            model = model.copy(screen = screen.withHelpPopup(show = false))
+            model = model.copy(screen = screen.withHelpPopup(show = false), exitArmed = false)
             index = inputs.length
 
           case _ if model.expectsSearchInput =>
@@ -300,7 +315,6 @@ object InteractiveReportViewer extends TuiRunner {
         case s: TerminalScreen.Diff =>
           val normalized = s.state.normalized
           renderDiffScreen(
-            normalized.currentRun,
             normalized.tree,
             normalized.anchor,
             normalized.rows,
@@ -316,7 +330,8 @@ object InteractiveReportViewer extends TuiRunner {
         case TerminalScreen.Terminated =>
           Vector.empty
       }
-      if (screen.showHelpPopup) renderHelpPopup(base, width, height, keymap) else base
+      val withPopup = if (screen.showHelpPopup) renderHelpPopup(base, width, height, keymap) else base
+      if (exitArmed) renderBottomMessage(withPopup, "Press ESC again to exit.", width, height) else withPopup
     }
 
     def isTerminated: Boolean =
@@ -333,17 +348,24 @@ object InteractiveReportViewer extends TuiRunner {
       }
 
     private def applyTerminalKey(key: TerminalKey): InteractiveReportViewerState =
+      key match {
+        case TerminalKey.Escape => applyEscape()
+        case TerminalKey.Quit => copy(screen = TerminalScreen.Terminated, exitArmed = false)
+        case _ => copy(exitArmed = false).applyNonEscapeTerminalKey(key)
+      }
+
+    private def applyNonEscapeTerminalKey(key: TerminalKey): InteractiveReportViewerState =
       screen match {
         case _: TerminalScreen.EmptyReport =>
           key match {
-            case TerminalKey.Quit | TerminalKey.Open => copy(screen = TerminalScreen.Terminated)
+            case TerminalKey.Open => copy(screen = TerminalScreen.Terminated)
             case TerminalKey.Help => copy(screen = screen.withHelpPopup(show = true))
             case _ => this
           }
 
         case s: TerminalScreen.NoDifferences =>
           key match {
-            case TerminalKey.Quit | TerminalKey.Open =>
+            case TerminalKey.Open =>
               s.state.reportRuns match {
                 case Some(runs) =>
                   copy(
@@ -365,18 +387,58 @@ object InteractiveReportViewer extends TuiRunner {
           this
       }
 
-    private def applySearchKey(key: SearchKey): InteractiveReportViewerState =
+    private def applyEscape(): InteractiveReportViewerState =
       screen match {
-        case s: TerminalScreen.ReportFinder =>
-          copy(screen = s.state.handleSearchKey(key))
-        case s: TerminalScreen.Diff if s.state.fieldSearch.active =>
-          copy(screen = TerminalScreen.Diff(s.state.normalized.handleFieldSearchKey(key)))
-        case _ =>
+        case _: TerminalScreen.EmptyReport =>
+          armOrExit()
+        case s: TerminalScreen.NoDifferences =>
+          s.state.reportRuns match {
+            case Some(runs) =>
+              copy(
+                screen = TerminalScreen.ReportFinder(
+                  FinderState.initial(runs, s.state.currentReportRunIndex, zoneId = zoneId),
+                ),
+                exitArmed = false,
+              )
+            case None =>
+              armOrExit()
+          }
+        case s: TerminalScreen.Diff =>
+          s.state.normalized.handleTerminalKey(TerminalKey.Escape, height, zoneId) match {
+            case TerminalScreen.Terminated => armOrExit()
+            case nextScreen => copy(screen = nextScreen, exitArmed = false)
+          }
+        case _: TerminalScreen.ReportFinder | TerminalScreen.Terminated =>
           this
       }
 
-    private final case class ParsedTerminalKey(key: TerminalKey, nextIndex: Int)
-    private final case class ParsedSearchKey(key: SearchKey, nextIndex: Int)
+    private def armOrExit(): InteractiveReportViewerState =
+      if (exitArmed) copy(screen = TerminalScreen.Terminated, exitArmed = false)
+      else copy(exitArmed = true)
+
+    private def applySearchKey(key: SearchKey): InteractiveReportViewerState =
+      if (key == SearchKey.Quit) copy(screen = TerminalScreen.Terminated, exitArmed = false)
+      else
+        screen match {
+          case s: TerminalScreen.ReportFinder =>
+            key match {
+              case SearchKey.Cancel =>
+                s.state.returnTo match {
+                  case Some(returnTo) => copy(screen = returnTo, exitArmed = false)
+                  case None if s.state.query.nonEmpty =>
+                    copy(
+                      screen = TerminalScreen.ReportFinder(s.state.copy(query = "", selectedIndex = 0)),
+                      exitArmed = false,
+                    )
+                  case None => armOrExit()
+                }
+              case _ => copy(screen = s.state.handleSearchKey(key), exitArmed = false)
+            }
+          case s: TerminalScreen.Diff if s.state.fieldSearch.active =>
+            copy(screen = TerminalScreen.Diff(s.state.normalized.handleFieldSearchKey(key)), exitArmed = false)
+          case _ =>
+            this
+        }
 
     private def parseTerminalKey(inputs: Vector[Int], index: Int): ParsedTerminalKey = {
       val code = inputs(index)
@@ -414,6 +476,8 @@ object InteractiveReportViewer extends TuiRunner {
           ParsedTerminalKey(key, index)
         case None if sequence.isEmpty =>
           ParsedTerminalKey(keymap.lookupCode(27).getOrElse(TerminalKey.Ignored), startIndex + 1)
+        case None if sequence.headOption.contains(27) =>
+          ParsedTerminalKey(keymap.lookupCode(27).getOrElse(TerminalKey.Ignored), startIndex + 1)
         case None =>
           ParsedTerminalKey(TerminalKey.Ignored, index)
       }
@@ -423,14 +487,14 @@ object InteractiveReportViewer extends TuiRunner {
       val code = inputs(index)
       code match {
         case 3 | 4 =>
-          ParsedSearchKey(SearchKey.Cancel, index + 1)
+          ParsedSearchKey(SearchKey.Quit, index + 1)
         case 27 =>
           val parsed = parseEscape(inputs, index)
           val key =
             parsed.key match {
               case TerminalKey.Previous => SearchKey.Up
               case TerminalKey.Next => SearchKey.Down
-              case TerminalKey.Quit => SearchKey.Cancel
+              case TerminalKey.Escape => SearchKey.Cancel
               case TerminalKey.Ignored => SearchKey.Cancel
               case _ => SearchKey.Ignored
             }
@@ -476,6 +540,7 @@ object InteractiveReportViewer extends TuiRunner {
       height: Int,
       keymap: TerminalKeymap = TerminalKeymap.default,
       initialIndex: Int = 0,
+      openInitialResult: Boolean = false,
       zoneId: ZoneId = ZoneId.systemDefault(),
     ): InteractiveReportViewerState = {
       val screen =
@@ -484,11 +549,20 @@ object InteractiveReportViewer extends TuiRunner {
             TerminalScreen.EmptyReport()
           case Vector(run) if run.metadata.isEmpty =>
             screenForRun(run, reportPanel = None, reportRuns = None, currentReportRunIndex = None)
+          case runs if openInitialResult =>
+            val initialRunIndex = normalizeIndex(initialIndex, runs.length)
+            val run = runs(initialRunIndex)
+            screenForRun(
+              run,
+              reportPanel = Some(ReportPanelSummary.fromRun(run)),
+              reportRuns = Some(runs),
+              currentReportRunIndex = Some(initialRunIndex),
+            )
           case runs =>
             val initialRunIndex = if (initialIndex == 0) None else Some(normalizeIndex(initialIndex, runs.length))
             TerminalScreen.ReportFinder(FinderState.initial(runs, initialRunIndex, zoneId = zoneId))
         }
-      InteractiveReportViewerState(color, width, height, keymap, zoneId, screen)
+      InteractiveReportViewerState(color, width, height, keymap, zoneId, screen, exitArmed = false)
     }
   }
 
@@ -537,6 +611,9 @@ object InteractiveReportViewer extends TuiRunner {
       key match {
         case SearchKey.Cancel =>
           returnTo.getOrElse(TerminalScreen.Terminated)
+
+        case SearchKey.Quit =>
+          TerminalScreen.Terminated
 
         case SearchKey.Submit =>
           matches.lift(clampedSelectedIndex) match {
@@ -637,8 +714,11 @@ object InteractiveReportViewer extends TuiRunner {
       val currentRows = state.rows
 
       key match {
-        case TerminalKey.Quit =>
+        case TerminalKey.Escape =>
           state.deanchorOneStep(zoneId)
+
+        case TerminalKey.Quit =>
+          TerminalScreen.Terminated
 
         case TerminalKey.Anchor =>
           val newAnchor = currentRows(state.selectedIndex).node.id
@@ -798,6 +878,9 @@ object InteractiveReportViewer extends TuiRunner {
         case SearchKey.Cancel =>
           copy(fieldSearch = fieldSearch.copy(query = "", active = false))
 
+        case SearchKey.Quit =>
+          this
+
         case SearchKey.Submit =>
           val submittedQuery = fieldSearch.query
           jumpToFieldSearchMatch(submittedQuery, step = 0)
@@ -935,7 +1018,7 @@ object InteractiveReportViewer extends TuiRunner {
         anchor = anchor,
         expanded = expanded,
         explicitlyExpanded = Set.empty,
-        selectedIndex = tree.firstDifferenceRow(anchor, rows).getOrElse(0),
+        selectedIndex = tree.firstDifferenceRow(rows).getOrElse(0),
         fieldSearch = FieldSearchState.Empty,
       )
     }
@@ -946,6 +1029,7 @@ object InteractiveReportViewer extends TuiRunner {
     session: TerminalSession,
     color: Boolean,
     initialIndex: Int = 0,
+    openInitialResult: Boolean = false,
     zoneId: ZoneId = ZoneId.systemDefault(),
   ): Unit = {
     var model =
@@ -956,6 +1040,7 @@ object InteractiveReportViewer extends TuiRunner {
         height = session.height,
         keymap = session.keymap,
         initialIndex = initialIndex,
+        openInitialResult = openInitialResult,
         zoneId = zoneId,
       )
 
@@ -968,7 +1053,6 @@ object InteractiveReportViewer extends TuiRunner {
   }
 
   private def renderDiffScreen(
-    run: DiffRun,
     tree: DiffTree,
     anchor: Vector[String],
     rows: Vector[DiffTreeRow],
@@ -1098,6 +1182,13 @@ object InteractiveReportViewer extends TuiRunner {
       Vector("No differences.", "") ++
       renderConsoleDiff(run.result, color).linesIterator.toVector
 
+  private def renderBottomMessage(lines: Vector[String], message: String, width: Int, height: Int): Vector[String] =
+    if (height <= 0) Vector.empty
+    else {
+      val screen = lines.take(height) ++ Vector.fill(math.max(0, height - lines.length))("")
+      screen.updated(height - 1, fitAnsi(message, math.max(0, width)))
+    }
+
   private def renderConsoleDiff(result: DiffResult, color: Boolean): String = {
     val rendered = DiffResultPrinter.consoleOutput(result, 0).render
     if (color) rendered else Ansi.strip(rendered)
@@ -1149,7 +1240,8 @@ object InteractiveReportViewer extends TuiRunner {
         ),
         "General" -> Vector(
           helpLine(keymap.help.label, "show this help"),
-          helpLine(keymap.quit.label, "quit or go back"),
+          helpLine(keymap.escape.label, "go back or confirm quit"),
+          helpLine(keymap.quit.label, "quit immediately"),
         ),
       )
     val keyLabelWidth = sections.flatMap { case (_, entries) => entries.map(_.keyLabel.length) }.maxOption.getOrElse(0)
@@ -1251,21 +1343,21 @@ object InteractiveReportViewer extends TuiRunner {
     contentWidth: Int,
     color: Boolean,
   ): Vector[String] = {
-    val start = windowStart(selectedIndex, matches.length, SearchCandidateRows)
-    val visibleMatches = matches.slice(start, start + SearchCandidateRows)
+    val lines =
+      matches.zipWithIndex.flatMap { case (searchMatch, index) =>
+        renderSearchCandidateLines(
+          searchMatch,
+          query,
+          selected = index == selectedIndex,
+          contentWidth = contentWidth,
+          color = color,
+        )
+      }
+    val selectedLineIndex = lines.indexWhere(_.selected)
+    val start = windowStart(math.max(0, selectedLineIndex), lines.length, SearchCandidateRows)
     val visibleLines =
       if (matches.isEmpty) Vector("No matches")
-      else
-        visibleMatches.zipWithIndex.map { case (searchMatch, offset) =>
-          val index = start + offset
-          renderSearchCandidateLine(
-            searchMatch,
-            query,
-            selected = index == selectedIndex,
-            contentWidth = contentWidth,
-            color = color,
-          )
-        }
+      else lines.slice(start, start + SearchCandidateRows).map(_.line)
     visibleLines ++ Vector.fill(math.max(0, SearchCandidateRows - visibleLines.length))("")
   }
 
@@ -1374,15 +1466,12 @@ object InteractiveReportViewer extends TuiRunner {
           selected = false,
         )
         suiteMatches.foreach { indexedSearchMatch =>
-          rows += SearchRenderRow(
-            renderHierarchicalSearchCandidateLine(
-              indexedSearchMatch.searchMatch,
-              query,
-              selected = indexedSearchMatch.index == selectedIndex,
-              contentWidth = contentWidth,
-              color = color,
-            ),
+          rows ++= renderHierarchicalSearchCandidateLines(
+            indexedSearchMatch.searchMatch,
+            query,
             selected = indexedSearchMatch.index == selectedIndex,
+            contentWidth = contentWidth,
+            color = color,
           )
         }
       }
@@ -1407,17 +1496,17 @@ object InteractiveReportViewer extends TuiRunner {
     padRightVisible(fitAnsi(renderStyledSegments(highlighted, contentWidth, color), contentWidth), contentWidth)
   }
 
-  private def renderHierarchicalSearchCandidateLine(
+  private def renderHierarchicalSearchCandidateLines(
     searchMatch: TestSearchMatch,
     query: String,
     selected: Boolean,
     contentWidth: Int,
     color: Boolean,
-  ): String = {
+  ): Vector[SearchRenderRow] = {
+    val candidateSegments = Vector(StyledText(searchMatch.candidate.testName, None))
     val segments =
-      Vector(StyledText("      ", None), StyledText(searchMatch.candidate.testName, None))
-    val content = renderStyledSegments(highlightSearchMatch(segments, Some(query)), contentWidth, color)
-    renderSelectableLine(content, selected)
+      highlightSearchMatch(candidateSegments, Some(query)) ++ testIdMatchBadge(searchMatch)
+    renderWrappedSearchCandidateLines(segments, "      \u00b7 ", "        ", selected, contentWidth, color)
   }
 
   private def renderSearchCandidateDetails(candidate: Option[TestSearchCandidate]): Vector[String] =
@@ -1440,21 +1529,84 @@ object InteractiveReportViewer extends TuiRunner {
         )
     }
 
-  private def renderSearchCandidateLine(
+  private def renderSearchCandidateLines(
     searchMatch: TestSearchMatch,
     query: String,
     selected: Boolean,
     contentWidth: Int,
     color: Boolean,
-  ): String = {
+  ): Vector[SearchRenderRow] = {
     val candidate = searchMatch.candidate
     val timestamp = candidate.runTimestampLabel.toVector
-    val segments =
+    val candidateSegments =
       Vector(StyledText(candidate.testName, None)) ++
         timestamp.flatMap(label => Vector(StyledText(" ", None), StyledText(label, Some(RowColor.Pink))))
-    val content = renderStyledSegments(highlightSearchMatch(segments, Some(query)), contentWidth, color)
-    renderSelectableLine(content, selected)
+    val segments =
+      highlightSearchMatch(candidateSegments, Some(query)) ++ testIdMatchBadge(searchMatch)
+    renderWrappedSearchCandidateLines(segments, "\u00b7 ", "  ", selected, contentWidth, color)
   }
+
+  private def renderWrappedSearchCandidateLines(
+    segments: Vector[StyledText],
+    firstPrefix: String,
+    continuationPrefix: String,
+    selected: Boolean,
+    contentWidth: Int,
+    color: Boolean,
+  ): Vector[SearchRenderRow] = {
+    val normalized = segments.map(segment => segment.copy(value = oneLine(segment.value))).filter(_.value.nonEmpty)
+    val rows = Vector.newBuilder[SearchRenderRow]
+    var segmentIndex = 0
+    var segmentOffset = 0
+    var firstLine = true
+
+    while (segmentIndex < normalized.length) {
+      if (!firstLine) {
+        while (
+          segmentIndex < normalized.length &&
+          normalized(segmentIndex).value.charAt(segmentOffset).isWhitespace
+        ) {
+          segmentOffset += 1
+          if (segmentOffset == normalized(segmentIndex).value.length) {
+            segmentIndex += 1
+            segmentOffset = 0
+          }
+        }
+      }
+      val prefix = if (firstLine) firstPrefix else continuationPrefix
+      var remaining = math.max(1, contentWidth - prefix.length)
+      val lineSegments = Vector.newBuilder[StyledText]
+      lineSegments += StyledText(prefix, None)
+
+      while (segmentIndex < normalized.length && remaining > 0) {
+        val segment = normalized(segmentIndex)
+        val available = segment.value.length - segmentOffset
+        val take = math.min(available, remaining)
+        lineSegments += segment.copy(value = segment.value.substring(segmentOffset, segmentOffset + take))
+        segmentOffset += take
+        remaining -= take
+        if (segmentOffset == segment.value.length) {
+          segmentIndex += 1
+          segmentOffset = 0
+        }
+      }
+
+      val isSelectedLine = selected && firstLine
+      val content = renderStyledSegments(lineSegments.result(), contentWidth, color)
+      rows += SearchRenderRow(renderSelectableLine(content, isSelectedLine), isSelectedLine)
+      firstLine = false
+    }
+
+    rows.result()
+  }
+
+  private def testIdMatchBadge(searchMatch: TestSearchMatch): Vector[StyledText] =
+    if (searchMatch.testIdMatch.nonEmpty)
+      Vector(
+        StyledText(" ", None),
+        StyledText("[test id matches]", None, Some(TextHighlight.Search)),
+      )
+    else Vector.empty
 
   private def clampSearchIndex(index: Int, length: Int): Int =
     if (length <= 0) 0 else math.max(0, math.min(index, length - 1))
@@ -1499,7 +1651,8 @@ object InteractiveReportViewer extends TuiRunner {
 
   private def searchMatches(candidates: Vector[TestSearchCandidate], query: String): Vector[TestSearchMatch] = {
     val trimmed = query.trim
-    if (trimmed.isEmpty) sortSearchMatches(candidates.map(candidate => TestSearchMatch(candidate, None, None, None)))
+    if (trimmed.isEmpty)
+      sortSearchMatches(candidates.map(candidate => TestSearchMatch(candidate, None, None, None, None)))
     else sortSearchMatches(fuzzySearchMatches(candidates, trimmed))
   }
 
@@ -1511,8 +1664,9 @@ object InteractiveReportViewer extends TuiRunner {
       val testNameMatch = FuzzySearch.find(candidate.testName, query)
       val suiteNameMatch = candidate.suiteName.flatMap(FuzzySearch.find(_, query))
       val runIdMatch = candidate.runId.flatMap(FuzzySearch.find(_, query))
-      if (testNameMatch.nonEmpty || suiteNameMatch.nonEmpty || runIdMatch.nonEmpty)
-        Some(TestSearchMatch(candidate, testNameMatch, suiteNameMatch, runIdMatch))
+      val testIdMatch = candidate.testId.flatMap(FuzzySearch.find(_, query))
+      if (testNameMatch.nonEmpty || suiteNameMatch.nonEmpty || runIdMatch.nonEmpty || testIdMatch.nonEmpty)
+        Some(TestSearchMatch(candidate, testNameMatch, suiteNameMatch, runIdMatch, testIdMatch))
       else None
     }
 
@@ -1551,7 +1705,7 @@ object InteractiveReportViewer extends TuiRunner {
 
       while (needleIndex < needle.length) {
         val char = needle.charAt(needleIndex)
-        val nextIndex = haystack.indexOf(char, previousIndex + 1)
+        val nextIndex = haystack.indexOf(char.toInt, previousIndex + 1)
         if (nextIndex < 0) return None
         score += nextIndex - previousIndex - 1
         previousIndex = nextIndex
@@ -1922,9 +2076,10 @@ object InteractiveReportViewer extends TuiRunner {
     testNameMatch: Option[FuzzySearch.Match],
     suiteNameMatch: Option[FuzzySearch.Match],
     runIdMatch: Option[FuzzySearch.Match],
+    testIdMatch: Option[FuzzySearch.Match],
   ) {
     def score: Int =
-      Vector(testNameMatch, suiteNameMatch, runIdMatch).flatten.map(_.score).minOption.getOrElse(0)
+      Vector(testNameMatch, suiteNameMatch, runIdMatch, testIdMatch).flatten.map(_.score).minOption.getOrElse(0)
   }
 
   private[cli] final case class FieldSearchState(query: String, active: Boolean, submittedQuery: String) {
@@ -1973,7 +2128,7 @@ object InteractiveReportViewer extends TuiRunner {
     def rows(anchor: Vector[String], expanded: Set[Vector[String]]): Vector[DiffTreeRow] =
       node(anchor).toVector.flatMap(visibleRows(_, expanded, depth = 0))
 
-    def firstDifferenceRow(anchor: Vector[String], rows: Vector[DiffTreeRow]): Option[Int] =
+    def firstDifferenceRow(rows: Vector[DiffTreeRow]): Option[Int] =
       differenceRow(rows, -1, step = 1)
 
     def rowIndex(id: Vector[String], rows: Vector[DiffTreeRow]): Option[Int] =

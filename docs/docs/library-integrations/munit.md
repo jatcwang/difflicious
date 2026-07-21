@@ -10,16 +10,18 @@ Add this to your SBT build
 "com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
 ```
 
-and then in your test suites you can call `assertNoDiff` on any `Differ`.
+and then extend `MUnitDiffliciousSuite` in your test suites and call `assertNoDiff` on any `Differ`.
 
 ```scala mdoc:nest
 import munit.FunSuite
-import difflicious.munit.MUnitDiff.*
+import difflicious.munit.MUnitDiffliciousSuite
 import difflicious.Differ
 
-class MyTest extends FunSuite {
-  test("a == b") { 
+class MyTest extends FunSuite with MUnitDiffliciousSuite {
+  test("a == b") {
     Differ[Int].assertNoDiff(1, 2)
   }
 }
 ```
+
+`MUnitDiffliciousSuite` writes diff reports for failed diffs, which you can explore with the [Diff Viewer UI / CLI](../CLI.md).

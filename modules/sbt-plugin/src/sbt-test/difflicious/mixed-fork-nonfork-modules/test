@@ -1,4 +1,6 @@
 > checkForkSettings
+> checkReportAllOutputDirs
+> checkCliDependency
 > checkSharedRunId
 > checkSbtJvmRunId
 > cleanReports
@@ -14,3 +16,5 @@
 > checkRootTestRunIdAfterFirstRun
 -> test
 > checkRootTestRunIdAfterSecondRun
+> createViewerReportDirs
+> diffliciousViewer --plain --no-color
