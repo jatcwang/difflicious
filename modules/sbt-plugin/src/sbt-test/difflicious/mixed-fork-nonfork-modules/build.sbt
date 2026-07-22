@@ -56,9 +56,12 @@ lazy val root = project
         s"root report output directories should include itself and all aggregated projects: $actual",
       )
       val viewerArguments = diffliciousViewerAdditionalArguments.value
-      val viewerDirectories = viewerArguments.grouped(2).collect {
-        case Seq("-d", directory) => file(directory)
-      }.toSeq
+      val viewerDirectories = viewerArguments
+        .grouped(2)
+        .collect { case Seq("-d", directory) =>
+          file(directory)
+        }
+        .toSeq
       assert(
         viewerArguments.size == viewerDirectories.size * 2 && viewerDirectories.toSet == expected.toSet,
         s"viewer arguments should pass each report output directory with -d: $viewerArguments",
@@ -168,11 +171,15 @@ def readSuiteRunIds(baseDir: File, suiteName: String): Vector[String] =
 
 def readRunIdsFromFiles(jsonlFiles: Seq[File]): Vector[String] = {
   val RunId = """"runId"\s*:\s*"([^"]+)"""".r
-  jsonlFiles.flatMap { file =>
-    IO.readLines(file).flatMap { line =>
-      RunId.findFirstMatchIn(line).map(_.group(1))
+  jsonlFiles
+    .flatMap { file =>
+      IO.readLines(file).flatMap { line =>
+        RunId.findFirstMatchIn(line).map(_.group(1))
+      }
     }
-  }.distinct.sorted.toVector
+    .distinct
+    .sorted
+    .toVector
 }
 
 def assertDifferentRunIds(runIds: Vector[String], clue: String): Unit = {
@@ -187,9 +194,12 @@ def checkRootTestRunIds(
 ): Unit = {
   val forkedRunIds = readSuiteRunIds(baseDir, "example.ForkedSuite")
   val unforkedRunIds = readSuiteRunIds(baseDir, "example.UnforkedSuite")
-  val jsonlFiles = (baseDir ** "*.jsonl").get().map { file =>
-    file.relativeTo(baseDir).getOrElse(file).getPath
-  }.sorted
+  val jsonlFiles = (baseDir ** "*.jsonl")
+    .get()
+    .map { file =>
+      file.relativeTo(baseDir).getOrElse(file).getPath
+    }
+    .sorted
   assert(
     forkedRunIds.size == expectedRuns,
     s"$clue: expected $expectedRuns forked run ids, got $forkedRunIds; jsonl files: $jsonlFiles",
