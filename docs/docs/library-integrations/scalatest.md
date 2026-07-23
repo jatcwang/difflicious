@@ -5,8 +5,15 @@ title: ScalaTest
 
 # ScalaTest
 
-Add this to your SBT build
+Add the Difflicious sbt plugin to `project/plugins.sbt`:
+
+```scala
+addSbtPlugin("com.github.jatcwang" % "sbt-difflicious" % "@VERSION@")
 ```
+
+Then add the ScalaTest integration to `build.sbt`:
+
+```scala
 "com.github.jatcwang" %% "difflicious-scalatest" % "@VERSION@" % Test
 ```
 
@@ -30,3 +37,6 @@ class MyTest extends AnyFunSuite {
   }
 }
 ```
+
+The sbt plugin registers Difflicious' ScalaTest reporter, which writes reports for failed diffs. You can explore
+them with **[Diff Viewer UI / CLI](../CLI.md)**.

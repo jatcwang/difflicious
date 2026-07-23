@@ -6,10 +6,10 @@ module.exports = {
       items: [
         'index',
         'quickstart',
-        'cli',
         'basic-differs',
         'derivation',
         'configuring-differs',
+        'cli',
         {
           type: 'category',
           label: 'Library Integrations',
@@ -23,6 +23,13 @@ module.exports = {
             'library-integrations/weaver',
             'library-integrations/cats',
             'library-integrations/circe',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Build Tool Integrations',
+          items: [
+            'sbt-plugin',
           ],
         },
         'best-practices-and-faq',

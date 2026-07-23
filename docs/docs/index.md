@@ -23,29 +23,7 @@ Hungry for some good diffs? Check out the [documentation](https://jatcwang.githu
 
 # Installation
 
-If you're using the [MUnit](https://scalameta.org/munit/) test framework:
-```
-// == SBT ==
-"com.github.jatcwang" %% "difflicious-munit" % "@VERSION@"
-// == Mill == 
-ivy"com.github.jatcwang::difflicious-munit:@VERSION@"
-```
-
-If you're using [ScalaTest](https://www.scalatest.org/) test framework:
-```
-// == SBT ==
-"com.github.jatcwang" %% "difflicious-scalatest" % "@VERSION@"
-// == Mill == 
-ivy"com.github.jatcwang::difflicious-scalatest:@VERSION@"
-```
-
-If you're using [Weaver](https://typelevel.org/weaver-test/) test framework:
-```
-// == SBT ==
-"com.github.jatcwang" %% "difflicious-weaver" % "@VERSION@"
-// == Mill == 
-ivy"com.github.jatcwang::difflicious-weaver:@VERSION@"
-```
+See [Quickstart](https://jatcwang.github.io/difflicious/docs/quickstart).
 
 # Contributing
 

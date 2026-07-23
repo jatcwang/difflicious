@@ -12,7 +12,8 @@ by the tests failures.
 You can interactively explore diffs from test failures by launching in TUI (Terminal user interface) mode.
 For non-interactive use cases such as for LLM AIs, you can view the diffs in **plain** (human readable) or **JSON** format.
 
-If you are using difflicious' sbt plugin `sbt-difflicious` then you can run the `diffliciousViewer` command to start the TUI / CLI.
+If you are using Difflicious' [`sbt-difflicious` plugin](SbtPlugin.md), 
+running `diffliciousViewer` command will launch the TUI / CLI.
 
 ## Interactive TUI
 

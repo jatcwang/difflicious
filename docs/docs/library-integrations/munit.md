@@ -5,8 +5,15 @@ title: MUnit
 
 # MUnit
 
-Add this to your SBT build
+Add the Difflicious sbt plugin to `project/plugins.sbt`:
+
+```scala
+addSbtPlugin("com.github.jatcwang" % "sbt-difflicious" % "@VERSION@")
 ```
+
+Then add the MUnit integration to `build.sbt`:
+
+```scala
 "com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
 ```
 
@@ -24,4 +31,4 @@ class MyTest extends FunSuite with MUnitDiffliciousSuite {
 }
 ```
 
-`MUnitDiffliciousSuite` writes diff reports for failed diffs, which you can explore with the [Diff Viewer UI / CLI](../CLI.md).
+`MUnitDiffliciousSuite` writes diff reports for failed diffs, which you can explore them using **[Diff Viewer UI / CLI](../CLI.md)**.
