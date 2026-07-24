@@ -2,6 +2,12 @@ name: Native image
 
 on:
   workflow_call:
+    inputs:
+      build_native_executable:
+        description: Build the native executables
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
       build_native_executable:
@@ -13,7 +19,7 @@ on:
 jobs:
   build:
     name: Build ${{ matrix.asset }}
-    if: github.event_name == 'workflow_call' || inputs.build_native_executable
+    if: inputs.build_native_executable
     strategy:
       fail-fast: false
       matrix:
