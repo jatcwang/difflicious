@@ -5,8 +5,15 @@ title: Weaver
 
 # Weaver
 
-Add this to your SBT build
+Add the Difflicious sbt plugin to `project/plugins.sbt`:
+
+```scala
+addSbtPlugin("com.github.jatcwang" % "sbt-difflicious" % "@VERSION@")
 ```
+
+Then add the Weaver integration to `build.sbt`:
+
+```scala
 "com.github.jatcwang" %% "difflicious-weaver" % "@VERSION@" % Test
 ```
 
@@ -25,4 +32,4 @@ object MyTest extends SimpleIOSuite with WeaverDiffliciousSuite[IO] {
 }
 ```
 
-`WeaverDiffliciousSuite` writes diff reports for failed diffs, which you can explore with the [Diff Viewer UI / CLI](../CLI.md).
+`WeaverDiffliciousSuite` writes diff reports for failed diffs, which you can explore using **[Diff Viewer UI / CLI](../CLI.md)**.

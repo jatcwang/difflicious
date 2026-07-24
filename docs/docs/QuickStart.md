@@ -5,16 +5,25 @@ title: Quickstart
 
 # Quickstart
 
-Let's see how you can use Difflicious in your MUnit tests
+Let's see how you can use Difflicious in your MUnit tests.
 
-First, add the following dependency in your SBT configuration:
+First, add the Difflicious sbt plugin to `project/plugins.sbt`:
 
+```scala
+addSbtPlugin("com.github.jatcwang" % "sbt-difflicious" % "@VERSION@")
 ```
+
+Then add the MUnit integration to `build.sbt`:
+
+```scala
 "com.github.jatcwang" %% "difflicious-munit" % "@VERSION@" % Test
 ```
 
-If you are running tests using **IntelliJ IDEA**'s test runner, you will want 
-to turn off the red text coloring it uses for test failure outputs because
+The plugin configures test report collection and provides tasks such as `diffliciousViewer`. See the
+[sbt plugin reference](SbtPlugin.md) for details.
+
+If you are running tests using **IntelliJ IDEA**'s test runner, you should 
+turn off the red text coloring it uses for test failure outputs because
 it interferes with difflicious' color outputs.
 
 In <b>File | Settings | Editor | Color Scheme | Console Colors | Console | Error Output</b>, uncheck the red foreground color.
