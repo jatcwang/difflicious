@@ -72,7 +72,7 @@ lazy val sbtPlugin = project
   .settings(
     name := "sbt-difflicious",
     sbt.Keys.sbtPlugin := true,
-    addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
+    addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0"),
     scalaVersion := Build.Scala212,
     crossScalaVersions := Seq(Build.Scala212, Build.Scala3),
     pluginCrossBuild / sbtVersion := {
