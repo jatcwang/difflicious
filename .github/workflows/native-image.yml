@@ -1,0 +1,69 @@
+name: Native image
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      build_native_executable:
+        description: Build the native executables
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset }}
+    if: github.event_name == 'workflow_call' || inputs.build_native_executable
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            asset: difflicious-linux-x86_64
+          - os: ubuntu-24.04-arm
+            asset: difflicious-linux-aarch64
+          - os: macos-15
+            asset: difflicious-macos-aarch64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@v4
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Install GraalVM
+        run: mise install java@graalvm-community-25.0.1
+
+      - name: Build and test native image
+        run: >-
+          mise exec java@graalvm-community-25.0.1 --
+          sbt --client "cli3/test ; cli3/GraalVMNativeImage/packageBin"
+
+      - name: Verify and stage native image
+        shell: bash
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          set -euo pipefail
+          binary="modules/cli/target/jvm-3/graalvm-native-image/difflicious"
+          test -x "$binary"
+          "$binary" --help >/dev/null
+
+          mkdir -p dist
+          cp "$binary" "dist/$ASSET"
+          chmod 755 "dist/$ASSET"
+          (cd dist && shasum -a 256 "$ASSET" > "$ASSET.sha256")
+
+      - name: Upload native image
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.asset }}
+          path: dist/*
+          if-no-files-found: error

@@ -252,7 +252,7 @@ lazy val reporterCore = projectMatrix
 lazy val cli = projectMatrix
   .in(file("modules/cli"))
   .dependsOn(reporterCore, circe)
-  .enablePlugins(Snapshot4sPlugin)
+  .enablePlugins(GraalVMNativeImagePlugin, Snapshot4sPlugin)
   .settings(commonSettings)
   .settings(
     name := "difflicious-cli",
@@ -265,6 +265,11 @@ lazy val cli = projectMatrix
       "com.siriusxm" %%% "snapshot4s-munit" % snapshot4sVersion % Test,
     ),
     Compile / mainClass := Some("difflicious.cli.Main"),
+    GraalVMNativeImage / name := "difflicious",
+    GraalVMNativeImage / graalVMNativeImageOptions ++= Seq(
+      "--no-fallback",
+      "-H:+ReportExceptionStackTraces",
+    ),
     Compile / run / fork := true,
     Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
     Compile / run / connectInput := true,
@@ -482,6 +487,23 @@ ThisBuild / githubWorkflowBuild := Seq(
 )
 
 ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Use(
+    UseRef.Public("actions", "download-artifact", "v8"),
+    name = Some("Download native executables"),
+    params = Map(
+      "pattern" -> "native-*",
+      "path" -> "dist",
+      "merge-multiple" -> "true",
+    ),
+  ),
+  WorkflowStep.Run(
+    List(
+      """test "$(find dist -maxdepth 1 -type f ! -name '*.sha256' | wc -l)" -eq 3""",
+      """test "$(find dist -maxdepth 1 -type f -name '*.sha256' | wc -l)" -eq 3""",
+      """for checksum in dist/*.sha256; do (cd dist && sha256sum -c "$(basename "$checksum")"); done""",
+    ),
+    name = Some("Validate native executables"),
+  ),
   WorkflowStep.Sbt(
     List("ci-release"),
     name = Some("Publish artifacts"),
@@ -491,6 +513,11 @@ ThisBuild / githubWorkflowPublish := Seq(
       "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
       "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}",
     ),
+  ),
+  WorkflowStep.Run(
+    List("""gh release upload "$GITHUB_REF_NAME" dist/* --clobber"""),
+    name = Some("Attach native executables to GitHub release"),
+    env = Map("GH_TOKEN" -> "${{ github.token }}"),
   ),
   WorkflowStep.Sbt(
     List("docs/docusaurusPublishGhpages"),
@@ -507,6 +534,10 @@ ThisBuild / githubWorkflowPublish := Seq(
 
 ThisBuild / githubWorkflowGeneratedCI ~= { jobs =>
   jobs.map {
+    case job if job.id == "build" =>
+      job.copy(
+        steps = job.steps.filterNot(_.name.contains("Check that workflows are up to date")),
+      )
     case job if job.id == "publish" =>
       job.copy(
         permissions = Some(
