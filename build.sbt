@@ -47,7 +47,6 @@ inThisBuild(
       ),
     ),
     commands ++= Build.createBuildCommands(projectMatrixModules.flatMap(_.projectRefs)),
-    useReadableConsoleGit,
   ),
 )
 
