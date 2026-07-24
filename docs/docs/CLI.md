@@ -48,7 +48,7 @@ Here are some TUI hotkeys. In general, vim-style keybindings are provided too.
 | <kbd>Esc</kbd> | Go back or confirm quit |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>D</kbd> | Quit immediately |
 
-# Non-interactive mode
+## Non-interactive mode
 
 Non-interactive mode is useful for quickly viewing a diff.
 
@@ -57,7 +57,7 @@ There are two modes:
 - Plain (`--plain`): Plain text format useful for both humans and AI agents
 - JSON (`--json`): If you need programmatic rendering of the diff details
 
-## Plain text output
+### Plain text output (`--plain`)
 
 To print every recorded test failure as plain text:
 
