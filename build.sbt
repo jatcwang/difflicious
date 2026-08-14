@@ -3,6 +3,7 @@ import sbtghactions.JavaSpec
 import complete.DefaultParsers.*
 import sbt.Reference.display
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
+import scala.concurrent.duration.*
 import scala.sys.process.Process
 import snapshot4s.BuildInfo.snapshot4sVersion
 
@@ -485,6 +486,72 @@ ThisBuild / githubWorkflowBuild := Seq(
   ),
 )
 
+ThisBuild / githubWorkflowAddedJobs := Seq(
+  WorkflowJob(
+    id = "native",
+    name = "Build Native Executables",
+    steps = List(
+      WorkflowStep.CheckoutFull,
+      setupMise.head,
+      WorkflowStep.SetupSbt(),
+      WorkflowStep.Run(
+        List("mise install java@graalvm-community-25.0.1"),
+        name = Some("Install GraalVM"),
+      ),
+      WorkflowStep.Run(
+        List(
+          "mise exec java@graalvm-community-25.0.1 -- sbt --client \"cli3/test ; cli3/GraalVMNativeImage/packageBin\"",
+        ),
+        name = Some("Build and test native image"),
+      ),
+      WorkflowStep.Run(
+        List(
+          "set -euo pipefail",
+          "binary=\"modules/cli/target/jvm-3/graalvm-native-image/difflicious\"",
+          "test -x \"$binary\"",
+          "\"$binary\" --help >/dev/null",
+          "mkdir -p dist",
+          "cp \"$binary\" \"dist/${{ matrix.asset }}\"",
+          "chmod 755 \"dist/${{ matrix.asset }}\"",
+          "(cd dist && shasum -a 256 \"${{ matrix.asset }}\" > \"${{ matrix.asset }}.sha256\")",
+        ),
+        name = Some("Verify and stage native image"),
+      ),
+      WorkflowStep.Use(
+        UseRef.Public("actions", "upload-artifact", "v7"),
+        name = Some("Upload native image"),
+        params = Map(
+          "name" -> "native-${{ matrix.asset }}",
+          "path" -> "dist/*",
+          "if-no-files-found" -> "error",
+        ),
+      ),
+    ),
+    cond = Some(
+      "github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')",
+    ),
+    oses = List("ubuntu-24.04", "ubuntu-24.04-arm", "macos-15"),
+    scalas = List("3"),
+    javas = List(JavaSpec.temurin("17")),
+    matrixFailFast = Some(false),
+    matrixIncs = List(
+      MatrixInclude(
+        matching = Map("os" -> "ubuntu-24.04"),
+        additions = Map("asset" -> "difflicious-linux-x86_64"),
+      ),
+      MatrixInclude(
+        matching = Map("os" -> "ubuntu-24.04-arm"),
+        additions = Map("asset" -> "difflicious-linux-aarch64"),
+      ),
+      MatrixInclude(
+        matching = Map("os" -> "macos-15"),
+        additions = Map("asset" -> "difflicious-macos-aarch64"),
+      ),
+    ),
+    timeout = Some(60.minutes),
+  ),
+)
+
 ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Use(
     UseRef.Public("actions", "download-artifact", "v8"),
@@ -533,12 +600,9 @@ ThisBuild / githubWorkflowPublish := Seq(
 
 ThisBuild / githubWorkflowGeneratedCI ~= { jobs =>
   jobs.map {
-    case job if job.id == "build" =>
-      job.copy(
-        steps = job.steps.filterNot(_.name.contains("Check that workflows are up to date")),
-      )
     case job if job.id == "publish" =>
       job.copy(
+        needs = List("build", "native"),
         permissions = Some(
           Permissions.Specify(
             Map(
