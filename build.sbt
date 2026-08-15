@@ -233,12 +233,23 @@ lazy val reporterCore = projectMatrix
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
     ),
-    shadedDependencies +=
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
-    shadingRules += ShadingRule.moveUnder(
-      "com.github.plokhotnyuk.jsoniter_scala",
-      "difflicious.internal.shaded",
-    ),
+    shadedDependencies ++= {
+      if (virtualAxes.value.contains(VirtualAxis.jvm))
+        Set(
+          "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
+        )
+      else Set.empty
+    },
+    shadingRules ++= {
+      if (virtualAxes.value.contains(VirtualAxis.jvm))
+        Seq(
+          ShadingRule.moveUnder(
+            "com.github.plokhotnyuk.jsoniter_scala",
+            "difflicious.internal.shaded",
+          ),
+        )
+      else Seq.empty
+    },
     validNamespaces += "difflicious",
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-parser" % circeVersion,
