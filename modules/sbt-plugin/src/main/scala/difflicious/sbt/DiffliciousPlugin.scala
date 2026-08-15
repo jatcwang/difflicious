@@ -32,7 +32,7 @@ object DiffliciousPlugin extends AutoPlugin {
 
   override def projectConfigurations: Seq[Configuration] = Seq(DiffliciousCli)
 
-  override def buildSettings: Seq[Def.Setting[_]] =
+  override def buildSettings =
     Seq(
       ThisBuild / diffliciousOverrideRunId := None,
       ThisBuild / diffliciousCliAutoDependency := true,
@@ -44,7 +44,7 @@ object DiffliciousPlugin extends AutoPlugin {
       ),
     )
 
-  override def projectSettings: Seq[Def.Setting[_]] =
+  override def projectSettings =
     Seq(
       Test / diffliciousReportOutputDir := target.value / "difflicious-report",
       Test / diffliciousReportAllOutputDirs := (Test / diffliciousReportOutputDir)
