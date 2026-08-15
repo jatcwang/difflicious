@@ -495,6 +495,10 @@ ThisBuild / githubWorkflowBuild := Seq(
     List("test", "docs/docusaurusCreateSite"),
     name = Some("Build project and docs"),
   ),
+  WorkflowStep.Sbt(
+    List(s"++${Build.Scala3}", "sbtPlugin / Compile / compile"),
+    name = Some("Compile sbt 2 plugin with fatal warnings"),
+  ),
 )
 
 ThisBuild / githubWorkflowAddedJobs := Seq(

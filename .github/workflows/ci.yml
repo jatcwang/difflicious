@@ -44,6 +44,9 @@ jobs:
       - name: Build project and docs
         run: sbt 'test; docs/docusaurusCreateSite'
 
+      - name: Compile sbt 2 plugin with fatal warnings
+        run: sbt '++3.8.4; sbtPlugin / Compile / compile'
+
   publish:
     name: Publish Artifacts
     needs: [build, native]
