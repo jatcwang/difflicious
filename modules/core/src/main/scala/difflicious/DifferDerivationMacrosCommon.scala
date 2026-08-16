@@ -67,6 +67,7 @@ private[difflicious] trait DifferDerivationMacrosCommon { this: hearth.MacroComm
       .runToExprOrFail(
         macroName,
         infoRendering = if (shouldWeLogDerivation) RenderFrom(Log.Level.Info) else DontRender,
+        timeout = scala.concurrent.duration.FiniteDuration(10, java.util.concurrent.TimeUnit.SECONDS),
       ) { (errorLogs, errors) =>
         formatDerivationErrors[T](errorLogs, errors.toVector)
       }
