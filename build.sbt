@@ -12,7 +12,7 @@ val munitScalacheckVersion = "1.3.0"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.16"
 val declineVersion = "2.6.2"
-val jlineVersion = "3.30.16"
+val jlineVersion = "4.3.1"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.1"
@@ -271,7 +271,7 @@ lazy val cli = projectMatrix
       "com.monovore" %%% "decline" % declineVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "io.circe" %%% "circe-parser" % circeVersion,
-      "org.jline" % "jline" % jlineVersion,
+      "org.jline" % "jline-terminal-jni" % jlineVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "com.siriusxm" %%% "snapshot4s-munit" % snapshot4sVersion % Test,
     ),

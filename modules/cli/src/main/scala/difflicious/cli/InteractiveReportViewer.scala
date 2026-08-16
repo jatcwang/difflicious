@@ -2361,10 +2361,10 @@ object InteractiveReportViewer extends TuiRunner {
     override val keymap: TerminalKeymap,
   ) extends TerminalSession {
     override def width: Int =
-      math.max(20, terminal.getWidth)
+      math.max(20, terminal.getColumns)
 
     override def height: Int =
-      math.max(6, terminal.getHeight)
+      math.max(6, terminal.getRows)
 
     override def readInputBurst(): Vector[Int] = {
       val reader = terminal.reader()
