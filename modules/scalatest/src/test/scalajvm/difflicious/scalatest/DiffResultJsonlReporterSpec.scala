@@ -4,13 +4,14 @@ import difflicious.DiffResult
 import difflicious.DiffResult.ValueResult
 import difflicious.reporter.DiffResultJsonlWriter
 import difflicious.reporter.DiffliciousResultDefaults
+import difflicious.reporter.DifferenceFound
 import difflicious.reporter.Ulid
 import difflicious.utils.TypeName
 import io.circe.Json
 import io.circe.parser.parse
 import munit.FunSuite
 import org.scalactic.source.Position
-import org.scalatest.Args
+import org.scalatest.{Args, Inside}
 import org.scalatest.events.{NameInfo, Ordinal, ScopeOpened, TestFailed}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.funsuite.AnyFunSuite
@@ -41,7 +42,7 @@ class DiffResultJsonlReporterSpec extends FunSuite {
     assertEquals(failure.fileName, "ExampleSuite.scala")
     assertEquals(failure.filePath, "/workspace/ExampleSuite.scala")
     assertEquals(failure.lineNumber, 37)
-    assertEquals(failure.getCause, null)
+    assert(failure.getCause.isInstanceOf[DifferenceFound])
     assertEquals(failure.payload, None)
   }
 
@@ -89,6 +90,22 @@ class DiffResultJsonlReporterSpec extends FunSuite {
           |}""".stripMargin,
       ),
     )
+  }
+
+  test("captures diff assertion failures wrapped by ScalaTest inside") {
+    val outputDir = Files.createTempDirectory("difflicious-scalatest-inside-jsonl")
+    val suite = new InsideDiffSuite(TestId)
+    val status = suite.run(None, Args(zeroRunReporter(outputDir)))
+
+    status.waitUntilCompleted()
+    assert(!status.succeeds())
+
+    val outputFiles = listJsonlFiles(outputDir)
+    assertEquals(outputFiles.size, 1)
+
+    val lines = Files.readAllLines(outputFiles.head, StandardCharsets.UTF_8)
+    assertEquals(lines.size, 1)
+    assertEquals(parseJson(lines.get(0)).hcursor.get[String]("testId"), Right(TestId))
   }
 
   test("captures nested ScalaTest scopes in hierarchy") {
@@ -287,6 +304,18 @@ class DiffResultJsonlReporterSpec extends FunSuite {
 
           ScalatestDiffAssertions.failWithDiffResult(result, testId)
         }
+      }
+    }
+  }
+
+  private final class InsideDiffSuite(testId: String) extends AnyFunSuite {
+    test("testInsideDiffFailure") {
+      Inside.inside(Some("value")) { case Some(_) =>
+        val result =
+          ValueResult.Both(intTypeName, "obtained", "expected", isSame = false, isIgnored = false)
+        implicit val pos: Position = Position("InsideDiffSuite.scala", "/workspace/InsideDiffSuite.scala", 52)
+
+        ScalatestDiffAssertions.failWithDiffResult(result, testId)
       }
     }
   }

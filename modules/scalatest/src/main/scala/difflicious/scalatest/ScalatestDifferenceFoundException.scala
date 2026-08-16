@@ -1,7 +1,7 @@
 package difflicious.scalatest
 
 import difflicious.DiffResult
-import difflicious.reporter.{DifferenceFound, UlidGenerator}
+import difflicious.reporter.{DifferenceFound, DifferenceFoundException, UlidGenerator}
 import org.scalactic.source.Position
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
@@ -11,7 +11,15 @@ final class ScalatestDifferenceFoundException(
 )(implicit pos: Position)
     extends TestFailedException(
       (_: StackDepthException) => Some(DifferenceFound.message(testId, diffResult)),
-      None,
+      Some(
+        DifferenceFoundException(
+          diffResult = diffResult,
+          fileName = pos.fileName,
+          filePath = pos.filePathname,
+          lineNumber = pos.lineNumber,
+          testId = testId,
+        ),
+      ),
       pos,
       None,
     )
