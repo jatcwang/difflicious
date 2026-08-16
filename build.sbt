@@ -259,7 +259,7 @@ lazy val cli = projectMatrix
       "com.monovore" %%% "decline" % declineVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "io.circe" %%% "circe-parser" % circeVersion,
-      "org.jline" % "jline" % jlineVersion,
+      "org.jline" % "jline-terminal-jni" % jlineVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "com.siriusxm" %%% "snapshot4s-munit" % snapshot4sVersion % Test,
     ),
