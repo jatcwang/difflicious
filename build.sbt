@@ -600,9 +600,21 @@ ThisBuild / githubWorkflowPublish := Seq(
     name = Some("Attach native executables to GitHub release"),
     env = Map("GH_TOKEN" -> "${{ github.token }}"),
   ),
+  WorkflowStep.Run(
+    List(
+      """if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then""",
+      "  echo \"official=true\" >> \"$GITHUB_OUTPUT\"",
+      "else",
+      "  echo \"official=false\" >> \"$GITHUB_OUTPUT\"",
+      "fi",
+    ),
+    name = Some("Classify release tag"),
+    id = Some("release-tag"),
+  ),
   WorkflowStep.Sbt(
     List("docs/docusaurusPublishGhpages"),
     name = Some("Publish docs"),
+    cond = Some("steps.release-tag.outputs.official == 'true'"),
     env = Map(
       "CURRENT_BRANCH" -> "${{ github.ref_name }}",
       "GIT_PASS" -> "${{ secrets.GITHUB_TOKEN }}",

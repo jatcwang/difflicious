@@ -15,6 +15,16 @@ For non-interactive use cases such as for LLM AIs, you can view the diffs in **p
 If you are using Difflicious' [`sbt-difflicious` plugin](SbtPlugin.md), 
 running `diffliciousViewer` command will launch the TUI / CLI.
 
+## About test diff reports
+
+With the SBT plugin loaded and configured for your test framework, each failing diff test will generate a test report
+as a [JSONL](https://jsonlines.org/) file.
+
+`runId`: Whenever you run `test`, `testOnly` etc in SBT, a new test `runId` will be generated and passed to the test framework.
+The `runId` is a [ULID](https://github.com/ulid/spec) value that uniquely identifies each test run and has a timestamp embedded in it.
+
+`testId`: Each test failure will generate a unique `testId`. You can use `testId` to jump straight to the diff result for that failed test.
+
 ## Interactive TUI
 
 By default, the CLI launches in TUI (Terminal User Interface) mode. You can search for tests and interactively explore the differences.
