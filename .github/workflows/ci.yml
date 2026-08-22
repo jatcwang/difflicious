@@ -97,7 +97,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
 
+      - name: Classify release tag
+        id: release-tag
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "official=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "official=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish docs
+        if: steps.release-tag.outputs.official == 'true'
         env:
           GIT_USER_NAME: github-actions[bot]
           CURRENT_BRANCH: ${{ github.ref_name }}
