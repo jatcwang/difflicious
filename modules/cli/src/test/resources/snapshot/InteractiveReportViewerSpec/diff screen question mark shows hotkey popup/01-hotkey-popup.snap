@@ -15,6 +15,7 @@
                  │                                                                │
                  │ Search                                                         │
                  │   /                       search current view                  │
+                 │   F4                      clear field search highlighting      │
                  │   ctrl-p                  search tests with finder             │
                  │                                                                │
                  │ Diff detail                                                    │
@@ -30,7 +31,6 @@
                  │   escape                  go back or confirm quit              │
                  │   ctrl-c or ctrl-d        quit immediately                     │
                  └────────────────────────────────────────────────────────────────┘
-
 
 
 

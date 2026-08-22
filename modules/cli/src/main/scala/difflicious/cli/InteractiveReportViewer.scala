@@ -25,6 +25,7 @@ private[cli] object TerminalKey {
   case object NextDifference extends TerminalKey
   case object PreviousDifference extends TerminalKey
   case object FieldSearch extends TerminalKey
+  case object ClearSearchHighlights extends TerminalKey
   case object NextSearchResult extends TerminalKey
   case object PreviousSearchResult extends TerminalKey
   case object PageDown extends TerminalKey
@@ -65,6 +66,7 @@ private[cli] final case class TerminalKeymap(
   nextDifference: TerminalKeymap.Binding,
   previousDifference: TerminalKeymap.Binding,
   fieldSearch: TerminalKeymap.Binding,
+  clearSearchHighlights: TerminalKeymap.Binding,
   nextSearchResult: TerminalKeymap.Binding,
   previousSearchResult: TerminalKeymap.Binding,
   pageDown: TerminalKeymap.Binding,
@@ -91,6 +93,7 @@ private[cli] final case class TerminalKeymap(
       nextDifference,
       previousDifference,
       fieldSearch,
+      clearSearchHighlights,
       nextSearchResult,
       previousSearchResult,
       pageDown,
@@ -187,6 +190,12 @@ private[cli] object TerminalKeymap {
       nextDifference = bind(NextDifference, char('f')),
       previousDifference = bind(PreviousDifference, char('b')),
       fieldSearch = bind(FieldSearch, char('/')),
+      clearSearchHighlights = bind(
+        ClearSearchHighlights,
+        escape("OS", "F4"),
+        escape("[14~", "F4"),
+        escape("[[D", "F4"),
+      ),
       nextSearchResult = bind(NextSearchResult, char('n')),
       previousSearchResult = bind(PreviousSearchResult, char('N')),
       pageDown = bind(PageDown, escape("[6~", "page down")),
@@ -803,6 +812,9 @@ object InteractiveReportViewer extends TuiRunner {
         case TerminalKey.FieldSearch =>
           TerminalScreen.Diff(state.copy(fieldSearch = state.fieldSearch.copy(active = true)))
 
+        case TerminalKey.ClearSearchHighlights =>
+          TerminalScreen.Diff(state.copy(fieldSearch = state.fieldSearch.copy(submittedQuery = "")))
+
         case TerminalKey.NextSearchResult =>
           TerminalScreen.Diff(state.jumpToFieldSearchMatch(state.fieldSearch.submittedQuery, step = 1))
 
@@ -1076,16 +1088,15 @@ object InteractiveReportViewer extends TuiRunner {
     val start = windowStart(selectedIndex, rows.length, listRows)
     val visibleRows = rows.slice(start, start + listRows)
     val pathWidth = rowContentWidth(width)
-    val highlightedSearchIds =
-      if (fieldSearch.active) tree.fieldSearchIds(anchor, fieldSearch.query).toSet else Set.empty[Vector[String]]
+    val highlightQuery = fieldSearch.highlightQuery
+    val highlightedSearchIds = tree.fieldSearchIds(anchor, highlightQuery).toSet
     val visibleTreeIds = rows.iterator.map(_.node.id).toSet
     val descendantSearchCounts =
-      if (fieldSearch.active) tree.fieldSearchHiddenDescendantCounts(anchor, fieldSearch.query, visibleTreeIds)
-      else Map.empty[Vector[String], Int]
+      tree.fieldSearchHiddenDescendantCounts(anchor, highlightQuery, visibleTreeIds)
     val changeLines = visibleRows.zipWithIndex.map { case (row, offset) =>
       val index = start + offset
       val searchQuery =
-        if (highlightedSearchIds.contains(row.node.id)) Some(fieldSearch.query) else None
+        if (highlightedSearchIds.contains(row.node.id)) Some(highlightQuery) else None
       renderSelectableLine(
         renderDiffTreeRow(
           row,
@@ -1226,6 +1237,7 @@ object InteractiveReportViewer extends TuiRunner {
         ),
         "Search" -> Vector(
           helpLine(keymap.fieldSearch.label, "search current view"),
+          helpLine(keymap.clearSearchHighlights.label, "clear field search highlighting"),
           helpLine(keymap.search.label, "search tests with finder"),
         ),
         "Diff detail" -> Vector(
@@ -2089,6 +2101,9 @@ object InteractiveReportViewer extends TuiRunner {
   private[cli] final case class FieldSearchState(query: String, active: Boolean, submittedQuery: String) {
     def isVisible: Boolean =
       active
+
+    def highlightQuery: String =
+      if (active) query else submittedQuery
   }
 
   private[cli] object FieldSearchState {
