@@ -456,6 +456,21 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
+  test("diff screen keeps submitted field search highlighted until F4 clears it") {
+    val report = DiffReport(Vector(fieldSearchDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = true))
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("name")
+    testDriver.pressKey(SearchKey.Submit)
+
+    assert(testDriver.render.exists(_.contains("\u001b[43m")))
+
+    testDriver.pressKey(TerminalKey.ClearSearchHighlights)
+
+    assert(!testDriver.render.exists(_.contains("\u001b[43m")))
+  }
+
   test("diff screen n and shift-n navigate field search results") {
     val report = DiffReport(Vector(fieldSearchDiffRun))
     val testDriver = TestDriver(makeViewerState(report, color = false))

@@ -41,6 +41,7 @@ Here are some TUI hotkeys. In general, vim-style keybindings are provided too.
 | <kbd>f</kbd> / <kbd>b</kbd> | Jump to the next or previous difference |
 | <kbd>/</kbd> | Search field names in the current diff |
 | <kbd>n</kbd> / <kbd>N</kbd> | Jump to the next or previous search result |
+| <kbd>F4</kbd> | Clear field search highlighting |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Open the test search window |
 | <kbd>a</kbd> | Anchor the selected subtree as the root. Useful if you want to "zoom in" on a particular part of the diff) |
 | <kbd>t</kbd> | Reset anchoring and return to showing the root of the diff |
