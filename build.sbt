@@ -100,7 +100,6 @@ lazy val sbtPlugin = project
       (LocalProject("munit3") / publishLocal).value
       (LocalProject("scalatest3") / publishLocal).value
       (LocalProject("weaver3") / publishLocal).value
-      (LocalProject("cli") / publishLocal).value
       (LocalProject("cli3") / publishLocal).value
       scriptedDependencies.value
     },
@@ -284,9 +283,8 @@ lazy val cli = projectMatrix
     Compile / run / fork := true,
     Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
     Compile / run / connectInput := true,
-    Test / skip := !isScala3.value,
   )
-  .jvmPlatform(Seq(Build.Scala213, Build.Scala3))
+  .jvmPlatform(Seq(Build.Scala3))
 
 lazy val example = projectMatrix
   .in(file("modules/example"))
