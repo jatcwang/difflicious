@@ -1,15 +1,15 @@
 ╔═ Go to test ═════════════════════════════════════════════════════════════════════════════════════╗
 ║ Search:                                                                                          ║
 ║                                                                                                  ║
-║   ▾ 01BRZ3NDEKTSV4RRFFQ69G5FAV (2017-09-01 18:16:28)                                             ║
+║   ▾ Sep 1 6:16pm (Fri)                                                                           ║
 ║     ▾ example.LatestSuite                                                                        ║
 ║ >       · same                                                                                 < ║
-║   ▾ 01ARZ3NDEKTSV4RRFFQ69G5FAV (2016-07-31 01:54:10)                                             ║
+║   ▾ Jul 31 1:54am (Sun)                                                                          ║
 ║     ▾ example.OldSuite                                                                           ║
 ║         · same                                                                                   ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ runId: 01BRZ3NDEKTSV4RRFFQ69G5FAV                                                                │
+│ Run: Sep 1 6:16pm (Fri)                                                                          │
 │ testId: 01ARZ3NDEKTSV4RRFFQ69G5FAW                                                               │
 │ Suite: example.LatestSuite                                                                       │
 │ Line: 37                                                                                         │

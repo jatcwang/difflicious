@@ -93,32 +93,54 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
-  snapshotTest("test finder - shows run id local timestamp from ULID") {
+  snapshotTest("test finder - shows human-friendly local time from ULID") {
     val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
     val testDriver = TestDriver(makeViewerState(report, color = false))
 
     testDriver.assertSnapshot("test-finder")
   }
 
-  test("timestamp label elides date when timestamp is today") {
+  test("timestamp label describes a local timestamp from today") {
     val zone = ZoneId.of("Europe/London")
     val timestamp = Instant.parse("2026-07-15T09:15:10Z")
     val now = Instant.parse("2026-07-15T20:00:00Z")
 
     assertEquals(
       InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
-      "10:15:10",
+      "Today 10:15am",
     )
   }
 
-  test("timestamp label includes local date when timestamp is not today") {
+  test("timestamp label describes a local timestamp from yesterday") {
     val zone = ZoneId.of("Europe/London")
     val timestamp = Instant.parse("2026-07-15T09:15:10Z")
     val now = Instant.parse("2026-07-16T20:00:00Z")
 
     assertEquals(
       InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
-      "2026-07-15 10:15:10",
+      "Yesterday 10:15am",
+    )
+  }
+
+  test("timestamp label uses the local date rather than the UTC date") {
+    val zone = ZoneId.of("America/Los_Angeles")
+    val timestamp = Instant.parse("2026-07-16T06:30:00Z")
+    val now = Instant.parse("2026-07-16T08:00:00Z")
+
+    assertEquals(
+      InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
+      "Yesterday 11:30pm",
+    )
+  }
+
+  test("timestamp label includes a friendly local date and weekday for older runs") {
+    val zone = ZoneId.of("Europe/London")
+    val timestamp = Instant.parse("2025-12-04T18:30:00Z")
+    val now = Instant.parse("2026-07-16T20:00:00Z")
+
+    assertEquals(
+      InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
+      "Dec 4 6:30pm (Thu)",
     )
   }
 

@@ -10,6 +10,7 @@ import org.jline.utils.NonBlockingReader
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDate, ZoneId}
+import java.util.Locale
 import scala.util.control.NonFatal
 
 // When modifying the UI, consider regenerating the TUI screenshots after snapshots are updated (scripts/render-cli-screenshots.mjs)
@@ -1513,7 +1514,7 @@ object InteractiveReportViewer extends TuiRunner {
     candidate match {
       case Some(candidate) =>
         Vector(
-          s"runId: ${candidate.runId.getOrElse("unknown")}",
+          s"Run: ${candidate.runTimestampLabel.getOrElse("unknown time")}",
           s"testId: ${candidate.testId.getOrElse("unknown")}",
           s"Suite: ${candidate.suiteName.getOrElse("unknown")}",
           s"Line: ${candidate.lineNumber.fold("unknown")(_.toString)}",
@@ -1521,7 +1522,7 @@ object InteractiveReportViewer extends TuiRunner {
         )
       case None =>
         Vector(
-          "runId: unknown",
+          "Run: unknown time",
           "testId: unknown",
           "Suite: unknown",
           "Line: unknown",
@@ -1537,7 +1538,7 @@ object InteractiveReportViewer extends TuiRunner {
     color: Boolean,
   ): Vector[SearchRenderRow] = {
     val candidate = searchMatch.candidate
-    val timestamp = candidate.runTimestampLabel.toVector
+    val timestamp = candidate.runTimestampLabel.map(label => s"($label)").toVector
     val candidateSegments =
       Vector(StyledText(candidate.testName, None)) ++
         timestamp.flatMap(label => Vector(StyledText(" ", None), StyledText(label, Some(RowColor.Pink))))
@@ -1612,17 +1613,18 @@ object InteractiveReportViewer extends TuiRunner {
     if (length <= 0) 0 else math.max(0, math.min(index, length - 1))
 
   private def testSearchCandidates(runs: Vector[DiffRun], zoneId: ZoneId): Vector[TestSearchCandidate] =
+    val now = Instant.now()
     runs.zipWithIndex.map { case (run, index) =>
       run.metadata match {
         case Some(metadata) =>
           val testName =
             if (metadata.testHierarchy.nonEmpty) metadata.testHierarchy.mkString(" / ") else metadata.testName
-          val runTimestamp = runTimestampText(metadata.runId, zoneId)
+          val runTimestamp = runTimestampText(metadata.runId, now, zoneId)
           TestSearchCandidate(
             runIndex = index,
             testName = testName,
             runId = Some(metadata.runId),
-            runTimestampLabel = Some(s"($runTimestamp)"),
+            runTimestampLabel = Some(runTimestamp),
             testId = Some(metadata.testId),
             suiteName = Some(metadata.suiteClassName.getOrElse(metadata.suiteName)),
             lineNumber = Some(metadata.lineNumber),
@@ -1809,19 +1811,24 @@ object InteractiveReportViewer extends TuiRunner {
   private def isAnsiFinal(char: Char): Boolean =
     char >= '@' && char <= '~'
 
-  private def runTimestampText(runId: String, zoneId: ZoneId): String =
+  private def runTimestampText(runId: String, now: Instant, zoneId: ZoneId): String =
     Ulid
       .timestampMillis(runId)
-      .map(millis => timestampLabel(millis, Instant.now(), zoneId))
+      .map(millis => timestampLabel(millis, now, zoneId))
       .getOrElse("unknown time")
 
   private[cli] def timestampLabel(millis: Long, now: Instant, zoneId: ZoneId): String = {
     val timestamp = Instant.ofEpochMilli(millis).atZone(zoneId)
     val today = LocalDate.ofInstant(now, zoneId)
-    val formatter =
-      if (timestamp.toLocalDate == today) DateTimeFormatter.ofPattern("HH:mm:ss")
-      else DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    timestamp.format(formatter)
+    val time = timestamp.format(DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH)).toLowerCase(Locale.ENGLISH)
+    val dateLabel =
+      if (timestamp.toLocalDate == today) "Today"
+      else if (timestamp.toLocalDate == today.minusDays(1)) "Yesterday"
+      else timestamp.format(DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH))
+    val dayOfWeek =
+      if (timestamp.toLocalDate == today || timestamp.toLocalDate == today.minusDays(1)) ""
+      else timestamp.format(DateTimeFormatter.ofPattern(" (EEE)", Locale.ENGLISH))
+    s"$dateLabel $time$dayOfWeek"
   }
 
   private def renderDiffTreeRow(
@@ -2062,10 +2069,7 @@ object InteractiveReportViewer extends TuiRunner {
     filePath: Option[String],
   ) {
     def runLabel: String =
-      runId match {
-        case Some(runId) => s"$runId ${runTimestampLabel.getOrElse("")}".trim
-        case None => "Raw comparison"
-      }
+      runTimestampLabel.getOrElse("Raw comparison")
 
     def suiteLabel: String =
       suiteName.getOrElse("unknown suite")
