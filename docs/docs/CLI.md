@@ -49,7 +49,8 @@ Here are some TUI hotkeys. In general, vim-style keybindings are provided too.
 | <kbd>Enter</kbd> / <kbd>o</kbd> | Open or toggle the selected entry |
 | <kbd>←</kbd> / <kbd>h</kbd>, <kbd>→</kbd> / <kbd>l</kbd> | Collapse or expand the selected field |
 | <kbd>f</kbd> / <kbd>b</kbd> | Jump to the next or previous difference |
-| <kbd>/</kbd> | Search field names in the current diff |
+| <kbd>/</kbd> | Search field names and values in the current diff |
+| <kbd>F6</kbd> | Toggle search between fields and values, values only, and fields only |
 | <kbd>n</kbd> / <kbd>N</kbd> | Jump to the next or previous search result |
 | <kbd>F4</kbd> | Clear field search highlighting |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Open the test search window |
