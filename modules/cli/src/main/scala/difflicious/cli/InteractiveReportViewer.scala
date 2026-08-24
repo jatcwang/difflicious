@@ -254,7 +254,7 @@ object InteractiveReportViewer extends TuiRunner {
     var session: JLineTerminalSession = null
 
     try {
-      terminal = TerminalBuilder.builder().name("difflicious").system(true).build()
+      terminal = TerminalBuilder.builder().name("difflicious").system(true).devTty(true).build()
       originalAttributes = terminal.enterRawMode()
       session = new JLineTerminalSession(terminal, TerminalKeymap.default)
       session.enterFullscreen()
