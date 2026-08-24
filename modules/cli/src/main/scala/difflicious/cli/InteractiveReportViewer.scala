@@ -28,6 +28,7 @@ private[cli] object TerminalKey {
   case object ClearSearchHighlights extends TerminalKey
   case object NextSearchResult extends TerminalKey
   case object PreviousSearchResult extends TerminalKey
+  case object ToggleSearchMode extends TerminalKey
   case object PageDown extends TerminalKey
   case object PageUp extends TerminalKey
   case object Expand extends TerminalKey
@@ -53,6 +54,7 @@ private[cli] object SearchKey {
   case object Backspace extends SearchKey
   case object Clear extends SearchKey
   case object ToggleHierarchy extends SearchKey
+  case object ToggleSearchMode extends SearchKey
   final case class Character(value: Char) extends SearchKey
   case object Ignored extends SearchKey
 }
@@ -69,6 +71,7 @@ private[cli] final case class TerminalKeymap(
   clearSearchHighlights: TerminalKeymap.Binding,
   nextSearchResult: TerminalKeymap.Binding,
   previousSearchResult: TerminalKeymap.Binding,
+  toggleSearchMode: TerminalKeymap.Binding,
   pageDown: TerminalKeymap.Binding,
   pageUp: TerminalKeymap.Binding,
   expand: TerminalKeymap.Binding,
@@ -96,6 +99,7 @@ private[cli] final case class TerminalKeymap(
       clearSearchHighlights,
       nextSearchResult,
       previousSearchResult,
+      toggleSearchMode,
       pageDown,
       pageUp,
       expand,
@@ -198,6 +202,7 @@ private[cli] object TerminalKeymap {
       ),
       nextSearchResult = bind(NextSearchResult, char('n')),
       previousSearchResult = bind(PreviousSearchResult, char('N')),
+      toggleSearchMode = bind(ToggleSearchMode, escape("[17~", "F6")),
       pageDown = bind(PageDown, escape("[6~", "page down")),
       pageUp = bind(PageUp, escape("[5~", "page up")),
       expand = bind(Expand, escape("[C", "right"), char('l')),
@@ -505,6 +510,7 @@ object InteractiveReportViewer extends TuiRunner {
               case TerminalKey.Previous => SearchKey.Up
               case TerminalKey.Next => SearchKey.Down
               case TerminalKey.Escape => SearchKey.Cancel
+              case TerminalKey.ToggleSearchMode => SearchKey.ToggleSearchMode
               case TerminalKey.Ignored => SearchKey.Cancel
               case _ => SearchKey.Ignored
             }
@@ -659,6 +665,9 @@ object InteractiveReportViewer extends TuiRunner {
 
         case SearchKey.ToggleHierarchy =>
           TerminalScreen.ReportFinder(copy(viewMode = viewMode.toggle, selectedIndex = clampedSelectedIndex))
+
+        case SearchKey.ToggleSearchMode =>
+          TerminalScreen.ReportFinder(copy(selectedIndex = clampedSelectedIndex))
 
         case SearchKey.Character(char) =>
           TerminalScreen.ReportFinder(copy(query = query + char, selectedIndex = 0))
@@ -821,6 +830,14 @@ object InteractiveReportViewer extends TuiRunner {
         case TerminalKey.PreviousSearchResult =>
           TerminalScreen.Diff(state.jumpToFieldSearchMatch(state.fieldSearch.submittedQuery, step = -1))
 
+        case TerminalKey.ToggleSearchMode =>
+          val nextMode = state.fieldSearch.mode.next
+          TerminalScreen.Diff(
+            state
+              .jumpToFieldSearchMatch(state.fieldSearch.submittedQuery, step = 0, mode = nextMode)
+              .copy(fieldSearch = state.fieldSearch.copy(mode = nextMode)),
+          )
+
         case TerminalKey.PageDown =>
           TerminalScreen.Diff(
             state.copy(selectedIndex = math.min(currentRows.length - 1, state.selectedIndex + pageStep(height))),
@@ -922,6 +939,9 @@ object InteractiveReportViewer extends TuiRunner {
         case SearchKey.ToggleHierarchy =>
           this
 
+        case SearchKey.ToggleSearchMode =>
+          copy(fieldSearch = fieldSearch.copy(mode = fieldSearch.mode.next))
+
         case SearchKey.Character(char) =>
           copy(fieldSearch = fieldSearch.copy(query = fieldSearch.query + char))
 
@@ -958,8 +978,12 @@ object InteractiveReportViewer extends TuiRunner {
     private def selectedId: Vector[String] =
       rows.lift(selectedIndex).map(_.node.id).getOrElse(anchor)
 
-    private def jumpToFieldSearchMatch(query: String, step: Int): DiffScreenState = {
-      val matches = tree.fieldSearchIds(anchor, query)
+    private def jumpToFieldSearchMatch(
+      query: String,
+      step: Int,
+      mode: FieldSearchMode = fieldSearch.mode,
+    ): DiffScreenState = {
+      val matches = tree.fieldSearchIds(anchor, query, mode)
       if (matches.isEmpty) this
       else {
         val currentIndex = matches.indexWhere(_ == selectedId)
@@ -1089,10 +1113,10 @@ object InteractiveReportViewer extends TuiRunner {
     val visibleRows = rows.slice(start, start + listRows)
     val pathWidth = rowContentWidth(width)
     val highlightQuery = fieldSearch.highlightQuery
-    val highlightedSearchIds = tree.fieldSearchIds(anchor, highlightQuery).toSet
+    val highlightedSearchIds = tree.fieldSearchIds(anchor, highlightQuery, fieldSearch.mode).toSet
     val visibleTreeIds = rows.iterator.map(_.node.id).toSet
     val descendantSearchCounts =
-      tree.fieldSearchHiddenDescendantCounts(anchor, highlightQuery, visibleTreeIds)
+      tree.fieldSearchHiddenDescendantCounts(anchor, highlightQuery, fieldSearch.mode, visibleTreeIds)
     val changeLines = visibleRows.zipWithIndex.map { case (row, offset) =>
       val index = start + offset
       val searchQuery =
@@ -1103,6 +1127,7 @@ object InteractiveReportViewer extends TuiRunner {
           pathWidth,
           color,
           searchQuery,
+          fieldSearch.mode,
           if (row.expanded) 0 else descendantSearchCounts.getOrElse(row.node.id, 0),
         ),
         selected = index == selectedIndex,
@@ -1122,9 +1147,9 @@ object InteractiveReportViewer extends TuiRunner {
     if (!fieldSearch.isVisible) Vector.empty
     else {
       val noMatches =
-        fieldSearch.query.trim.nonEmpty && tree.fieldSearchIds(anchor, fieldSearch.query).isEmpty
+        fieldSearch.query.trim.nonEmpty && tree.fieldSearchIds(anchor, fieldSearch.query, fieldSearch.mode).isEmpty
       val suffix = if (noMatches) " (no matches)" else ""
-      renderBorderedPanel("Field search", Vector(s"/${fieldSearch.query}$suffix"), width)
+      renderBorderedPanel(s"Search: ${fieldSearch.mode.label}", Vector(s"/${fieldSearch.query}$suffix"), width)
     }
 
   private def renderCollapsedReportPanel(summary: ReportPanelSummary, width: Int): Vector[String] =
@@ -1241,7 +1266,8 @@ object InteractiveReportViewer extends TuiRunner {
           helpLine(keymap.search.label, "search tests with finder"),
         ),
         "Diff detail" -> Vector(
-          helpLine(keymap.fieldSearch.label, "search field names"),
+          helpLine(keymap.fieldSearch.label, "search"),
+          helpLine(keymap.toggleSearchMode.label, "toggle fields/values search mode"),
           helpLine(
             s"${keymap.nextSearchResult.label} / ${keymap.previousSearchResult.label}",
             "next or previous field search result",
@@ -1848,11 +1874,12 @@ object InteractiveReportViewer extends TuiRunner {
     width: Int,
     color: Boolean,
     searchQuery: Option[String],
+    searchMode: FieldSearchMode,
     descendantSearchMatches: Int,
   ): String = {
     val rowSegments =
       renderDiffTreeSegments(row).getOrElse(Vector(StyledText(plainDiffTreeRow(row), diffTreeRowColor(row.node))))
-    val highlightedSegments = highlightSearchMatch(rowSegments, searchQuery)
+    val highlightedSegments = highlightDiffSearchMatches(rowSegments, row.node, searchQuery, searchMode)
     renderStyledSegments(highlightedSegments ++ searchMatchBadge(descendantSearchMatches), width, color)
   }
 
@@ -1917,6 +1944,51 @@ object InteractiveReportViewer extends TuiRunner {
               offset += text.length
               highlighted
             }
+        }
+    }
+
+  private def highlightDiffSearchMatches(
+    segments: Vector[StyledText],
+    node: DiffTreeNode,
+    query: Option[String],
+    mode: FieldSearchMode,
+  ): Vector[StyledText] =
+    query.map(_.trim).filter(_.nonEmpty) match {
+      case None => segments
+      case Some(needle) =>
+        val segmentTexts = segments.map(segment => oneLine(segment.value))
+        val rendered = segmentTexts.mkString
+        val highlightIndices = scala.collection.mutable.Set.empty[Int]
+        val fieldLocation = node.searchName.flatMap { field =>
+          val renderedField = oneLine(field)
+          val start = rendered.indexOf(renderedField)
+          Option.when(start >= 0)((renderedField, start))
+        }
+        if (mode.includesFields)
+          fieldLocation.foreach { case (renderedField, start) =>
+            FuzzySearch.find(renderedField, needle).foreach { searchMatch =>
+              highlightIndices ++= searchMatch.indices.map(_ + start)
+            }
+          }
+        if (mode.includesValues) {
+          var searchEnd = rendered.length
+          node.searchValues.reverseIterator.foreach { value =>
+            val renderedValue = oneLine(value)
+            val start = rendered.lastIndexOf(renderedValue, searchEnd)
+            if (start >= 0) {
+              FuzzySearch.find(renderedValue, needle).foreach { searchMatch =>
+                highlightIndices ++= searchMatch.indices.map(_ + start)
+              }
+              searchEnd = start - 1
+            }
+          }
+        }
+
+        var offset = 0
+        segments.zip(segmentTexts).flatMap { case (segment, text) =>
+          val highlighted = splitStyledSegment(segment.copy(value = text), offset, highlightIndices.toSet)
+          offset += text.length
+          highlighted
         }
     }
 
@@ -2098,7 +2170,42 @@ object InteractiveReportViewer extends TuiRunner {
       Vector(testNameMatch, suiteNameMatch, runIdMatch, testIdMatch).flatten.map(_.score).minOption.getOrElse(0)
   }
 
-  private[cli] final case class FieldSearchState(query: String, active: Boolean, submittedQuery: String) {
+  private[cli] sealed trait FieldSearchMode {
+    def label: String
+    def next: FieldSearchMode
+    def includesFields: Boolean
+    def includesValues: Boolean
+  }
+
+  private[cli] object FieldSearchMode {
+    case object FieldsAndValues extends FieldSearchMode {
+      override val label: String = "fields + values"
+      override val next: FieldSearchMode = ValuesOnly
+      override val includesFields: Boolean = true
+      override val includesValues: Boolean = true
+    }
+
+    case object ValuesOnly extends FieldSearchMode {
+      override val label: String = "values only"
+      override val next: FieldSearchMode = FieldsOnly
+      override val includesFields: Boolean = false
+      override val includesValues: Boolean = true
+    }
+
+    case object FieldsOnly extends FieldSearchMode {
+      override val label: String = "fields only"
+      override val next: FieldSearchMode = FieldsAndValues
+      override val includesFields: Boolean = true
+      override val includesValues: Boolean = false
+    }
+  }
+
+  private[cli] final case class FieldSearchState(
+    query: String,
+    active: Boolean,
+    submittedQuery: String,
+    mode: FieldSearchMode,
+  ) {
     def isVisible: Boolean =
       active
 
@@ -2108,7 +2215,12 @@ object InteractiveReportViewer extends TuiRunner {
 
   private[cli] object FieldSearchState {
     val Empty: FieldSearchState =
-      FieldSearchState(query = "", active = false, submittedQuery = "")
+      FieldSearchState(
+        query = "",
+        active = false,
+        submittedQuery = "",
+        mode = FieldSearchMode.FieldsAndValues,
+      )
   }
 
   private[cli] final case class DiffTreeRow(node: DiffTreeNode, depth: Int, expanded: Boolean)
@@ -2121,6 +2233,14 @@ object InteractiveReportViewer extends TuiRunner {
     result: DiffResult,
     children: Vector[DiffTreeNode],
   ) {
+    def searchValues: Vector[String] =
+      result match {
+        case DiffResult.ValueResult.Both(_, obtained, expected, _, _) => Vector(obtained, expected)
+        case DiffResult.ValueResult.ObtainedOnly(_, obtained, _) => Vector(obtained)
+        case DiffResult.ValueResult.ExpectedOnly(_, expected, _) => Vector(expected)
+        case _ => Vector.empty
+      }
+
     def isDifference: Boolean =
       !result.isIgnored && !result.isOk && (children.isEmpty || result.pairType != PairType.Both)
 
@@ -2165,23 +2285,32 @@ object InteractiveReportViewer extends TuiRunner {
         .collect { case subtreeNode if subtreeNode.children.nonEmpty => subtreeNode.id }
         .toSet
 
-    def fieldSearchIds(anchor: Vector[String], query: String): Vector[Vector[String]] = {
+    def fieldSearchIds(
+      anchor: Vector[String],
+      query: String,
+      mode: FieldSearchMode,
+    ): Vector[Vector[String]] = {
       val normalized = query.trim.toLowerCase
       if (normalized.isEmpty) Vector.empty
       else
         node(anchor).toVector.flatMap { anchorNode =>
           flatten(anchorNode).collect {
-            case node if node.searchName.exists(name => FuzzySearch.matches(name, normalized)) => node.id
+            case node if fieldSearchMatches(node, normalized, mode) => node.id
           }
         }
     }
 
+    private def fieldSearchMatches(node: DiffTreeNode, query: String, mode: FieldSearchMode): Boolean =
+      (mode.includesFields && node.searchName.exists(FuzzySearch.matches(_, query))) ||
+        (mode.includesValues && node.searchValues.exists(FuzzySearch.matches(_, query)))
+
     def fieldSearchHiddenDescendantCounts(
       anchor: Vector[String],
       query: String,
+      mode: FieldSearchMode,
       visibleIds: Set[Vector[String]],
     ): Map[Vector[String], Int] =
-      fieldSearchIds(anchor, query)
+      fieldSearchIds(anchor, query, mode)
         .filterNot(visibleIds)
         .foldLeft(Map.empty[Vector[String], Int]) { case (counts, matchId) =>
           ancestorIds(matchId).foldLeft(counts) { case (innerCounts, ancestorId) =>

@@ -377,6 +377,40 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
+  test("diff screen search cycles through fields and values modes with F6") {
+    val report = DiffReport(Vector(fieldSearchDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("Hopper")
+    assert(testDriver.render.exists(_.contains("Search: fields + values")))
+    assert(!testDriver.render.exists(_.contains("no matches")))
+
+    testDriver.pressKey(SearchKey.ToggleSearchMode)
+    assert(testDriver.render.exists(_.contains("Search: values only")))
+    assert(!testDriver.render.exists(_.contains("no matches")))
+
+    testDriver.pressKey(SearchKey.ToggleSearchMode)
+    assert(testDriver.render.exists(_.contains("Search: fields only")))
+    assert(testDriver.render.exists(_.contains("no matches")))
+  }
+
+  test("diff screen F6 changes the search mode after search is submitted") {
+    val report = DiffReport(Vector(searchModeDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("target")
+    testDriver.pressKey(SearchKey.Submit)
+    assert(testDriver.render.exists(line => line.startsWith("> ") && line.contains("target")))
+
+    testDriver.pressKey(TerminalKey.ToggleSearchMode)
+    assert(testDriver.render.exists(line => line.startsWith("> ") && line.contains("other")))
+
+    testDriver.pressKey(TerminalKey.ToggleSearchMode)
+    assert(testDriver.render.exists(line => line.startsWith("> ") && line.contains("target")))
+  }
+
   test("diff screen clears field search input after submit and cancel") {
     val report = DiffReport(Vector(fieldSearchDiffRun))
     val submittedDriver = TestDriver(makeViewerState(report, color = false))
@@ -469,6 +503,28 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.pressKey(TerminalKey.ClearSearchHighlights)
 
     assert(!testDriver.render.exists(_.contains("\u001b[43m")))
+  }
+
+  test("diff screen highlights field and value matches independently and keeps them after submit") {
+    val report = DiffReport(Vector(searchHighlightDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = true))
+    val searchHighlight = "\u001b[43m"
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("target")
+    assertEquals(testDriver.render.mkString.countOccurrences(searchHighlight), 2)
+
+    testDriver.pressKey(SearchKey.Submit)
+    assertEquals(testDriver.render.mkString.countOccurrences(searchHighlight), 2)
+  }
+
+  test("diff screen does not combine a field and value into one fuzzy search candidate") {
+    val report = DiffReport(Vector(searchHighlightDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("bc")
+    assert(testDriver.render.exists(_.contains("no matches")))
   }
 
   test("diff screen n and shift-n navigate field search results") {
@@ -880,6 +936,40 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       metadata = None,
     )
 
+  private def searchModeDiffRun: DiffRun =
+    DiffRun.fromResult(
+      DiffResult.RecordResult(
+        typeName = TypeName[Any]("difflicious.cli.SearchModeFixture", "SearchModeFixture", Nil),
+        fields = ListMap(
+          "target" -> DiffResult.ValueResult
+            .Both(intTypeName, "before", "after", isSame = false, isIgnored = false),
+          "other" -> DiffResult.ValueResult
+            .Both(intTypeName, "target", "changed", isSame = false, isIgnored = false),
+        ),
+        pairType = PairType.Both,
+        isIgnored = false,
+        isOk = false,
+      ),
+      metadata = None,
+    )
+
+  private def searchHighlightDiffRun: DiffRun =
+    DiffRun.fromResult(
+      DiffResult.RecordResult(
+        typeName = TypeName[Any]("difflicious.cli.SearchHighlightFixture", "SearchHighlightFixture", Nil),
+        fields = ListMap(
+          "target" -> DiffResult.ValueResult
+            .Both(intTypeName, "target", "changed", isSame = false, isIgnored = false),
+          "ab" -> DiffResult.ValueResult
+            .Both(intTypeName, "cd", "ef", isSame = false, isIgnored = false),
+        ),
+        pairType = PairType.Both,
+        isIgnored = false,
+        isOk = false,
+      ),
+      metadata = None,
+    )
+
   private def fieldSearchBadgeRun: DiffRun =
     DiffRun.fromResult(
       DiffResult.RecordResult(
@@ -1189,8 +1279,13 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       case SearchKey.Backspace => Vector(127)
       case SearchKey.Clear => Vector(21)
       case SearchKey.ToggleHierarchy => Vector(8)
+      case SearchKey.ToggleSearchMode => terminalKeyInput(TerminalKey.ToggleSearchMode)
       case SearchKey.Character(value) => Vector(value.toInt)
       case SearchKey.Ignored => Vector(0)
     }
+
+  extension (value: String)
+    private def countOccurrences(needle: String): Int =
+      value.sliding(needle.length).count(_ == needle)
 
 }
