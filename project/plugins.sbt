@@ -6,7 +6,6 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.12.1")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.31.0")
 addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.1")
-addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
@@ -15,5 +14,5 @@ addSbtPlugin("io.get-coursier" % "sbt-shading" % "2.1.8")
 
 Compile / unmanagedSourceDirectories ++= {
   val dir = (ThisBuild / baseDirectory).value.getParentFile / "modules" / "sbt-plugin" / "src" / "main"
-  Seq(dir / "scala", dir / "scala-sbt-1.0")
+  Seq(dir / "scala", dir / "scala-sbt-2")
 }

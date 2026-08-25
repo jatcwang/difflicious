@@ -27,7 +27,7 @@ const config = {
       'classic',
       {
         docs: {
-          path: '../docs/target/jvm-2.13/mdoc',
+          path: '../docs/target/mdoc',
           routeBasePath: 'docs',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: ({docPath}) =>

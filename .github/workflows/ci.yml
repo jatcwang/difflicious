@@ -110,10 +110,10 @@ jobs:
         if: steps.release-tag.outputs.official == 'true'
         env:
           GIT_USER_NAME: github-actions[bot]
-          CURRENT_BRANCH: ${{ github.ref_name }}
-          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
           GIT_USER: github-actions[bot]
+          CURRENT_BRANCH: ${{ github.ref_name }}
+          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: sbt docs/docusaurusPublishGhpages
 
   native:

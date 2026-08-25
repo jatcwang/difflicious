@@ -4,8 +4,6 @@ import com.jsuereth.sbtpgp.PgpKeys.*
 import sbt.internal.LogManager
 import sbt.internal.util.BufferedAppender
 import java.io.PrintStream
-import sbt.internal.ProjectMatrix
-import sbtprojectmatrix.ProjectMatrixPlugin.autoImport.virtualAxes
 
 object Build {
 

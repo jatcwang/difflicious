@@ -1,4 +1,3 @@
-import sbt.internal.ProjectMatrix
 import sbtghactions.JavaSpec
 import complete.DefaultParsers.*
 import sbt.Reference.display
@@ -21,7 +20,7 @@ val jsoniterScalaVersion = "2.40.1"
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
 def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String)*): Unit = {
-  val exit = Process(command, cwd, extraEnv: _*).!
+  val exit = Process(command, cwd, extraEnv*).!
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
@@ -63,7 +62,7 @@ lazy val allModules =
   projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("sbtPlugin")
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(allModules: _*)
+  .aggregate(allModules*)
   .settings(commonSettings, noPublishSettings)
 
 lazy val sbtPlugin = project
@@ -79,7 +78,7 @@ lazy val sbtPlugin = project
     pluginCrossBuild / sbtVersion := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.12.11"
-        case _ => "2.0.2"
+        case _ => "2.0.7"
       }
     },
     versionScheme := Some("early-semver"),
@@ -108,13 +107,14 @@ lazy val sbtPlugin = project
   )
 
 lazy val core = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/core"))
   .settings(commonSettings)
   .settings(
     name := "difflicious-core",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "fansi" % "0.5.1",
-      "com.kubuszok" %%% "hearth" % hearthVersion,
+      "com.lihaoyi" %% "fansi" % "0.5.1",
+      "com.kubuszok" %% "hearth" % hearthVersion,
     ) ++ (if (isScala3.value) {
             Seq(compilerPlugin("com.kubuszok" %% "hearth-cross-quotes" % hearthVersion))
           } else
@@ -130,20 +130,21 @@ lazy val core = projectMatrix
     scalaCrossVersions,
     settings = Seq(
       libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % "2.8.1",
+        "org.scala-js" %% "scalajs-dom" % "2.8.1",
       ),
     ),
   )
   .nativePlatform(scalaCrossVersions)
 
 lazy val munit = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/munit"))
   .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-munit",
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit" % munitVersion,
+      "org.scalameta" %% "munit" % munitVersion,
     ),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -151,16 +152,17 @@ lazy val munit = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val scalatest = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/scalatest"))
   .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-scalatest",
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest-core" % scalatestVersion,
+      "org.scalatest" %% "scalatest-core" % scalatestVersion,
     ),
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit" % munitVersion,
+      "org.scalameta" %% "munit" % munitVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(
@@ -168,22 +170,23 @@ lazy val scalatest = projectMatrix
     Seq(
       libraryDependencies +=
         "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
-      libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion % Test,
-      libraryDependencies += "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
-      libraryDependencies += "org.scalatest" %%% "scalatest-freespec" % scalatestVersion % Test,
+      libraryDependencies += "io.circe" %% "circe-parser" % circeVersion % Test,
+      libraryDependencies += "org.scalatest" %% "scalatest-funsuite" % scalatestVersion % Test,
+      libraryDependencies += "org.scalatest" %% "scalatest-freespec" % scalatestVersion % Test,
     ),
   )
   .jsPlatform(scalaCrossVersions)
   .nativePlatform(scalaCrossVersions)
 
 lazy val weaver = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/weaver"))
   .dependsOn(core, reporterCore)
   .settings(commonSettings)
   .settings(
     name := "difflicious-weaver",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "weaver-core" % weaverVersion,
+      "org.typelevel" %% "weaver-core" % weaverVersion,
     ),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -191,16 +194,17 @@ lazy val weaver = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val cats = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/cats"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
   .settings(
     name := "difflicious-cats",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
     ),
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-laws" % catsVersion,
+      "org.typelevel" %% "cats-laws" % catsVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -208,13 +212,14 @@ lazy val cats = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val circe = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/circe"))
   .dependsOn(core, coretest % "test->test")
   .settings(commonSettings)
   .settings(
     name := "difflicious-circe",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % circeVersion,
+      "io.circe" %% "circe-core" % circeVersion,
     ),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -222,6 +227,7 @@ lazy val circe = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val reporterCore = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/reporter-core"))
   .dependsOn(core)
   .enablePlugins(ShadingPlugin)
@@ -229,13 +235,13 @@ lazy val reporterCore = projectMatrix
   .settings(
     name := "difflicious-reporter-core",
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % jsoniterScalaVersion,
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % jsoniterScalaVersion % Provided,
     ),
     shadedDependencies ++= {
       if (virtualAxes.value.contains(VirtualAxis.jvm))
         Set(
-          "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % jsoniterScalaVersion,
+          "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % jsoniterScalaVersion,
         )
       else Set.empty
     },
@@ -251,8 +257,8 @@ lazy val reporterCore = projectMatrix
     },
     validNamespaces += "difflicious",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-parser" % circeVersion,
-      "org.scalameta" %%% "munit" % munitVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
+      "org.scalameta" %% "munit" % munitVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -260,6 +266,7 @@ lazy val reporterCore = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val cli = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/cli"))
   .dependsOn(reporterCore, circe)
   .enablePlugins(GraalVMNativeImagePlugin, Snapshot4sPlugin)
@@ -267,12 +274,12 @@ lazy val cli = projectMatrix
   .settings(
     name := "difflicious-cli",
     libraryDependencies ++= Seq(
-      "com.monovore" %%% "decline" % declineVersion,
-      "org.typelevel" %%% "cats-core" % catsVersion,
-      "io.circe" %%% "circe-parser" % circeVersion,
+      "com.monovore" %% "decline" % declineVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
       "org.jline" % "jline-terminal-jni" % jlineVersion,
-      "org.scalameta" %%% "munit" % munitVersion % Test,
-      "com.siriusxm" %%% "snapshot4s-munit" % snapshot4sVersion % Test,
+      "org.scalameta" %% "munit" % munitVersion % Test,
+      "com.siriusxm" %% "snapshot4s-munit" % snapshot4sVersion % Test,
     ),
     Compile / mainClass := Some("difflicious.cli.Main"),
     GraalVMNativeImage / name := "difflicious",
@@ -287,32 +294,34 @@ lazy val cli = projectMatrix
   .jvmPlatform(Seq(Build.Scala3))
 
 lazy val example = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/example"))
   .dependsOn(scalatest, munit, weaver, cats)
   .settings(commonSettings, noPublishSettings)
   .settings(
     name := "example",
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.scalatest" %%% "scalatest-funsuite" % scalatestVersion % Test,
-      "org.typelevel" %%% "weaver-cats" % weaverVersion % Test,
+      "org.scalameta" %% "munit" % munitVersion % Test,
+      "org.scalatest" %% "scalatest-funsuite" % scalatestVersion % Test,
+      "org.typelevel" %% "weaver-cats" % weaverVersion % Test,
     ),
   )
   .jvmPlatform(Seq(Build.Scala3))
 
 lazy val coretest = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/coretest"))
   .dependsOn(core)
   .settings(commonSettings, noPublishSettings)
   .settings(
     name := "coretest",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
     ),
     // Test deps
     libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit" % munitVersion,
-      "org.scalameta" %%% "munit-scalacheck" % munitScalacheckVersion,
+      "org.scalameta" %% "munit" % munitVersion,
+      "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion,
     ).map(_ % Test),
   )
   .jvmPlatform(scalaCrossVersions)
@@ -320,6 +329,7 @@ lazy val coretest = projectMatrix
   .nativePlatform(scalaCrossVersions)
 
 lazy val docs: ProjectMatrix = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .dependsOn(core, coretest, cats, circe, munit, scalatest, weaver)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
   .settings(
@@ -330,13 +340,14 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-literal" % circeVersion,
-      "org.scalatest" %%% "scalatest" % scalatestVersion,
-      "org.typelevel" %%% "weaver-cats" % weaverVersion,
+      "io.circe" %% "circe-literal" % circeVersion,
+      "org.scalatest" %% "scalatest" % scalatestVersion,
+      "org.typelevel" %% "weaver-cats" % weaverVersion,
     ),
   )
   .settings(
     mdocIn := file("docs/docs"),
+    mdocOut := file("docs/target/mdoc"),
     mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     docusaurusCreateSite := {
@@ -359,7 +370,7 @@ lazy val docs: ProjectMatrix = projectMatrix
         ),
       ).filter(_._2.nonEmpty)
       runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv: _*)
+      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv*)
     },
   )
   .settings(
@@ -381,6 +392,7 @@ lazy val docs: ProjectMatrix = projectMatrix
   .jvmPlatform(Seq(Build.Scala213))
 
 lazy val benchmarks = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/benchmarks"))
   .dependsOn(coretest)
   .enablePlugins(JmhPlugin)
@@ -389,12 +401,13 @@ lazy val benchmarks = projectMatrix
   .jvmPlatform(scalaCrossVersions)
 
 lazy val benchmarkCompile = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/compile-benchmarks"))
   .dependsOn(core)
   .settings(commonSettings, noPublishSettings)
   .settings(
     name := "difflicious-compile-benchmarks",
-    generateCompileBenchmarkSources := {
+    generateCompileBenchmarkSources := Def.uncached {
       val directory = (Compile / scalaSource).value / "difflicious" / "derivation"
       IO.createDirectory(directory)
       DerivationBenchmarkInputsGen.files(layerCount = 25).map { case (fileName, content) =>
@@ -414,12 +427,16 @@ lazy val selfHostedDiffliciousViewerSettings = Seq(
     val arguments = (diffliciousViewerAdditionalArguments.value ++ parsedArguments)
       .map(argument => '"' + argument.replace("\\", "\\\\").replace("\"", "\\\"") + '"')
       .mkString(" ", " ", "")
-    (Global / clientJob).toTask(s" cli/Compile/run$arguments").map(_ => ())
+    (LocalProject("cli3") / Compile / run).toTask(arguments).map(_ => ())
   }.evaluated,
 )
 
 lazy val commonSettings = selfHostedDiffliciousViewerSettings ++ Seq(
   versionScheme := Some("early-semver"),
+  libraryDependencySchemes ++= Seq(
+    "org.scala-native" % "test-interface_native0.5_2.13" % VersionScheme.Always,
+    "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.Always,
+  ),
   nativeConfig ~= { config =>
     // Avoid GNU ld executable-stack warnings from Scala Native runtime assembly objects.
     val linuxNoExecStackLinkerOption = "-Wl,-z,noexecstack"
@@ -461,7 +478,7 @@ lazy val commonSettings = selfHostedDiffliciousViewerSettings ++ Seq(
                          "-Wconf:msg=.* in method workaround_[0-9]+ is never used:s",
                        )),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full),
+    compilerPlugin(("org.typelevel" %% "kind-projector" % "0.13.4").cross(CrossVersion.full)),
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   ).filterNot(_ => isScala3.value),
 )
@@ -478,7 +495,7 @@ lazy val setupMise = Seq(
 )
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
-ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowTargetTags := Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
 
