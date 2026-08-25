@@ -140,7 +140,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
 
     assertEquals(
       InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
-      "Dec 4 6:30pm (Thu)",
+      "Dec 4 (Thu) 6:30pm",
     )
   }
 

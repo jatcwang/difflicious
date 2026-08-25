@@ -1,15 +1,15 @@
 ╔═ Go to test ═════════════════════════════════════════════════════════════════════════════════════╗
 ║ Search: another                                                                                  ║
 ║                                                                                                  ║
-║   ▾ Oct 4 10:38am (Thu)                                                                          ║
+║   ▾ Oct 4 (Thu) 10:38am                                                                          ║
 ║     ▾ example.AnotherSuite                                                                       ║
 ║ >       · deep order invoice snapshot has nested differences                                   < ║
-║   ▾ Sep 1 6:16pm (Fri)                                                                           ║
+║   ▾ Sep 1 (Fri) 6:16pm                                                                           ║
 ║     ▾ example.ComplexSuite                                                                       ║
 ║         · another test that fails                                                                ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Run: Oct 4 10:38am (Thu)                                                                         │
+│ Run: Oct 4 (Thu) 10:38am                                                                         │
 │ testId: 01ARZ3NDEKTSV4RRFFQ69G5FAW                                                               │
 │ Suite: example.AnotherSuite                                                                      │
 │ Line: 37                                                                                         │
