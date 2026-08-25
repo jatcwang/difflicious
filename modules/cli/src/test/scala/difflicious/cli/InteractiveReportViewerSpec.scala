@@ -73,7 +73,7 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
 
   snapshotTest("hotkey popup renders session keymap labels") {
     val customKeymap = TerminalKeymap.default.copy(
-      search = TerminalKeymap.bind(TerminalKey.Search, TerminalKeymap.char('x')),
+      fieldSearch = TerminalKeymap.bind(TerminalKey.FieldSearch, TerminalKeymap.char('x')),
     )
     val testDriver = TestDriver(makeViewerState(DiffReport(Vector.empty), keymap = customKeymap, color = false))
 
@@ -297,21 +297,6 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
 
     testDriver.typeKeys("another")
     testDriver.assertSnapshot("filtered-another")
-  }
-
-  test("diff screen ctrl-p fuzzy searches report tests") {
-    val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
-    val testDriver = TestDriver(makeViewerState(report, color = false))
-
-    testDriver.pressKey(SearchKey.Submit)
-    testDriver.pressKey(TerminalKey.Search)
-    testDriver.typeKeys("second")
-    testDriver.pressKey(SearchKey.Submit)
-    val openedScreen = testDriver.render
-    assertFileSnapshot(
-      snapshotLines(openedScreen),
-      "InteractiveReportViewerSpec/diff-screen-ctrl-p-result.snap",
-    )
   }
 
   test("diff screen renders a structured tree and folds ok branches by default") {

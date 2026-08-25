@@ -4,6 +4,7 @@
 >       nested -> 1 -> 2                                                                           <
 
 
+
                  ┌─ Hotkeys ──────────────────────────────────────────────────────┐
                  │ Navigation                                                     │
                  │   up or k / down or j     move selection                       │
@@ -15,12 +16,10 @@
                  │ Search                                                         │
                  │   /                       search current view                  │
                  │   F4                      clear field search highlighting      │
-                 │   ctrl-p                  search tests with finder             │
-                 │                                                                │
-                 │ Diff detail                                                    │
-                 │   /                       search                               │
                  │   F6                      toggle fields/values search mode     │
                  │   n / N                   next or previous field search result │
+                 │                                                                │
+                 │ Diff detail                                                    │
                  │   f / b                   next or previous diff                │
                  │   a                       anchor selected subtree              │
                  │   t                       return to top                        │
@@ -31,6 +30,7 @@
                  │   escape                  go back or confirm quit              │
                  │   ctrl-c or ctrl-d        quit immediately                     │
                  └────────────────────────────────────────────────────────────────┘
+
 
 
 

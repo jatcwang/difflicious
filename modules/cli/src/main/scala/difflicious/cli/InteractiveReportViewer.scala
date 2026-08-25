@@ -38,7 +38,6 @@ private[cli] object TerminalKey {
   case object Anchor extends TerminalKey
   case object Top extends TerminalKey
   case object ToggleTypeName extends TerminalKey
-  case object Search extends TerminalKey
   case object Help extends TerminalKey
   case object Ignored extends TerminalKey
 }
@@ -81,7 +80,6 @@ private[cli] final case class TerminalKeymap(
   anchor: TerminalKeymap.Binding,
   top: TerminalKeymap.Binding,
   toggleTypeName: TerminalKeymap.Binding,
-  search: TerminalKeymap.Binding,
   help: TerminalKeymap.Binding,
 ) {
   import TerminalKeymap.Input
@@ -109,7 +107,6 @@ private[cli] final case class TerminalKeymap(
       anchor,
       top,
       toggleTypeName,
-      search,
       help,
     )
 
@@ -212,7 +209,6 @@ private[cli] object TerminalKeymap {
       anchor = bind(Anchor, char('a')),
       top = bind(Top, char('t')),
       toggleTypeName = bind(ToggleTypeName, char('i')),
-      search = bind(Search, code(16, "ctrl-p")),
       help = bind(Help, char('?'), escape("OP", "F1"), escape("[11~", "F1"), escape("[[A", "F1")),
     )
   }
@@ -880,21 +876,6 @@ object InteractiveReportViewer extends TuiRunner {
             ),
           )
 
-        case TerminalKey.Search =>
-          state.reportRuns match {
-            case Some(runs) =>
-              TerminalScreen.ReportFinder(
-                FinderState.initial(
-                  runs,
-                  initialRunIndex = None,
-                  returnTo = Some(TerminalScreen.Diff(state)),
-                  zoneId = zoneId,
-                ),
-              )
-            case None =>
-              TerminalScreen.Diff(state)
-          }
-
         case TerminalKey.Help =>
           TerminalScreen.Diff(state, showHelpPopup = true)
 
@@ -1263,15 +1244,13 @@ object InteractiveReportViewer extends TuiRunner {
         "Search" -> Vector(
           helpLine(keymap.fieldSearch.label, "search current view"),
           helpLine(keymap.clearSearchHighlights.label, "clear field search highlighting"),
-          helpLine(keymap.search.label, "search tests with finder"),
-        ),
-        "Diff detail" -> Vector(
-          helpLine(keymap.fieldSearch.label, "search"),
           helpLine(keymap.toggleSearchMode.label, "toggle fields/values search mode"),
           helpLine(
             s"${keymap.nextSearchResult.label} / ${keymap.previousSearchResult.label}",
             "next or previous field search result",
           ),
+        ),
+        "Diff detail" -> Vector(
           helpLine(s"${keymap.nextDifference.label} / ${keymap.previousDifference.label}", "next or previous diff"),
           helpLine(keymap.anchor.label, "anchor selected subtree"),
           helpLine(keymap.top.label, "return to top"),
