@@ -1862,11 +1862,8 @@ object InteractiveReportViewer extends TuiRunner {
     val dateLabel =
       if (timestamp.toLocalDate == today) "Today"
       else if (timestamp.toLocalDate == today.minusDays(1)) "Yesterday"
-      else timestamp.format(DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH))
-    val dayOfWeek =
-      if (timestamp.toLocalDate == today || timestamp.toLocalDate == today.minusDays(1)) ""
-      else timestamp.format(DateTimeFormatter.ofPattern(" (EEE)", Locale.ENGLISH))
-    s"$dateLabel $time$dayOfWeek"
+      else timestamp.format(DateTimeFormatter.ofPattern("MMM d (EEE)", Locale.ENGLISH))
+    s"$dateLabel $time"
   }
 
   private def renderDiffTreeRow(

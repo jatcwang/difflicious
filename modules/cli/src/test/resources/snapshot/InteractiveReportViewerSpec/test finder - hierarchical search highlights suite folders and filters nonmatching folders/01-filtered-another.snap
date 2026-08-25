@@ -1,7 +1,7 @@
 ╔═ Go to test ═════════════════════════════════════════════════════════════════════════════════════╗
 ║ Search: another                                                                                  ║
 ║                                                                                                  ║
-║   ▾ Oct 4 10:38am (Thu)                                                                          ║
+║   ▾ Oct 4 (Thu) 10:38am                                                                          ║
 ║     ▾ ex[43ma[49mmple.A[43mnother[49mSuite                                                                       ║
 ║ >       · customer credit is applied to the invoice                                            < ║
 ║         · deep order invoice snapshot has nested differences across adjustments discounts taxes  ║
@@ -9,7 +9,7 @@
 ║                                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Run: Oct 4 10:38am (Thu)                                                                         │
+│ Run: Oct 4 (Thu) 10:38am                                                                         │
 │ testId: 01ARZ3NDEKTSV4RRFFQ69G5FAW                                                               │
 │ Suite: example.AnotherSuite                                                                      │
 │ Line: 37                                                                                         │
