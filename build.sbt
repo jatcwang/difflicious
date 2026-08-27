@@ -350,14 +350,16 @@ lazy val docs: ProjectMatrix = projectMatrix
     mdocOut := file("docs/target/mdoc"),
     mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
-    docusaurusCreateSite := {
+    docusaurusCreateSite := Def.taskDyn {
       (Compile / mdoc).toTask(" ").value
       val website = (ThisBuild / baseDirectory).value / "website"
-      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommand(Seq("yarn", "run", "build"), website)
-      website / "build"
-    },
-    docusaurusPublishGhpages := {
+      Def.task {
+        runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+        runWebsiteCommand(Seq("yarn", "run", "build"), website)
+        website / "build"
+      }
+    }.value,
+    docusaurusPublishGhpages := Def.taskDyn {
       (Compile / mdoc).toTask(" ").value
       val website = (ThisBuild / baseDirectory).value / "website"
       val publishEnv = Seq(
@@ -369,9 +371,11 @@ lazy val docs: ProjectMatrix = projectMatrix
           "jatcwang@gmail.com",
         ),
       ).filter(_._2.nonEmpty)
-      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv*)
-    },
+      Def.task {
+        runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+        runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv*)
+      }
+    }.value,
   )
   .settings(
     // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
