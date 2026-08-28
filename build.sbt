@@ -511,7 +511,7 @@ ThisBuild / githubWorkflowJobSetup :=
 
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(
-    List("test", "docs/docusaurusCreateSite"),
+    List("test", "docs/mdoc", "docs/docusaurusCreateSite"),
     name = Some("Build project and docs"),
   ),
   WorkflowStep.Sbt(
