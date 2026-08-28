@@ -24,6 +24,37 @@ def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
+def markdownFiles(directory: File): Seq[File] =
+  Option(directory.listFiles).toSeq.flatten.flatMap { file =>
+    if (file.isDirectory) markdownFiles(file)
+    else if (file.getName.endsWith(".md")) Seq(file)
+    else Seq.empty
+  }
+
+def waitForMdocOutput(input: File, output: File): Unit = {
+  val expected = markdownFiles(input).map(file => input.toPath.relativize(file.toPath))
+  val deadline = 10.seconds.fromNow
+  var missing = expected.filterNot(path => output.toPath.resolve(path).toFile.isFile)
+  while (missing.nonEmpty && deadline.hasTimeLeft) {
+    Thread.sleep(50)
+    missing = expected.filterNot(path => output.toPath.resolve(path).toFile.isFile)
+  }
+  require(missing.isEmpty, s"mdoc output was not materialized: ${missing.mkString(", ")}")
+
+  var previous = Seq.empty[(Long, Long)]
+  var stable = false
+  while (!stable && deadline.hasTimeLeft) {
+    val current = expected.map { path =>
+      val file = output.toPath.resolve(path).toFile
+      file.length -> file.lastModified
+    }
+    stable = current == previous
+    previous = current
+    if (!stable) Thread.sleep(50)
+  }
+  require(stable, "mdoc output did not stabilize")
+}
+
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
   scalaVersion.value.startsWith("3")
@@ -352,8 +383,11 @@ lazy val docs: ProjectMatrix = projectMatrix
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     docusaurusCreateSite := Def.taskDyn {
       (Compile / mdoc).toTask(" ").value
+      val input = mdocIn.value
+      val output = mdocOut.value
       val website = (ThisBuild / baseDirectory).value / "website"
       Def.task {
+        waitForMdocOutput(input, output)
         runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
         runWebsiteCommand(Seq("yarn", "run", "build"), website)
         website / "build"
@@ -511,7 +545,7 @@ ThisBuild / githubWorkflowJobSetup :=
 
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(
-    List("test", "docs/mdoc", "docs/docusaurusCreateSite"),
+    List("test", "docs/docusaurusCreateSite"),
     name = Some("Build project and docs"),
   ),
   WorkflowStep.Sbt(
