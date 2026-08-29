@@ -42,7 +42,7 @@ jobs:
         run: sbt githubWorkflowCheck
 
       - name: Build project and docs
-        run: sbt 'test; docs/docusaurusCreateSite'
+        run: sbt 'test; docs/mdoc; docs/docusaurusCreateSite'
 
       - name: Compile sbt 2 plugin with fatal warnings
         run: sbt '++3.8.4; sbtPlugin / Compile / compile'
