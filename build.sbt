@@ -24,6 +24,22 @@ def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
+def runWebsiteCommandWithRetry(
+    command: Seq[String],
+    cwd: File,
+    retries: Int,
+    extraEnv: (String, String)*,
+): Unit = {
+  var attemptsLeft = retries
+  var exit = Process(command, cwd, extraEnv*).!
+  while (exit != 0 && attemptsLeft > 0) {
+    println(s"Retrying command after exit $exit: ${command.mkString(" ")}")
+    attemptsLeft -= 1
+    exit = Process(command, cwd, extraEnv*).!
+  }
+  assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
+}
+
 val isScala3 = Def.setting {
   // doesn't work well with >= 3.0.0 for `3.0.0-M1`
   scalaVersion.value.startsWith("3")
@@ -353,7 +369,7 @@ lazy val docs: ProjectMatrix = projectMatrix
     docusaurusCreateSite := {
       val website = (ThisBuild / baseDirectory).value / "website"
       runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommand(Seq("yarn", "run", "build"), website)
+      runWebsiteCommandWithRetry(Seq("yarn", "run", "build"), website, retries = 1)
       website / "build"
     },
     docusaurusPublishGhpages := {
