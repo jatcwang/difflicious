@@ -551,7 +551,8 @@ ThisBuild / githubWorkflowAddedJobs := Seq(
       WorkflowStep.Run(
         List(
           "set -euo pipefail",
-          "binary=\"modules/cli/target/jvm-3/graalvm-native-image/difflicious\"",
+          "binary=\"$(find target/out -type f -path '*/difflicious-cli/graalvm-native-image/difflicious' -print -quit)\"",
+          "test -n \"$binary\"",
           "test -x \"$binary\"",
           "\"$binary\" --help >/dev/null",
           "mkdir -p dist",
