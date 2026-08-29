@@ -547,6 +547,20 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
+  test("diff screen ctrl-d does not quit during field search") {
+    val report = DiffReport(Vector(fieldSearchDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.pressKey(TerminalKey.FieldSearch)
+    testDriver.typeKeys("first")
+    val beforeCtrlD = testDriver.render
+
+    testDriver.pressInputs(Vector(4))
+
+    assert(!testDriver.isTerminated)
+    assertEquals(testDriver.render, beforeCtrlD)
+  }
+
   test("diff screen escape exits field search mode") {
     val report = DiffReport(Vector(fieldSearchDiffRun))
     val testDriver = TestDriver(makeViewerState(report, color = false))
@@ -694,6 +708,19 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.pressKey(TerminalKey.Quit)
 
     assert(testDriver.isTerminated)
+  }
+
+  test("ctrl-d and ctrl-u move by half a screen") {
+    val report = DiffReport(Vector(largeDiffRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false, openInitialResult = true))
+    val initiallySelected = selectedLine(testDriver.render)
+
+    testDriver.pressInputs(Vector(4))
+    assert(!testDriver.isTerminated)
+    assertNotEquals(selectedLine(testDriver.render), initiallySelected)
+
+    testDriver.pressInputs(Vector(21))
+    assertEquals(selectedLine(testDriver.render), initiallySelected)
   }
 
   test("diff screen next and previous diff reveal folded descendants") {

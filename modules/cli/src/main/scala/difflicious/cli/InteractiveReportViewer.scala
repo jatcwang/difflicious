@@ -184,7 +184,7 @@ private[cli] object TerminalKeymap {
 
     TerminalKeymap(
       escape = bind(Escape, code(27, "escape")),
-      quit = bind(Quit, code(3, "ctrl-c"), code(4, "ctrl-d")),
+      quit = bind(Quit, code(3, "ctrl-c")),
       open = bind(Open, code(10, "enter"), code(13, "enter"), char('o')),
       next = bind(Next, escape("[B", "down"), char('j')),
       previous = bind(Previous, escape("[A", "up"), char('k')),
@@ -200,8 +200,8 @@ private[cli] object TerminalKeymap {
       nextSearchResult = bind(NextSearchResult, char('n')),
       previousSearchResult = bind(PreviousSearchResult, char('N')),
       toggleSearchMode = bind(ToggleSearchMode, escape("[17~", "F6")),
-      pageDown = bind(PageDown, escape("[6~", "page down")),
-      pageUp = bind(PageUp, escape("[5~", "page up")),
+      pageDown = bind(PageDown, escape("[6~", "page down"), code(4, "ctrl-d")),
+      pageUp = bind(PageUp, escape("[5~", "page up"), code(21, "ctrl-u")),
       expand = bind(Expand, escape("[C", "right"), char('l')),
       collapse = bind(Collapse, escape("[D", "left"), char('h')),
       expandLevel = bind(ExpandLevel, char(']')),
@@ -497,7 +497,7 @@ object InteractiveReportViewer extends TuiRunner {
     private def parseSearchKey(inputs: Vector[Int], index: Int): ParsedSearchKey = {
       val code = inputs(index)
       code match {
-        case 3 | 4 =>
+        case 3 =>
           ParsedSearchKey(SearchKey.Quit, index + 1)
         case 27 =>
           val parsed = parseEscape(inputs, index)
