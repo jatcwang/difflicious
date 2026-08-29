@@ -1,6 +1,7 @@
 import sbtghactions.JavaSpec
 import complete.DefaultParsers.*
 import sbt.Reference.display
+import sbt.util.CacheImplicits.given
 import org.typelevel.sbt.tpolecat.{CiMode, DevMode}
 import scala.concurrent.duration.*
 import scala.sys.process.Process
@@ -18,41 +19,18 @@ val hearthVersion = "0.4.1"
 val jsoniterScalaVersion = "2.40.1"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
+val generateMdoc = taskKey[xsbti.HashedVirtualFileRef]("Generate cached mdoc output")
+val mdocInputs = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Mdoc input files")
+val mdocRunnerClasspath = taskKey[Seq[String]]("Classpath used to launch mdoc")
 
 def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String)*): Unit = {
-  val exit = Process(command, cwd, extraEnv*).!
+  val exit = Process(command, cwd, extraEnv *).!
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
-def markdownFiles(directory: File): Seq[File] =
-  Option(directory.listFiles).toSeq.flatten.flatMap { file =>
-    if (file.isDirectory) markdownFiles(file)
-    else if (file.getName.endsWith(".md")) Seq(file)
-    else Seq.empty
-  }
-
-def waitForMdocOutput(input: File, output: File): Unit = {
-  val expected = markdownFiles(input).map(file => input.toPath.relativize(file.toPath))
-  val deadline = 10.seconds.fromNow
-  var missing = expected.filterNot(path => output.toPath.resolve(path).toFile.isFile)
-  while (missing.nonEmpty && deadline.hasTimeLeft) {
-    Thread.sleep(50)
-    missing = expected.filterNot(path => output.toPath.resolve(path).toFile.isFile)
-  }
-  require(missing.isEmpty, s"mdoc output was not materialized: ${missing.mkString(", ")}")
-
-  var previous = Seq.empty[(Long, Long)]
-  var stable = false
-  while (!stable && deadline.hasTimeLeft) {
-    val current = expected.map { path =>
-      val file = output.toPath.resolve(path).toFile
-      file.length -> file.lastModified
-    }
-    stable = current == previous
-    previous = current
-    if (!stable) Thread.sleep(50)
-  }
-  require(stable, "mdoc output did not stabilize")
+def stageMdoc(generated: java.nio.file.Path, destination: File): Unit = {
+  IO.delete(destination)
+  IO.copyDirectory(generated.toFile, destination)
 }
 
 val isScala3 = Def.setting {
@@ -93,7 +71,7 @@ lazy val allModules =
   projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("sbtPlugin")
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(allModules*)
+  .aggregate(allModules *)
   .settings(commonSettings, noPublishSettings)
 
 lazy val sbtPlugin = project
@@ -378,24 +356,55 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     mdocIn := file("docs/docs"),
-    mdocOut := file("docs/target/mdoc"),
+    mdocOut := (Compile / target).value / "mdoc",
     mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
-    docusaurusCreateSite := Def.taskDyn {
-      (Compile / mdoc).toTask(" ").value
-      val input = mdocIn.value
-      val output = mdocOut.value
-      val website = (ThisBuild / baseDirectory).value / "website"
-      Def.task {
-        waitForMdocOutput(input, output)
-        runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-        runWebsiteCommand(Seq("yarn", "run", "build"), website)
-        website / "build"
-      }
-    }.value,
-    docusaurusPublishGhpages := Def.taskDyn {
-      (Compile / mdoc).toTask(" ").value
-      val website = (ThisBuild / baseDirectory).value / "website"
+    mdocInputs := Def.uncached {
+      val converter = fileConverter.value
+      ((mdocIn.value ** AllPassFilter).get() ++ (Compile / sources).value).distinct
+        .filter(_.isFile)
+        .sortBy(_.getAbsolutePath)
+        .map(file => converter.toVirtualFile(file.toPath))
+    },
+    mdocRunnerClasspath := Def.uncached {
+      val converter = fileConverter.value
+      (Compile / fullClasspath).value.map(entry => converter.toPath(entry.data).toString)
+    },
+    generateMdoc := {
+      val converter = fileConverter.value
+      val _ = mdocInputs.value
+      val _ = (Compile / dependencyClasspath).value
+      val _ = (Compile / scalacOptions).value
+      val _ = mdocVariables.value
+      val root = (ThisBuild / baseDirectory).value
+      val output = root.toPath.resolve(mdocOut.value.toPath).normalize
+      val javaExecutable = javaHome.value.fold("java")(home => (home / "bin" / "java").absolutePath)
+      val command =
+        Seq(javaExecutable, "-cp", mdocRunnerClasspath.value.mkString(java.io.File.pathSeparator), "mdoc.SbtMain") ++
+          mdocExtraArguments.value
+
+      IO.delete(output.toFile)
+      runWebsiteCommand(command, root)
+      require(output.toFile.isDirectory, s"mdoc did not create $output")
+
+      val generated = converter.toVirtualFile(output)
+      Def.declareOutputDirectory(generated)
+      generated
+    },
+    docusaurusCreateSite := {
+      val generated = fileConverter.value.toPath(generateMdoc.value)
+      val root = (ThisBuild / baseDirectory).value
+      val website = root / "website"
+      stageMdoc(generated, root / "docs/target/mdoc")
+      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+      runWebsiteCommand(Seq("yarn", "run", "build"), website)
+      website / "build"
+    },
+    docusaurusPublishGhpages := {
+      val generated = fileConverter.value.toPath(generateMdoc.value)
+      val root = (ThisBuild / baseDirectory).value
+      val website = root / "website"
+      stageMdoc(generated, root / "docs/target/mdoc")
       val publishEnv = Seq(
         "GIT_USER" -> sys.env.getOrElse("GIT_USER", "jatcwang"),
         "GIT_PASS" -> sys.env.getOrElse("GIT_PASS", sys.env.getOrElse("GITHUB_TOKEN", "")),
@@ -405,11 +414,9 @@ lazy val docs: ProjectMatrix = projectMatrix
           "jatcwang@gmail.com",
         ),
       ).filter(_._2.nonEmpty)
-      Def.task {
-        runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-        runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv*)
-      }
-    }.value,
+      runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv *)
+    },
   )
   .settings(
     // Disable any2stringAdd deprecation in md files. Seems like mdoc macro generates code which
