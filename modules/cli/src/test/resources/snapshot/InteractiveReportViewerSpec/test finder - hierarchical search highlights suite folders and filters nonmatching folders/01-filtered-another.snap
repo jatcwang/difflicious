@@ -3,9 +3,9 @@
 ║                                                                                                  ║
 ║   ▾ Oct 4 (Thu) 10:38am                                                                          ║
 ║     ▾ ex[43ma[49mmple.A[43mnother[49mSuite                                                                       ║
-║ >       · customer credit is applied to the invoice                                            < ║
-║         · deep order invoice snapshot has nested differences across adjustments discounts taxes  ║
-║           shipping and payments                                                                  ║
+║ >     · customer credit is applied to the invoice                                              < ║
+║       · deep order invoice snapshot has nested differences across adjustments discounts taxes s  ║
+║         hipping and payments                                                                     ║
 ║                                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐

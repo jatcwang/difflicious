@@ -1629,8 +1629,8 @@ object InteractiveReportViewer extends TuiRunner {
     val candidateSegments = Vector(StyledText(searchMatch.candidate.testName, None))
     val segments =
       highlightSearchMatch(candidateSegments, Some(query)) ++ testIdMatchBadge(searchMatch)
-    val firstPrefix = if (testRunsToShow == TestRunsToShow.SingleRun) "    \u00b7 " else "      \u00b7 "
-    val continuationPrefix = if (testRunsToShow == TestRunsToShow.SingleRun) "      " else "        "
+    val firstPrefix = if (testRunsToShow == TestRunsToShow.SingleRun) "  \u00b7 " else "    \u00b7 "
+    val continuationPrefix = if (testRunsToShow == TestRunsToShow.SingleRun) "    " else "      "
     renderWrappedSearchCandidateLines(segments, firstPrefix, continuationPrefix, selected, contentWidth, color)
   }
 
