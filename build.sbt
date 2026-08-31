@@ -14,28 +14,28 @@ val declineVersion = "2.6.2"
 val jlineVersion = "4.4.0"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
-val hearthVersion = "0.4.1"
+val hearthVersion = "0.4.2"
 val jsoniterScalaVersion = "2.40.1"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 
 def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String)*): Unit = {
-  val exit = Process(command, cwd, extraEnv*).!
+  val exit = Process(command, cwd, extraEnv *).!
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
 def runWebsiteCommandWithRetry(
-    command: Seq[String],
-    cwd: File,
-    retries: Int,
-    extraEnv: (String, String)*,
+  command: Seq[String],
+  cwd: File,
+  retries: Int,
+  extraEnv: (String, String)*,
 ): Unit = {
   var attemptsLeft = retries
-  var exit = Process(command, cwd, extraEnv*).!
+  var exit = Process(command, cwd, extraEnv *).!
   while (exit != 0 && attemptsLeft > 0) {
     println(s"Retrying command after exit $exit: ${command.mkString(" ")}")
     attemptsLeft -= 1
-    exit = Process(command, cwd, extraEnv*).!
+    exit = Process(command, cwd, extraEnv *).!
   }
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
@@ -78,7 +78,7 @@ lazy val allModules =
   projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("sbtPlugin")
 
 lazy val difflicious = Project("difflicious", file("."))
-  .aggregate(allModules*)
+  .aggregate(allModules *)
   .settings(commonSettings, noPublishSettings)
 
 lazy val sbtPlugin = project
@@ -384,7 +384,7 @@ lazy val docs: ProjectMatrix = projectMatrix
         ),
       ).filter(_._2.nonEmpty)
       runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv*)
+      runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv *)
     },
   )
   .settings(
