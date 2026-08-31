@@ -363,7 +363,6 @@ lazy val docs: ProjectMatrix = projectMatrix
   )
   .settings(
     mdocIn := file("docs/docs"),
-    mdocOut := file("docs/target/mdoc"),
     mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     docusaurusCreateSite := {
@@ -642,7 +641,7 @@ ThisBuild / githubWorkflowPublish := Seq(
     id = Some("release-tag"),
   ),
   WorkflowStep.Sbt(
-    List("docs/docusaurusPublishGhpages"),
+    List("docs/mdoc", "docs/docusaurusPublishGhpages"),
     name = Some("Publish docs"),
     cond = Some("steps.release-tag.outputs.official == 'true'"),
     env = Map(

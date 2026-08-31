@@ -41,4 +41,4 @@ jobs:
           GIT_USER: github-actions[bot]
           GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_USER_NAME: github-actions[bot]
-        run: sbt --client "docs/docusaurusPublishGhpages"
+        run: sbt --client "docs/mdoc ; docs/docusaurusPublishGhpages"
