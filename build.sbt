@@ -52,14 +52,14 @@ inThisBuild(
   List(
     scalaVersion := mainScalaVersion,
     organization := "com.github.jatcwang",
-    homepage := Some(url("https://github.com/jatcwang/difflicious")),
-    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    homepage := Some(uri("https://github.com/jatcwang/difflicious")),
+    licenses := List("Apache-2.0" -> uri("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
         "jatcwang",
         "Jacob Wang",
         "jatcwang@gmail.com",
-        url("https://almostfunctional.com"),
+        uri("https://almostfunctional.com"),
       ),
     ),
     commands ++= Build.createBuildCommands(projectMatrixModules.flatMap(_.projectRefs)),
@@ -439,7 +439,7 @@ lazy val selfHostedDiffliciousViewerSettings = Seq(
   diffliciousViewer := Def.inputTaskDyn {
     val parsedArguments = sbt.complete.DefaultParsers.spaceDelimited("<arg>").parsed
     val arguments = (diffliciousViewerAdditionalArguments.value ++ parsedArguments)
-      .map(argument => '"' + argument.replace("\\", "\\\\").replace("\"", "\\\"") + '"')
+      .map(argument => s""""${argument.replace("\\", "\\\\").replace("\"", "\\\"")}"""")
       .mkString(" ", " ", "")
     (LocalProject("cli3") / Compile / run).toTask(arguments).map(_ => ())
   }.evaluated,

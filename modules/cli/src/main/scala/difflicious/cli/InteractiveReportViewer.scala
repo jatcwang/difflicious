@@ -50,6 +50,8 @@ private[cli] object SearchKey {
   case object Submit extends SearchKey
   case object Up extends SearchKey
   case object Down extends SearchKey
+  case object PageUp extends SearchKey
+  case object PageDown extends SearchKey
   case object Backspace extends SearchKey
   case object Clear extends SearchKey
   case object ToggleHierarchy extends SearchKey
@@ -241,7 +243,10 @@ private[cli] trait TuiRunner {
 }
 
 object InteractiveReportViewer extends TuiRunner {
-  private val SearchCandidateRows = 6
+  private val FinderFixedRows = 11
+
+  private def finderCandidateRows(height: Int): Int =
+    math.max(1, height - FinderFixedRows)
 
   override def run(
     report: DiffReport,
@@ -467,7 +472,7 @@ object InteractiveReportViewer extends TuiRunner {
                     )
                   case None => armOrExit()
                 }
-              case _ => copy(screen = s.state.handleSearchKey(key), exitArmed = false)
+              case _ => copy(screen = s.state.handleSearchKey(key, finderCandidateRows(height)), exitArmed = false)
             }
           case s: TerminalScreen.Diff if s.state.fieldSearch.active =>
             copy(screen = TerminalScreen.Diff(s.state.normalized.handleFieldSearchKey(key)), exitArmed = false)
@@ -541,10 +546,12 @@ object InteractiveReportViewer extends TuiRunner {
           ParsedSearchKey(SearchKey.Down, index + 1)
         case 11 =>
           ParsedSearchKey(SearchKey.Up, index + 1)
-        case 21 =>
-          ParsedSearchKey(SearchKey.Clear, index + 1)
+        case 4 =>
+          ParsedSearchKey(finderOrFieldSearchKey(SearchKey.PageDown, SearchKey.Ignored), index + 1)
         case 8 =>
           ParsedSearchKey(SearchKey.ToggleHierarchy, index + 1)
+        case 21 =>
+          ParsedSearchKey(finderOrFieldSearchKey(SearchKey.PageUp, SearchKey.Clear), index + 1)
         case 127 =>
           ParsedSearchKey(SearchKey.Backspace, index + 1)
         case printable if isPrintable(printable) =>
@@ -553,6 +560,12 @@ object InteractiveReportViewer extends TuiRunner {
           ParsedSearchKey(SearchKey.Ignored, index + 1)
       }
     }
+
+    private def finderOrFieldSearchKey(finderKey: SearchKey, fieldSearchKey: SearchKey): SearchKey =
+      screen match {
+        case _: TerminalScreen.ReportFinder => finderKey
+        case _ => fieldSearchKey
+      }
 
     private def isPrintable(code: Int): Boolean =
       code >= 32 && code != 127
@@ -660,7 +673,7 @@ object InteractiveReportViewer extends TuiRunner {
     runTimestampLabel: Option[String],
     returnTo: Option[TerminalScreen],
   ) {
-    def handleSearchKey(key: SearchKey): TerminalScreen = {
+    def handleSearchKey(key: SearchKey, candidateRows: Int): TerminalScreen = {
       val matches = searchMatches(candidates, query)
       val clampedSelectedIndex = clampSearchIndex(selectedIndex, matches.length)
 
@@ -694,6 +707,22 @@ object InteractiveReportViewer extends TuiRunner {
         case SearchKey.Down =>
           TerminalScreen.ReportFinder(
             copy(selectedIndex = moveSearchSelection(clampedSelectedIndex, matches, viewMode, step = 1)),
+          )
+
+        case SearchKey.PageUp =>
+          TerminalScreen.ReportFinder(
+            copy(
+              selectedIndex =
+                moveSearchSelection(clampedSelectedIndex, matches, viewMode, step = -pageStep(candidateRows)),
+            ),
+          )
+
+        case SearchKey.PageDown =>
+          TerminalScreen.ReportFinder(
+            copy(
+              selectedIndex =
+                moveSearchSelection(clampedSelectedIndex, matches, viewMode, step = pageStep(candidateRows)),
+            ),
           )
 
         case SearchKey.Backspace =>
@@ -962,6 +991,12 @@ object InteractiveReportViewer extends TuiRunner {
 
         case SearchKey.Down =>
           jumpToFieldSearchMatch(fieldSearch.query, step = 1)
+
+        case SearchKey.PageUp =>
+          this
+
+        case SearchKey.PageDown =>
+          this
 
         case SearchKey.Backspace =>
           if (fieldSearch.query.nonEmpty)
@@ -1419,12 +1454,21 @@ object InteractiveReportViewer extends TuiRunner {
   ): Vector[String] = {
     val promptWidth = math.max(4, width)
     val contentWidth = rowContentWidth(borderedPanelContentWidth(promptWidth))
+    val candidateRows = finderCandidateRows(height)
     val selectedIndex = clampSearchIndex(state.selectedIndex, matches.length)
     val selectedCandidate = matches.lift(selectedIndex).map(_.candidate)
     val matchLines =
       viewMode match {
         case TestSearchViewMode.Flat =>
-          renderFlatSearchCandidateLines(matches, state.query, selectedIndex, contentWidth, color, testRunsToShow)
+          renderFlatSearchCandidateLines(
+            matches = matches,
+            query = state.query,
+            selectedIndex = selectedIndex,
+            contentWidth = contentWidth,
+            color = color,
+            testRunsToShow = testRunsToShow,
+            candidateRows = candidateRows,
+          )
         case TestSearchViewMode.Hierarchical =>
           renderHierarchicalSearchCandidateLines(
             matches,
@@ -1433,6 +1477,7 @@ object InteractiveReportViewer extends TuiRunner {
             contentWidth,
             color,
             testRunsToShow,
+            candidateRows,
           )
       }
     val runLabel =
@@ -1459,6 +1504,7 @@ object InteractiveReportViewer extends TuiRunner {
     contentWidth: Int,
     color: Boolean,
     testRunsToShow: TestRunsToShow,
+    candidateRows: Int,
   ): Vector[String] = {
     val lines =
       matches.zipWithIndex.flatMap { case (searchMatch, index) =>
@@ -1472,11 +1518,11 @@ object InteractiveReportViewer extends TuiRunner {
         )
       }
     val selectedLineIndex = lines.indexWhere(_.selected)
-    val start = windowStart(math.max(0, selectedLineIndex), lines.length, SearchCandidateRows)
+    val start = windowStart(math.max(0, selectedLineIndex), lines.length, candidateRows)
     val visibleLines =
       if (matches.isEmpty) Vector("No matches")
-      else lines.slice(start, start + SearchCandidateRows).map(_.line)
-    visibleLines ++ Vector.fill(math.max(0, SearchCandidateRows - visibleLines.length))("")
+      else lines.slice(start, start + candidateRows).map(_.line)
+    visibleLines ++ Vector.fill(math.max(0, candidateRows - visibleLines.length))("")
   }
 
   private def renderHierarchicalSearchCandidateLines(
@@ -1486,16 +1532,17 @@ object InteractiveReportViewer extends TuiRunner {
     contentWidth: Int,
     color: Boolean,
     testRunsToShow: TestRunsToShow,
+    candidateRows: Int,
   ): Vector[String] = {
     if (matches.isEmpty)
-      return Vector("No matches") ++ Vector.fill(math.max(0, SearchCandidateRows - 1))("")
+      return Vector("No matches") ++ Vector.fill(math.max(0, candidateRows - 1))("")
 
     val lines = hierarchicalSearchRows(matches, query, selectedIndex, contentWidth, color, testRunsToShow)
     val selectedLineIndex = lines.indexWhere(_.selected)
-    val start = windowStart(math.max(0, selectedLineIndex), lines.length, SearchCandidateRows)
+    val start = windowStart(math.max(0, selectedLineIndex), lines.length, candidateRows)
     val visibleLines =
-      lines.slice(start, start + SearchCandidateRows).map(_.line)
-    visibleLines ++ Vector.fill(math.max(0, SearchCandidateRows - visibleLines.length))("")
+      lines.slice(start, start + candidateRows).map(_.line)
+    visibleLines ++ Vector.fill(math.max(0, candidateRows - visibleLines.length))("")
   }
 
   private final case class SearchRenderRow(line: String, selected: Boolean)
