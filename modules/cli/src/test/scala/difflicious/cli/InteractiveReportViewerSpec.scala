@@ -1306,6 +1306,8 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       case SearchKey.Submit => Vector(13)
       case SearchKey.Up => Vector(11)
       case SearchKey.Down => Vector(10)
+      case SearchKey.PageUp => Vector(21)
+      case SearchKey.PageDown => Vector(4)
       case SearchKey.Backspace => Vector(127)
       case SearchKey.Clear => Vector(21)
       case SearchKey.ToggleHierarchy => Vector(8)
