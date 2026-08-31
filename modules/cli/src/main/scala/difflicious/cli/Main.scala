@@ -57,6 +57,9 @@ object Main {
     ReporterJsonlReader.read(config.input, stdin, config.mode)
 
   private def selectReport(config: CliConfig, report: DiffReport): Either[String, SelectedReport] =
+    selectTest(config, DiffRunSelector.forTestRunsToShow(report, config.testRunsToShow))
+
+  private def selectTest(config: CliConfig, report: DiffReport): Either[String, SelectedReport] =
     config.testId match {
       case None =>
         Right(SelectedReport(report, initialTuiIndex = 0, openInitialTuiResult = false))
@@ -76,7 +79,7 @@ object Main {
           case RunMode.NonInteractive(_) =>
             val matches = DiffRunSelector.matchingRuns(report, testId)
             if (matches.nonEmpty)
-              Right(SelectedReport(DiffReport(matches), initialTuiIndex = 0, openInitialTuiResult = false))
+              Right(SelectedReport(report.copy(runs = matches), initialTuiIndex = 0, openInitialTuiResult = false))
             else Left(s"No diff failure matched test id '$testId'.")
         }
     }

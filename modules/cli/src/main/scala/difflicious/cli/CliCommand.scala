@@ -9,6 +9,7 @@ object CliCommand {
 
 final case class CliConfig(
   mode: RunMode,
+  testRunsToShow: TestRunsToShow,
   input: CliInput.Report,
   testId: Option[String],
   color: Boolean,

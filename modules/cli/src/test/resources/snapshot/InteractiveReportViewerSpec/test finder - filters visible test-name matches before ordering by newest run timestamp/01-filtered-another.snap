@@ -3,10 +3,10 @@
 ║                                                                                                  ║
 ║   ▾ Oct 4 (Thu) 10:38am                                                                          ║
 ║     ▾ example.AnotherSuite                                                                       ║
-║ >       · deep order invoice snapshot has nested differences                                   < ║
+║ >     · deep order invoice snapshot has nested differences                                     < ║
 ║   ▾ Sep 1 (Fri) 6:16pm                                                                           ║
 ║     ▾ example.ComplexSuite                                                                       ║
-║         · another test that fails                                                                ║
+║       · another test that fails                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Run: Oct 4 (Thu) 10:38am                                                                         │

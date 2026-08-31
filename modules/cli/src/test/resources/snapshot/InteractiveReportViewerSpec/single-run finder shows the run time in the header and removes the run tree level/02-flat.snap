@@ -1,19 +1,19 @@
-╔═ Go to test ═════════════════════════════════════════════════════════════════════════════════════╗
+╔═ Go to test ══════════════════════════════════════════════ Showing Test Run: Sep 1 (Fri) 6:16pm ═╗
 ║ Search:                                                                                          ║
 ║                                                                                                  ║
-║   ▾ Jul 31 (Sun) 1:54am                                                                          ║
-║     ▾ example.ExampleSuite                                                                       ║
-║       · first                                                                                    ║
-║     ▾ example.OtherSuite                                                                         ║
-║ >     · second                                                                                 < ║
+║ > · first                                                                                      < ║
+║   · second                                                                                       ║
+║                                                                                                  ║
+║                                                                                                  ║
+║                                                                                                  ║
 ║                                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Run: Jul 31 (Sun) 1:54am                                                                         │
+│ Run: Sep 1 (Fri) 6:16pm                                                                          │
 │ testId: 01ARZ3NDEKTSV4RRFFQ69G5FAW                                                               │
-│ Suite: example.OtherSuite                                                                        │
+│ Suite: example.ExampleSuite                                                                      │
 │ Line: 37                                                                                         │
-│ File: /workspace/OtherSuite.scala                                                                │
+│ File: /workspace/ExampleSuite.scala                                                              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 

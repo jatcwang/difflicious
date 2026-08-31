@@ -39,7 +39,11 @@ object DiffRun {
     )
 }
 
-final case class DiffReport(runs: Vector[DiffRun]) {
+final case class DiffReport(
+  runs: Vector[DiffRun],
+  testRunsToShow: TestRunsToShow = TestRunsToShow.AllRuns,
+  selectedRunId: Option[String] = None,
+) {
   def isOk: Boolean =
     runs.forall(_.result.isOk)
 

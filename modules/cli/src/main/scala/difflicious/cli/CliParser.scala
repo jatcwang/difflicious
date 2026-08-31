@@ -30,14 +30,25 @@ object CliParser {
     Opts.flag(long = "help", help = "Display this help text.", short = "h").asHelp
 
   private lazy val reportConfigOptions: Opts[CliConfig] =
-    (modeOption, reportInputOptions, testIdOption, noColorOption).mapN { case (mode, input, testId, noColor) =>
-      CliConfig(
-        mode = mode,
-        input = input,
-        testId = testId,
-        color = !noColor,
-      )
+    (modeOption, testRunsToShowOption, reportInputOptions, testIdOption, noColorOption).mapN {
+      case (mode, testRunsToShow, input, testId, noColor) =>
+        CliConfig(
+          mode = mode,
+          testRunsToShow = testRunsToShow,
+          input = input,
+          testId = testId,
+          color = !noColor,
+        )
     }
+
+  private lazy val testRunsToShowOption: Opts[TestRunsToShow] =
+    Opts
+      .flag(
+        long = "all-runs",
+        help = "Show results from every detected test run instead of only the latest run.",
+      )
+      .as(TestRunsToShow.AllRuns)
+      .withDefault(TestRunsToShow.default)
 
   private lazy val modeOption: Opts[RunMode] = {
     val interactive =

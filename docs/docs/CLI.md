@@ -28,6 +28,7 @@ The `runId` is a [ULID](https://github.com/ulid/spec) value that uniquely identi
 ## Interactive TUI
 
 By default, the CLI launches in TUI (Terminal User Interface) mode. You can search for tests and interactively explore the differences.
+Only failures from the latest detected test run are shown. Pass `--all-runs` to include failures from older runs.
 
 ```
 sbt> diffliciousViewer
@@ -70,10 +71,16 @@ There are two modes:
 
 ### Plain text output (`--plain`)
 
-To print every recorded test failure as plain text:
+To print failures from the latest detected test run as plain text:
 
 ```
 sbt> diffliciousViewer --plain
+```
+
+To include failures from every detected test run, pass `--all-runs`:
+
+```
+sbt> diffliciousViewer --plain --all-runs
 ```
 
 To print only the failure with a specific test id:

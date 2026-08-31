@@ -16,6 +16,7 @@ import MainSpec._
 
 class MainSpec extends FunSuite with SnapshotAssertions {
   private val ExampleRunId = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+  private val LaterRunId = "01BRZ3NDEKTSV4RRFFQ69G5FAV"
   private val ExampleTestId = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
   private val OtherTestId = "01ARZ3NDEKTSV4RRFFQ69G5FAX"
 
@@ -67,6 +68,52 @@ class MainSpec extends FunSuite with SnapshotAssertions {
     assertEquals(error.toString(StandardCharsets.UTF_8.name()), "")
     assertEquals(json.hcursor.downField("summary").get[Int]("failures"), Right(2))
     assertEquals(json.hcursor.downField("summary").get[Int]("totalChanges"), Right(2))
+  }
+
+  test("output defaults to the latest detected test run and can show all runs") {
+    val directory = Files.createTempDirectory("difflicious-cli-latest-run")
+    Files.writeString(
+      directory.resolve("old.jsonl"),
+      listenerJsonl("OldSuite", "example.OldSuite", "/workspace/OldSuite.scala", 12),
+    )
+    Files.writeString(
+      directory.resolve("latest.jsonl"),
+      listenerJsonl(
+        "LatestSuite",
+        "example.LatestSuite",
+        "/workspace/LatestSuite.scala",
+        24,
+        runId = LaterRunId,
+      ),
+    )
+
+    val latestOutput = new ByteArrayOutputStream
+    val latestExitCode = Main.run(
+      List("--plain", "-d", directory.toString),
+      emptyStdin,
+      printStream(latestOutput),
+      printStream(new ByteArrayOutputStream),
+    )
+    val latestRendered = latestOutput.toString(StandardCharsets.UTF_8.name())
+
+    assertEquals(latestExitCode, 0)
+    assert(latestRendered.contains("LatestSuite"))
+    assert(!latestRendered.contains("OldSuite"))
+    assert(latestRendered.contains("Summary: 1 diff failure(s)"))
+
+    val allOutput = new ByteArrayOutputStream
+    val allExitCode = Main.run(
+      List("--plain", "--all-runs", "-d", directory.toString),
+      emptyStdin,
+      printStream(allOutput),
+      printStream(new ByteArrayOutputStream),
+    )
+    val allRendered = allOutput.toString(StandardCharsets.UTF_8.name())
+
+    assertEquals(allExitCode, 0)
+    assert(allRendered.contains("LatestSuite"))
+    assert(allRendered.contains("OldSuite"))
+    assert(allRendered.contains("Summary: 2 diff failure(s)"))
   }
 
   test("test id filters non-interactive report output") {
