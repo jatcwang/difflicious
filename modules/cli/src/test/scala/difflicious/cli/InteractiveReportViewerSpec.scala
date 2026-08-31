@@ -37,6 +37,24 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     assert(testDriver.isTerminated)
   }
 
+  snapshotTest("single-run finder shows the run time in the header and removes the run tree level") {
+    val unselected =
+      DiffReport(
+        Vector(
+          diffRun("OldSuite", "old", runId = RunId),
+          diffRun("ExampleSuite", "first", runId = LaterRunId),
+          diffRun("OtherSuite", "second", runId = LaterRunId),
+        ),
+      )
+    val report = DiffRunSelector.forTestRunsToShow(unselected, TestRunsToShow.SingleRun)
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    testDriver.assertSnapshot("hierarchical")
+
+    testDriver.pressKey(SearchKey.ToggleHierarchy)
+    testDriver.assertSnapshot("flat")
+  }
+
   test("test finder escape cancels an active search without exiting or arming exit") {
     val report = DiffReport(Vector(diffRun("ExampleSuite", "first"), diffRun("OtherSuite", "second")))
     val testDriver = TestDriver(makeViewerState(report, color = false))

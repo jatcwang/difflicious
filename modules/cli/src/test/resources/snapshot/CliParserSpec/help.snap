@@ -1,6 +1,6 @@
 Usage:
     difflicious --help
-    difflicious [--interactive] [--json] [--plain] [--report-directory <directory>]... [--test-id <ulid>] [--no-color]
+    difflicious [--interactive] [--json] [--plain] [--all-runs] [--report-directory <directory>]... [--test-id <ulid>] [--no-color]
 
 View Difflicious JSON diffs interactively, as JSON, or as plain text.
 
@@ -13,6 +13,8 @@ Options and flags:
         Print machine-readable JSON.
     --plain
         Print a plain-text summary.
+    --all-runs
+        Show results from every detected test run instead of only the latest run.
     --report-directory <directory>, -d <directory>
         Directory containing Difflicious JSONL reports. May be specified multiple times.
     --test-id <ulid>

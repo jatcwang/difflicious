@@ -12,6 +12,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
         CliCommand.Run(
           CliConfig(
             mode = RunMode.NonInteractive(OutputFormat.Json),
+            testRunsToShow = TestRunsToShow.SingleRun,
             input = CliInput.Report(Vector("target/difflicious-result")),
             testId = None,
             color = true,
@@ -28,6 +29,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
         CliCommand.Run(
           CliConfig(
             mode = RunMode.Tui,
+            testRunsToShow = TestRunsToShow.SingleRun,
             input = CliInput.Report(Vector("suite-a.jsonl", "suite-b.jsonl")),
             testId = None,
             color = false,
@@ -57,6 +59,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
         CliCommand.Run(
           CliConfig(
             mode = RunMode.NonInteractive(OutputFormat.Plain),
+            testRunsToShow = TestRunsToShow.SingleRun,
             input = CliInput.Report(Vector("failures.jsonl")),
             testId = Some("01ARZ3NDEKTSV4RRFFQ69G5FAW"),
             color = true,
@@ -73,6 +76,7 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
         CliCommand.Run(
           CliConfig(
             mode = RunMode.default,
+            testRunsToShow = TestRunsToShow.SingleRun,
             input = CliInput.Report(Vector("target/difflicious-result")),
             testId = None,
             color = true,
@@ -80,6 +84,14 @@ class CliParserSpec extends FunSuite with SnapshotAssertions {
         ),
       ),
     )
+  }
+
+  test("can show all detected test runs") {
+    val config = CliParser.parse(List("--plain", "--all-runs")).toOption.collect { case CliCommand.Run(config) =>
+      config
+    }
+
+    assertEquals(config.map(_.testRunsToShow), Some(TestRunsToShow.AllRuns))
   }
 
   test("reports conflicting mode selectors") {
