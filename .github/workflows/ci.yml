@@ -114,7 +114,7 @@ jobs:
           GIT_USER: github-actions[bot]
           CURRENT_BRANCH: ${{ github.ref_name }}
           GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-        run: sbt docs/docusaurusPublishGhpages
+        run: sbt 'docs/mdoc; docs/docusaurusPublishGhpages'
 
   native:
     name: Build Native Executables

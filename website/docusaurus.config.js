@@ -27,7 +27,7 @@ const config = {
       'classic',
       {
         docs: {
-          path: '../docs/target/mdoc',
+          path: '../target/out/jvm/scala-2.13.18/difflicious-docs/mdoc',
           routeBasePath: 'docs',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: ({docPath}) =>
