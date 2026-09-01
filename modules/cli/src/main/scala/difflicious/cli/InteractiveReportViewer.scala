@@ -1991,14 +1991,20 @@ object InteractiveReportViewer extends TuiRunner {
       .getOrElse("unknown time")
 
   private[cli] def timestampLabel(millis: Long, now: Instant, zoneId: ZoneId): String = {
-    val timestamp = Instant.ofEpochMilli(millis).atZone(zoneId)
-    val today = LocalDate.ofInstant(now, zoneId)
-    val time = timestamp.format(DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH)).toLowerCase(Locale.ENGLISH)
-    val dateLabel =
-      if (timestamp.toLocalDate == today) "Today"
-      else if (timestamp.toLocalDate == today.minusDays(1)) "Yesterday"
-      else timestamp.format(DateTimeFormatter.ofPattern("MMM d (EEE)", Locale.ENGLISH))
-    s"$dateLabel $time"
+    val seconds = Math.max(0L, (now.toEpochMilli - millis) / 1000L)
+    if (seconds < 2 * 60)
+      if (seconds == 1L) "1 second ago"
+      else s"$seconds seconds ago"
+    else {
+      val timestamp = Instant.ofEpochMilli(millis).atZone(zoneId)
+      val today = LocalDate.ofInstant(now, zoneId)
+      val time = timestamp.format(DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH)).toLowerCase(Locale.ENGLISH)
+      val dateLabel =
+        if (timestamp.toLocalDate == today) "Today"
+        else if (timestamp.toLocalDate == today.minusDays(1)) "Yesterday"
+        else timestamp.format(DateTimeFormatter.ofPattern("MMM d (EEE)", Locale.ENGLISH))
+      s"$dateLabel $time"
+    }
   }
 
   private def renderDiffTreeRow(

@@ -118,6 +118,28 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     testDriver.assertSnapshot("test-finder")
   }
 
+  test("timestamp label shows seconds ago for runs under two minutes old") {
+    val zone = ZoneId.of("Europe/London")
+    val timestamp = Instant.parse("2026-07-15T09:15:10Z")
+    val now = Instant.parse("2026-07-15T09:16:20Z")
+
+    assertEquals(
+      InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
+      "70 seconds ago",
+    )
+  }
+
+  test("timestamp label shows one second ago for a run one second old") {
+    val zone = ZoneId.of("Europe/London")
+    val timestamp = Instant.parse("2026-07-15T09:15:10Z")
+    val now = Instant.parse("2026-07-15T09:15:11Z")
+
+    assertEquals(
+      InteractiveReportViewer.timestampLabel(timestamp.toEpochMilli, now, zone),
+      "1 second ago",
+    )
+  }
+
   test("timestamp label describes a local timestamp from today") {
     val zone = ZoneId.of("Europe/London")
     val timestamp = Instant.parse("2026-07-15T09:15:10Z")
