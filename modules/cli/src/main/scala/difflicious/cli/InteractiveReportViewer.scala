@@ -2623,9 +2623,9 @@ object InteractiveReportViewer extends TuiRunner {
         case DiffResult.ValueResult.Both(_, obtained, expected, isSame, _) =>
           if (isSame) obtained else s"$obtained -> $expected"
         case DiffResult.ValueResult.ObtainedOnly(_, obtained, _) =>
-          s"+ $obtained"
+          obtained
         case DiffResult.ValueResult.ExpectedOnly(_, expected, _) =>
-          s"- $expected"
+          expected
       }
 
     private def decodeMapKey(key: String): String =

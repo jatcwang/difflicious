@@ -1,0 +1,39 @@
+  ▾ List[TuiListElement]                                                                            
+    ▸ [0]: TuiListElement                                                                           
+    ▾ [1]: TuiListElement                                                                           
+        sku        : "SKU-EXTRA"                                                                    
+        description: "Extra lid"                                                                    
+        quantity   : 1                                                                              
+    ▸ [2]: TuiListElement                                                                           
+>   ▾ [3]: TuiListElement                                                                          <
+        sku        : "SKU-MISSING"                                                                  
+        description: "Missing cap"                                                                  
+        quantity   : 3                                                                              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

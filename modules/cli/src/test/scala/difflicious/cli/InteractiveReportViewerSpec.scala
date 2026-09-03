@@ -1,6 +1,8 @@
 package difflicious.cli
 
+import difflicious.Differ
 import difflicious.DiffResult
+import difflicious.implicits.toPairByOps
 import difflicious.PairType
 import difflicious.utils.TypeName
 import io.circe.parser.parse
@@ -847,6 +849,29 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
     )
   }
 
+  test("diff screen shows list with one extra and one missing case class element") {
+    val report = DiffReport(Vector(listWithExtraAndMissingRun))
+    val testDriver = TestDriver(makeViewerState(report, color = false))
+
+    assertFileSnapshot(
+      snapshotLines(testDriver.render),
+      "InteractiveReportViewerSpec/diff-screen-list-extra-and-missing-collapsed.snap",
+    )
+
+    testDriver.pressKeys(
+      TerminalKey.Expand,
+      TerminalKey.NextDifference,
+      TerminalKey.NextDifference,
+      TerminalKey.NextDifference,
+      TerminalKey.NextDifference,
+      TerminalKey.Expand,
+    )
+    assertFileSnapshot(
+      snapshotLines(testDriver.render),
+      "InteractiveReportViewerSpec/diff-screen-list-extra-and-missing-expanded.snap",
+    )
+  }
+
   test("diff screen right pads record fields to the longest field name") {
     val report = DiffReport(Vector(paddedRecordDiffRun))
     val testDriver = TestDriver(makeViewerState(report, color = false))
@@ -1207,6 +1232,21 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       metadata = None,
     )
 
+  private def listWithExtraAndMissingRun: DiffRun = {
+    val obtained = List(
+      TuiListElement("SKU-RED", "Red travel mug", 1),
+      TuiListElement("SKU-EXTRA", "Extra lid", 1),
+      TuiListElement("SKU-BLUE", "Blue bottle", 2),
+    )
+    val expected = List(
+      TuiListElement("SKU-RED", "Red travel mug", 1),
+      TuiListElement("SKU-MISSING", "Missing cap", 3),
+      TuiListElement("SKU-BLUE", "Blue bottle", 2),
+    )
+    val result = Differ[List[TuiListElement]].pairBy(_.sku).diff(obtained, expected)
+    DiffRun.fromResult(result, metadata = None)
+  }
+
   private def lineContaining(lines: Vector[String], text: String): String =
     lines.find(_.contains(text)).getOrElse(fail(s"Could not find line containing $text"))
 
@@ -1343,3 +1383,5 @@ class InteractiveReportViewerSpec extends FunSuite with SnapshotAssertions {
       value.sliding(needle.length).count(_ == needle)
 
 }
+
+private final case class TuiListElement(sku: String, description: String, quantity: Int) derives Differ
