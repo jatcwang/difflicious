@@ -74,6 +74,26 @@ object Build {
       }
     }
 
-    cmds
+    val jvmProjects = all.collect { case (Doublet(_, "jvm"), projects) =>
+      projects
+    }.flatten
+
+    cmds :+ publishLocalSnapshotCommand(jvmProjects)
   }
+
+  // Quick local development command to run publishLocal for all JVM projects
+  def publishLocalSnapshotCommand(
+    projects: Seq[String],
+    snapshotVersion: String = "0.7.0-SNAPSHOT",
+  ): Command =
+    Command.command("jvmPublishLocal") { state =>
+      val matrixPublishes = projects.map(project => s"$project/publishLocal")
+      // `+` cross-builds sbtPlugin over crossScalaVersions, publishing both
+      // the sbt 1.x (Scala 2.12) and sbt 2.x (Scala 3) variants.
+      val allPublishes = matrixPublishes :+ "+ sbtPlugin/publishLocal"
+      val setVersionCmd = s"""set ThisBuild / version := "$snapshotVersion""""
+      (setVersionCmd +: allPublishes).reverse.foldLeft(state) { (st, cmd) =>
+        cmd :: st
+      }
+    }
 }
