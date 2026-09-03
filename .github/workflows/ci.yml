@@ -45,7 +45,7 @@ jobs:
         run: sbt 'test; docs/mdoc; docs/docusaurusCreateSite'
 
       - name: Compile sbt 2 plugin with fatal warnings
-        run: sbt '++3.8.4; sbtPlugin / Compile / compile'
+        run: sbt '++3.9.0; sbtPlugin / Compile / compile'
 
   publish:
     name: Publish Artifacts
