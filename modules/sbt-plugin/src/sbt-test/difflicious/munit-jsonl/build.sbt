@@ -1,7 +1,7 @@
 import difflicious.sbt.DiffliciousPlugin.autoImport.*
 import sbtcompat.PluginCompat.*
 
-ThisBuild / scalaVersion := "3.8.4"
+ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / diffliciousCliAutoDependency := false
 
 libraryDependencies ++= Seq(

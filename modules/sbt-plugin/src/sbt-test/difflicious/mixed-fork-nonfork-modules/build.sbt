@@ -2,7 +2,7 @@ import difflicious.sbt.DiffliciousPlugin.autoImport.*
 import difflicious.sbt.DiffliciousPlugin.SysPropNames
 import sbtcompat.PluginCompat.*
 
-ThisBuild / scalaVersion := "3.8.4"
+ThisBuild / scalaVersion := "3.9.0"
 
 val testDependencies = Seq(
   "com.github.jatcwang" %% "difflicious-scalatest" % sys.props("plugin.version"),
