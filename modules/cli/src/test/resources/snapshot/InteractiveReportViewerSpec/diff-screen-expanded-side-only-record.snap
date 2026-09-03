@@ -1,6 +1,6 @@
   ▾ SideOnlyFixture                                                                                 
     ▾ actualOnly  : ActualOnlyRecord                                                                
->       name: + Ada                                                                                <
+>       name: Ada                                                                                  <
     ▸ expectedOnly: ExpectedOnlyRecord                                                              
 
 
