@@ -7,7 +7,7 @@ import scala.sys.process.Process
 import snapshot4s.BuildInfo.snapshot4sVersion
 
 val munitVersion = "1.3.5"
-val munitScalacheckVersion = "1.3.0"
+val munitScalacheckVersion = "1.3.1"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.16"
 val declineVersion = "2.6.2"
