@@ -6,12 +6,12 @@ import scala.concurrent.duration.*
 import scala.sys.process.Process
 import snapshot4s.BuildInfo.snapshot4sVersion
 
-val munitVersion = "1.3.5"
+val munitVersion = "1.3.6"
 val munitScalacheckVersion = "1.3.1"
 val catsVersion = "2.13.0"
 val circeVersion = "0.14.16"
 val declineVersion = "2.6.2"
-val jlineVersion = "4.4.1"
+val jlineVersion = "4.4.2"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.2"

@@ -6,7 +6,7 @@ ThisBuild / diffliciousCliAutoDependency := false
 
 libraryDependencies ++= Seq(
   "com.github.jatcwang" %% "difflicious-munit" % sys.props("plugin.version"),
-  "org.scalameta" %% "munit" % "1.3.5",
+  "org.scalameta" %% "munit" % "1.3.6",
 ).map(_ % Test)
 
 Test / diffliciousScalaTestJsonlReporterEnabled := false
