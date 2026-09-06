@@ -18,25 +18,10 @@ val hearthVersion = "0.4.2"
 val jsoniterScalaVersion = "2.40.1"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
+val waitForMdocOutput = taskKey[Unit]("Wait for mdoc output to be materialized")
 
 def runWebsiteCommand(command: Seq[String], cwd: File, extraEnv: (String, String)*): Unit = {
   val exit = Process(command, cwd, extraEnv *).!
-  assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
-}
-
-def runWebsiteCommandWithRetry(
-  command: Seq[String],
-  cwd: File,
-  retries: Int,
-  extraEnv: (String, String)*,
-): Unit = {
-  var attemptsLeft = retries
-  var exit = Process(command, cwd, extraEnv *).!
-  while (exit != 0 && attemptsLeft > 0) {
-    println(s"Retrying command after exit $exit: ${command.mkString(" ")}")
-    attemptsLeft -= 1
-    exit = Process(command, cwd, extraEnv *).!
-  }
   assert(exit == 0, s"command returned $exit: ${command.mkString(" ")}")
 }
 
@@ -366,10 +351,33 @@ lazy val docs: ProjectMatrix = projectMatrix
     mdocIn := file("docs/docs"),
     mdocVariables := Map("VERSION" -> sys.env.get("DOCS_VERSION").filter(_.nonEmpty).getOrElse(version.value)),
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
+    // Mdoc outputs don't seem to appear in file system immediately so we need to poll to make sure
+    // they've all been materialized by SBT.. Something to do with SBT 2's VirtualFile?
+    waitForMdocOutput := {
+      val input = mdocIn.value
+      val output = mdocOut.value
+      val logger = streams.value.log
+      val expected = (input ** "*").get().filter(_.isFile).flatMap { file =>
+        IO.relativize(input, file).map(output / _)
+      }
+      val deadline = 20.seconds.fromNow
+      var missing = expected.filterNot(_.isFile)
+      if (missing.nonEmpty) {
+        logger.info(s"Waiting for ${missing.size} mdoc output files to appear in $output")
+      }
+      while (missing.nonEmpty && deadline.hasTimeLeft()) {
+        Thread.sleep(50)
+        missing = expected.filterNot(_.isFile)
+      }
+      if (missing.nonEmpty) {
+        sys.error(s"Timed out waiting for mdoc output:\n${missing.mkString("\n")}")
+      }
+    },
     docusaurusCreateSite := {
       val website = (ThisBuild / baseDirectory).value / "website"
       runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
-      runWebsiteCommandWithRetry(Seq("yarn", "run", "build"), website, retries = 1)
+      waitForMdocOutput.value
+      runWebsiteCommand(Seq("yarn", "run", "build"), website)
       website / "build"
     },
     docusaurusPublishGhpages := {
@@ -384,6 +392,7 @@ lazy val docs: ProjectMatrix = projectMatrix
         ),
       ).filter(_._2.nonEmpty)
       runWebsiteCommand(Seq("yarn", "install", "--immutable"), website)
+      waitForMdocOutput.value
       runWebsiteCommand(Seq("yarn", "run", "publish-gh-pages"), website, publishEnv *)
     },
   )
