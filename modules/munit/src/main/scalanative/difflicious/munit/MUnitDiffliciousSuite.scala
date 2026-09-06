@@ -1,0 +1,3 @@
+package difflicious.munit
+
+trait MUnitDiffliciousSuite extends MUnitDiffliciousSuiteBase

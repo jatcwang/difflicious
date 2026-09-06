@@ -31,4 +31,5 @@ class MyTest extends FunSuite with MUnitDiffliciousSuite {
 }
 ```
 
-`MUnitDiffliciousSuite` writes diff reports for failed diffs, which you can explore them using **[Diff Viewer UI / CLI](../CLI.md)**.
+On the JVM, `MUnitDiffliciousSuite` writes reports for failed diffs, which you can explore using **[Diff Viewer UI / CLI](../CLI.md)**.
+JSONL report writing is not currently supported on Scala.js or Scala Native.

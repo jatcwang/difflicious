@@ -38,5 +38,6 @@ class MyTest extends AnyFunSuite {
 }
 ```
 
-The sbt plugin registers Difflicious' ScalaTest reporter, which writes reports for failed diffs. You can explore
-them with **[Diff Viewer UI / CLI](../CLI.md)**.
+On the JVM, the sbt plugin registers Difflicious' ScalaTest reporter, which writes reports for failed diffs. You
+can explore them with **[Diff Viewer UI / CLI](../CLI.md)**. JSONL report writing is not currently supported on
+Scala.js or Scala Native.
