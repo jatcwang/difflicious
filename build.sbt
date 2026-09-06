@@ -204,6 +204,7 @@ lazy val weaver = projectMatrix
     libraryDependencies ++= Seq(
       "org.typelevel" %% "weaver-core" % weaverVersion,
     ),
+    libraryDependencies += "org.typelevel" %% "weaver-cats" % weaverVersion % Test,
   )
   .jvmPlatform(scalaCrossVersions)
   .jsPlatform(scalaCrossVersions)

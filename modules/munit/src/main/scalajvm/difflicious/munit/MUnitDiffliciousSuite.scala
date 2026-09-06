@@ -1,28 +1,12 @@
 package difflicious.munit
 
-import difflicious.Differ
-import difflicious.reporter.{DifferenceFound, DifferenceFoundException, DiffResultJsonlWriter}
-import munit.{Location, Suite}
+import difflicious.reporter.{DifferenceFound, DiffResultJsonlWriter}
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
-trait MUnitDiffliciousSuite extends Suite {
-  implicit class DifferExtensions[A](differ: Differ[A]) {
-    def assertNoDiff(obtained: A, expected: A)(implicit loc: Location): Unit = {
-      differ.equalsOrDiff(obtained, expected).foreach { result =>
-        if (!result.isOk)
-          throw DifferenceFoundException(
-            diffResult = result,
-            fileName = loc.filename,
-            filePath = loc.path,
-            lineNumber = loc.line,
-          )
-      }
-    }
-  }
-
+trait MUnitDiffliciousSuite extends MUnitDiffliciousSuiteBase {
   private lazy val diffliciousJsonlWriter = new DiffResultJsonlWriter()
 
   abstract override def munitTests(): Seq[Test] =

@@ -32,4 +32,5 @@ object MyTest extends SimpleIOSuite with WeaverDiffliciousSuite[IO] {
 }
 ```
 
-`WeaverDiffliciousSuite` writes diff reports for failed diffs, which you can explore using **[Diff Viewer UI / CLI](../CLI.md)**.
+On the JVM, `WeaverDiffliciousSuite` writes reports for failed diffs, which you can explore using **[Diff Viewer UI / CLI](../CLI.md)**.
+JSONL report writing is not currently supported on Scala.js or Scala Native.

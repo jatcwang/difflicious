@@ -1,21 +1,9 @@
 package difflicious.weaver
 
-import difflicious.Differ
 import difflicious.reporter.{DifferenceFound, DifferenceFoundException, DiffResultJsonlWriter}
-import weaver.{Expectations, FSuite, Log, TestName}
-import weaver.Expectations.Helpers.success
+import weaver.{Expectations, Log, TestName}
 
-trait WeaverDiffliciousSuite[F[_]] extends FSuite[F] {
-  implicit class DifferExtensions[A](differ: Differ[A]) {
-    def assertNoDiff(obtained: A, expected: A): Expectations = {
-      differ.equalsOrDiff(obtained, expected) match {
-        case Some(result) if !result.isOk =>
-          throw DifferenceFoundException(result, "", "", 0)
-        case _ => success
-      }
-    }
-  }
-
+trait WeaverDiffliciousSuite[F[_]] extends WeaverDiffliciousSuiteBase[F] {
   private lazy val diffliciousJsonlWriter = new DiffResultJsonlWriter()
 
   override def pureTest(name: TestName)(run: => Expectations): Unit =
