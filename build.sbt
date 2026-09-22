@@ -15,7 +15,7 @@ val jlineVersion = "4.4.3"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
 val hearthVersion = "0.4.2"
-val jsoniterScalaVersion = "2.40.1"
+val jsoniterScalaVersion = "2.41.0"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
 val waitForMdocOutput = taskKey[Unit]("Wait for mdoc output to be materialized")
