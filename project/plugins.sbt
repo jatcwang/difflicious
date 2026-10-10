@@ -8,7 +8,7 @@ addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.13.0")
 addSbtPlugin("com.siriusxm" % "sbt-snapshot4s" % "0.2.11")
 addSbtPlugin("io.get-coursier" % "sbt-shading" % "2.1.8")
 
