@@ -9,7 +9,7 @@ object Build {
 
   val Scala212 = "2.12.21"
   val Scala213 = "2.13.18"
-  val Scala3 = "3.8.4"
+  val Scala3 = "3.9.0"
 
   // copied from: https://github.com/disneystreaming/smithy4s/blob/21a6fb04ab3485c0a4b40fe205a628c6f4750813/project/Smithy4sBuildPlugin.scala#L508
   def createBuildCommands(projects: Seq[ProjectReference]) = {
