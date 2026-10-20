@@ -1,7 +1,13 @@
+queue_rules:
+  - name: default
+    merge_conditions:
+      - check-success ~= ^Build and Test.*$
+
 pull_request_rules:
   - name: merge Scala Steward PRs
     conditions:
       - author = scala-steward
       - check-success ~= ^Build and Test.*$
     actions:
-      merge: {}
+      queue:
+        name: default
