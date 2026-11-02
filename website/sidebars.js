@@ -21,6 +21,7 @@ module.exports = {
             'library-integrations/munit',
             'library-integrations/scalatest',
             'library-integrations/weaver',
+            'library-integrations/zio-test',
             'library-integrations/cats',
             'library-integrations/circe',
           ],

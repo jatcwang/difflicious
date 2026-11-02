@@ -14,6 +14,7 @@ val declineVersion = "2.6.2"
 val jlineVersion = "4.4.3"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.0"
+val zioVersion = "2.1.26"
 val hearthVersion = "0.4.3"
 val jsoniterScalaVersion = "2.41.7"
 
@@ -51,13 +52,17 @@ inThisBuild(
   ),
 )
 
+// Scala.js and Scala Native hold a whole test program in memory while linking it. Linking one at a time keeps the
+// full cross-platform build within the 3 GB heap set in .jvmopts.
+Global / concurrentRestrictions += Tags.limitSum(1, ScalaJSTags.Link, NativeTags.Link)
+
 addCommandAlias("runBenchCompile2", "benchmarkCompile / clean ; benchmarkCompile / Compile / compile")
 addCommandAlias("runBenchCompile3", "benchmarkCompile3 / clean ; benchmarkCompile3 / Compile / compile")
 addCommandAlias("test2", "coretest/test")
 addCommandAlias("test3", "coretest3/test")
 
 lazy val projectMatrixModules =
-  Seq(core, coretest, munit, scalatest, weaver, cats, circe, reporterCore, cli, benchmarks, docs)
+  Seq(core, coretest, munit, scalatest, weaver, zioTest, cats, circe, reporterCore, cli, benchmarks, docs)
 
 lazy val allModules =
   projectMatrixModules.flatMap(_.projectRefs) :+ LocalProject("sbtPlugin")
@@ -100,6 +105,7 @@ lazy val sbtPlugin = project
       (LocalProject("munit3") / publishLocal).value
       (LocalProject("scalatest3") / publishLocal).value
       (LocalProject("weaver3") / publishLocal).value
+      (LocalProject("zioTest3") / publishLocal).value
       (LocalProject("cli3") / publishLocal).value
       scriptedDependencies.value
     },
@@ -190,6 +196,22 @@ lazy val weaver = projectMatrix
       "org.typelevel" %% "weaver-core" % weaverVersion,
     ),
     libraryDependencies += "org.typelevel" %% "weaver-cats" % weaverVersion % Test,
+  )
+  .jvmPlatform(scalaCrossVersions)
+  .jsPlatform(scalaCrossVersions)
+  .nativePlatform(scalaCrossVersions)
+
+lazy val zioTest = projectMatrix
+  .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
+  .in(file("modules/zio-test"))
+  .dependsOn(core, reporterCore)
+  .settings(commonSettings)
+  .settings(
+    name := "difflicious-zio-test",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-test" % zioVersion,
+    ),
+    libraryDependencies += "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
   )
   .jvmPlatform(scalaCrossVersions)
   .jsPlatform(scalaCrossVersions)
@@ -298,7 +320,7 @@ lazy val cli = projectMatrix
 lazy val example = projectMatrix
   .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
   .in(file("modules/example"))
-  .dependsOn(scalatest, munit, weaver, cats)
+  .dependsOn(scalatest, munit, weaver, zioTest, cats)
   .settings(commonSettings, noPublishSettings)
   .settings(
     name := "example",
@@ -306,6 +328,7 @@ lazy val example = projectMatrix
       "org.scalameta" %% "munit" % munitVersion % Test,
       "org.scalatest" %% "scalatest-funsuite" % scalatestVersion % Test,
       "org.typelevel" %% "weaver-cats" % weaverVersion % Test,
+      "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
     ),
   )
   .jvmPlatform(Seq(Build.Scala3))
@@ -332,7 +355,7 @@ lazy val coretest = projectMatrix
 
 lazy val docs: ProjectMatrix = projectMatrix
   .defaultAxes(VirtualAxis.jvm, VirtualAxis.scalaABIVersion(Build.Scala213))
-  .dependsOn(core, coretest, cats, circe, munit, scalatest, weaver)
+  .dependsOn(core, coretest, cats, circe, munit, scalatest, weaver, zioTest)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
   .settings(
     name := "docs",
@@ -407,6 +430,10 @@ lazy val docs: ProjectMatrix = projectMatrix
           "-Wconf:msg=.*method right in class Either.*:s",
           "-Wconf:msg=.*method get in class RightProjection.*:s",
           "-Wconf:msg=.*local (object|class).+?is never used:s",
+          // ZIO Test specs inherit a main method, which mdoc's wrapper objects can't expose as an entry point
+          "-Wconf:msg=.*will not have an entry point on the JVM.*:s",
+          // ZIO Test examples use the usual unannotated `def spec`, which -Xsource:3 would otherwise reject
+          "-Wconf:msg=.*the inferred type changes.*:s",
         )
       val removes = Set("-Wdead-code", "-Ywarn-dead-code", "-Wnonunit-statement") // we use ??? in various places
       (opts ++ extraOpts).filterNot(removes)
