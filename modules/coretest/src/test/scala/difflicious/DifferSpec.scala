@@ -1,6 +1,6 @@
 package difflicious
 
-import difflicious.differ.{LazyDiffer, RecordDiffer}
+import difflicious.differ.{LazyDiffer, RecordDiffer, ValueDiffer}
 import difflicious.ConfigureError.InvalidConfigureOp
 import munit.ScalaCheckSuite
 import difflicious.testutils.*
@@ -968,6 +968,77 @@ class DifferSpec extends ScalaCheckSuite with ScalaVersionDependentTests {
          |  d: 1.0
          |)$X""".stripMargin,
     )
+  }
+
+  // These check the raw output, as assertConsoleDiffOutput writes a color carried across lines as one span.
+  // Every line must start its own color, since anything prefixed to a line (e.g. sbt's [info]) resets it.
+  private def renderedLines(result: DiffResult): List[String] =
+    DiffResultPrinter.consoleOutput(result, 0).render.split("\n", -1).toList
+
+  test("Console output: a type mismatch colors every line") {
+    assertEquals(
+      renderedLines(Sealed.differ.diff(Sealed.Sub1(1), Sealed.Sub2(1.0))),
+      List(
+        s"${R}Sub1$X != ${G}Sub2$X",
+        s"$R=== Obtained ===$X",
+        s"${R}Sub1($X",
+        s"$R  i: 1$X",
+        s"$R)$X",
+        s"$G=== Expected ===$X",
+        s"${G}Sub2($X",
+        s"$G  d: 1.0$X",
+        s"$G)$X",
+      ),
+    )
+  }
+
+  test("Console output: a nested type mismatch colors every line") {
+    implicit val sealedDiffer: Differ[Sealed] = Sealed.differ
+    assertEquals(
+      renderedLines(Differ[Option[Sealed]].diff(Some(Sealed.Sub1(1)), Some(Sealed.Sub2(1.0)))),
+      List(
+        "Some(",
+        s"  value: ${R}Sub1$X != ${G}Sub2$X",
+        s"  $R=== Obtained ===$X",
+        s"$R  Sub1($X",
+        s"$R    i: 1$X",
+        s"$R  )$X",
+        s"  $G=== Expected ===$X",
+        s"$G  Sub2($X",
+        s"$G    d: 1.0$X",
+        s"$G  )$X",
+        ")",
+      ),
+    )
+  }
+
+  test("Console output: a value spanning several lines colors every line") {
+    assertEquals(
+      renderedLines(Differ.stringDiffer.diff("a\nb", "c\nd")),
+      List(s"""$R"a$X""", s"""${R}b"$X -> $G"c$X""", s"""${G}d"$X"""),
+    )
+  }
+
+  test("Console output: coloring leaves the text as it is") {
+    val result = Differ[Either[String, Int]].diff(Left("a\r\nb\n\n"), Right(1))
+    assertEquals(
+      DiffResultPrinter.consoleOutput(result, 0).plainText,
+      s"""Left != Right
+         |=== Obtained ===
+         |Left(
+         |  value: "a\r\nb\n\n"
+         |)
+         |=== Expected ===
+         |Right(
+         |  value: 1
+         |)""".stripMargin,
+    )
+  }
+
+  test("Console output: an entry only on one side can have an empty key") {
+    implicit val emptyKeys: ValueDiffer[String] = Differ.useEquals[String](_ => "")
+    val result = Differ[Map[String, Int]].diff(Map("a" -> 1), Map.empty[String, Int])
+    assertEquals(DiffResultPrinter.consoleOutput(result, 0).plainText, "Map(\n   -> 1\n)")
   }
 
   test("Sealed trait: isOk == true if two values are equal") {
