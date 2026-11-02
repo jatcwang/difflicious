@@ -376,7 +376,8 @@ lazy val docs: ProjectMatrix = projectMatrix
     mdocExtraArguments ++= Seq("--noLinkHygiene"),
     // Mdoc outputs don't seem to appear in file system immediately so we need to poll to make sure
     // they've all been materialized by SBT.. Something to do with SBT 2's VirtualFile?
-    waitForMdocOutput := {
+    // Uncached, as a cached result would skip the check whenever its inputs are unchanged
+    waitForMdocOutput := Def.uncached {
       val input = mdocIn.value
       val output = mdocOut.value
       val logger = streams.value.log
