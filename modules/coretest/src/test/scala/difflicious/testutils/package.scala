@@ -76,13 +76,16 @@ package object testutils {
     expectedOutputStr: String,
   ): Unit = {
 
-    // Reverse "recolor each line" difflicious.DiffResultPrinter.colorOnMatchType
+    // Reverse "recolor each line" difflicious.DiffResultPrinter.colorEachLine
     // to make test expectations easier to read and write
     def removeMultilineRecoloring(str: String): String = {
-      val k = s"$X\n $R"
-      val j = s"$X\n $G"
-      val replaced = str.replace(k, "\n ").replace(j, "\n ")
-      replaced
+      str.split("\n", -1).reduceLeft { (accum, next) =>
+        val lastColor = List(R, G, I).maxBy(color => accum.lastIndexOf(color))
+        if (accum.endsWith(X) && next.startsWith(lastColor))
+          s"${accum.dropRight(X.length)}\n${next.drop(lastColor.length)}"
+        else
+          s"$accum\n$next"
+      }
     }
 
     val obtainedOutputStr = removeMultilineRecoloring(consoleOutput(res, 0).render)

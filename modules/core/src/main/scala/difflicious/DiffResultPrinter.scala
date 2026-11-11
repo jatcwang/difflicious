@@ -2,7 +2,7 @@ package difflicious
 
 import difflicious.DiffResult.MapResult.Entry
 import difflicious.DiffResult.ValueResult
-import fansi.{Color, EscapeAttr, Str}
+import fansi.{Color, Str}
 
 object DiffResultPrinter {
   private val colorObtained = Color.Red
@@ -24,7 +24,12 @@ object DiffResultPrinter {
   def consoleOutput(
     res: DiffResult,
     indentLevel: Int,
-  ): fansi.Str = {
+  ): fansi.Str = colorEachLine(render(res, indentLevel))
+
+  private def render(
+    res: DiffResult,
+    indentLevel: Int,
+  ): Str = {
     if (res.isIgnored) ignoredStr
     else
       res match {
@@ -32,7 +37,7 @@ object DiffResultPrinter {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val listStrs = r.items
             .map { res =>
-              consoleOutput(res, indentLevel + 1)
+              render(res, indentLevel + 1)
             }
             .reduceLeftOption[Str] { case (accum, next) => accum ++ "," ++ indentForFields ++ next }
             .map(accum => indentForFields ++ accum)
@@ -44,7 +49,7 @@ object DiffResultPrinter {
           val indentForFields = Str("\n" ++ indentLevel.asSpacesPlus1)
           val fieldsStr = r.fields
             .map { case (fieldName, vRes) =>
-              Str(fieldName) ++ ": " ++ consoleOutput(
+              Str(fieldName) ++ ": " ++ render(
                 vRes,
                 indentLevel = indentLevel + 1,
               )
@@ -61,7 +66,7 @@ object DiffResultPrinter {
             .map { case Entry(keyJson, valueDiff) =>
               val keyStr =
                 colorOnMatchType(str = Str(keyJson), matchType = valueDiff.pairType)
-              val valueStr = consoleOutput(valueDiff, indentLevel + 2)
+              val valueStr = render(valueDiff, indentLevel + 2)
               keyStr ++ " -> " ++ valueStr
             }
             .reduceLeftOption[Str] { case (accum, nextStr) =>
@@ -76,8 +81,8 @@ object DiffResultPrinter {
           val titleStr = Str(r.obtainedTypeName.short).overlay(colorObtained) ++ " != " ++ Str(r.expectedTypeName.short)
             .overlay(colorExpected)
           val allStr = {
-            val obtainedStr = consoleOutput(r.obtained, indentLevel)
-            val expectedStr = consoleOutput(r.expected, indentLevel)
+            val obtainedStr = render(r.obtained, indentLevel)
+            val expectedStr = render(r.expected, indentLevel)
             val indentSplitStr = Str(s"\n${indentLevel.asSpaces}")
             titleStr ++
               indentSplitStr ++ (Str("=== Obtained ===") ++ indentSplitStr ++ obtainedStr).overlay(colorObtained) ++
@@ -102,32 +107,26 @@ object DiffResultPrinter {
       }
   }
 
-  private val dummyColoSeparator = Str(" ").overlay(Color.Reset)
+  // Because SBT (and maybe other tools) put their own logging prefix on each line (e.g. [info])
+  // they effectively resets the color of each line. Therefore we need to ensure every line is "recolored"
+  // We do this by removing the color from each newline, so that fansi ends the color before it and restarts it after.
+  private def colorEachLine(str: Str): Str = {
+    val chars = str.getChars
+    val colors = str.getColors
+    chars.indices.foreach { i =>
+      if (chars(i) == '\n') colors(i) = Color.Reset.transform(colors(i))
+    }
+    Str.fromArrays(chars, colors)
+  }
+
   private def colorOnMatchType(
     str: Str,
     matchType: PairType,
   ): Str = {
-    // Because SBT (and maybe other tools) put their own logging prefix on each line (e.g. [info])
-    // they effectively resets the color of each line. Therefore we need to ensure every line is "recolored"
-    // Because we always indent with spaces, we do this by recoloring the first space we find on each line.
-    def recolorEachLine(orig: Str, color: EscapeAttr) = {
-      orig.plainText.linesIterator
-        .map { s =>
-          if (s.startsWith(" "))
-            dummyColoSeparator ++ Str(s.drop(1)).overlay(color)
-          else
-            Str(s).overlay(color)
-        }
-        .reduceLeft((accum, next) => accum ++ Str("\n") ++ next)
-    }
-
     matchType match {
       case PairType.Both => str
-      case PairType.ObtainedOnly => {
-        recolorEachLine(str, colorObtained)
-      }
-      case PairType.ExpectedOnly =>
-        recolorEachLine(str, colorExpected)
+      case PairType.ObtainedOnly => str.overlay(colorObtained)
+      case PairType.ExpectedOnly => str.overlay(colorExpected)
     }
   }
 
