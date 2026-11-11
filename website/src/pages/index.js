@@ -49,7 +49,7 @@ export default function Home() {
             Exclude fields from comparison and configure alternative pairing strategy when comparing collections.
           </Feature>
           <Feature title="Test framework and library integration">
-            Integrates with popular framework and libraries such as MUnit, ScalaTest, Weaver, Cats, and Circe.
+            Integrates with popular framework and libraries such as MUnit, ScalaTest, Weaver, ZIO Test, Cats, and Circe.
           </Feature>
         </div>
       </main>
