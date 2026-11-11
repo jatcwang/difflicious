@@ -6,7 +6,7 @@ ThisBuild / diffliciousCliAutoDependency := false
 
 libraryDependencies ++= Seq(
   "com.github.jatcwang" %% "difflicious-weaver" % sys.props("plugin.version"),
-  "org.typelevel" %% "weaver-cats" % "0.13.0",
+  "org.typelevel" %% "weaver-cats" % "0.13.1",
 ).map(_ % Test)
 
 Test / testFrameworks += new TestFramework("weaver.framework.CatsEffect")
