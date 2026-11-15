@@ -14,7 +14,7 @@ val declineVersion = "2.6.2"
 val jlineVersion = "4.7.0"
 val scalatestVersion = "3.2.20"
 val weaverVersion = "0.13.1"
-val hearthVersion = "0.4.3"
+val hearthVersion = "0.4.4"
 val jsoniterScalaVersion = "2.43.0"
 
 val generateCompileBenchmarkSources = taskKey[Seq[File]]("Generate tracked compile benchmark sources")
